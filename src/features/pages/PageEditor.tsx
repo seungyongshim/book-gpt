@@ -107,7 +107,7 @@ const PageEditor: React.FC = () => {
     userInstruction: instruction
   }), [references, instruction, worldSummary, refSummaries]);
 
-  const generate = () => { run(layer); };
+  const generate = () => { if (page) run(page.id, layer); };
 
   if (!page) return <div className="p-4 text-sm">페이지 로딩 중 또는 없음</div>;
 

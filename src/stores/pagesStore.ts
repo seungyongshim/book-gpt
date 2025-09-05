@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { nanoid } from 'nanoid';
-import { PageMeta, PageVersion, PageStatus } from '../types/domain';
-import { put, getAll, tx, get } from '../db/database';
+import { PageMeta, PageVersion, PageStatus, ReferenceSummaryCache } from '../types/domain';
+import { put, getAll, get } from '../db/database';
+import { summarizeForReference } from '../utils/promptAssembler';
 
 interface PagesState {
   pages: PageMeta[];
@@ -9,6 +10,7 @@ interface PagesState {
   createPage: (bookId: string, index?: number) => Promise<PageMeta>;
   updatePage: (id: string, patch: Partial<PageMeta>) => Promise<void>;
   addVersion: (pageId: string, snapshot: string, author: 'system' | 'user') => Promise<void>;
+  getReferenceSummary: (pageId: string) => Promise<string | undefined>;
 }
 
 export const usePagesStore = create<PagesState>((set, getStore) => ({
@@ -48,5 +50,17 @@ export const usePagesStore = create<PagesState>((set, getStore) => ({
       author
     };
     await put('pageVersions', version);
+  },
+  getReferenceSummary: async (pageId) => {
+    // 캐시 조회
+    const cached = await get<ReferenceSummaryCache>('referenceSummaries', pageId);
+    if (cached) return cached.summary;
+    // 페이지 본문 확보
+    const page = getStore().pages.find(p=>p.id===pageId);
+    if (!page || !page.rawContent) return undefined;
+    const summary = summarizeForReference(page.rawContent);
+    const rec: ReferenceSummaryCache = { pageId, summary, updatedAt: Date.now() };
+    await put('referenceSummaries', rec);
+    return summary;
   }
 }));

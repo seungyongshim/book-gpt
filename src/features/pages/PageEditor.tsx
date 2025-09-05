@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePagesStore } from '../../stores/pagesStore';
+import { useWorldStore } from '../../stores/worldStore';
 import { assemblePrompt } from '../../utils/promptAssembler';
 import { parseReferences } from '../../utils/referenceParser';
 import { usePageGeneration } from '../../hooks/usePageGeneration';
@@ -48,25 +49,63 @@ const PromptDrawer: React.FC<{ open: boolean; onClose: () => void; layer: any; }
 
 const PageEditor: React.FC = () => {
   const { bookId, pageIndex } = useParams();
-  const { pages, load } = usePagesStore();
+  const { pages, load, getReferenceSummary } = usePagesStore();
+  const { world, load: loadWorld, getWorldDerived } = useWorldStore();
   const navigate = useNavigate();
   const page = pages.find(p => p.bookId === bookId && p.index === Number(pageIndex));
   const { output, running, run } = usePageGeneration();
   const [instruction, setInstruction] = React.useState('');
   const [openDrawer, setOpenDrawer] = React.useState(false);
 
-  useEffect(() => { if (bookId) load(bookId); }, [bookId, load]);
+  useEffect(() => { if (bookId) { load(bookId); loadWorld(bookId); } }, [bookId, load, loadWorld]);
 
+  const [worldSummary, setWorldSummary] = React.useState<string>('');
+  const [refSummaries, setRefSummaries] = React.useState<Record<string,string>>({});
+
+  // 참조 파싱 (요약 로딩 useEffect보다 먼저 선언 필요)
   const { references } = useMemo(() => parseReferences(instruction), [instruction]);
+
+  // worldDerived 로드
+  useEffect(() => {
+    if (!bookId) return;
+    (async () => {
+      const ws = await getWorldDerived(bookId);
+      if (ws) setWorldSummary(ws);
+    })();
+  }, [bookId, world, getWorldDerived]);
+
+  // 참조 요약 로드
+  useEffect(() => {
+    if (!references.length || !bookId) { setRefSummaries({}); return; }
+    let cancelled = false;
+    (async () => {
+      const acc: Record<string,string> = {};
+      for (const r of references) {
+        for (const idxStr of r.pageIds) {
+          const idx = parseInt(idxStr, 10);
+            const target = pages.find(p=>p.bookId===bookId && p.index===idx);
+            if (target) {
+              const sum = await getReferenceSummary(target.id);
+              if (sum) acc[r.refRaw] = (acc[r.refRaw] ? acc[r.refRaw] + '\n' : '') + sum;
+            }
+        }
+      }
+      if (!cancelled) setRefSummaries(acc);
+    })();
+    return () => { cancelled = true; };
+  }, [references, pages, bookId, getReferenceSummary]);
 
   const layer = useMemo(() => assemblePrompt({
     system: '글로벌 규칙',
     bookSystem: '북 시스템',
-    worldDerived: '세계관 요약 (예시)',
+    worldDerived: worldSummary || '세계관 요약 준비중...',
     pageSystem: '페이지 시스템',
-    referencedSummaries: references.map(r => ({ ref: r.refRaw, summary: '요약 placeholder' })),
+    referencedSummaries: references.map(r => ({
+      ref: r.refRaw,
+      summary: refSummaries[r.refRaw] || '로딩 중...'
+    })),
     userInstruction: instruction
-  }), [references, instruction]);
+  }), [references, instruction, worldSummary, refSummaries]);
 
   const generate = () => { run(layer); };
 

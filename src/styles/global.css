@@ -1,0 +1,36 @@
+/* CSS 변수 (다크 기본) */
+:root {
+  --color-bg: hsl(220 15% 9%);
+  --color-surface: hsl(222 18% 14%);
+  --color-surface-alt: hsl(222 18% 18%);
+  --color-border: hsl(220 12% 28%);
+  --color-border-accent: hsl(260 70% 55%);
+  --color-text: hsl(220 15% 92%);
+  --color-text-dim: hsl(220 10% 65%);
+  --color-primary: hsl(265 85% 62%);
+  --color-primary-hover: hsl(265 85% 70%);
+  --color-danger: hsl(350 70% 55%);
+  --color-warn: hsl(40 85% 55%);
+  --color-success: hsl(145 55% 45%);
+  --color-info: hsl(205 70% 55%);
+}
+
+.light {
+  --color-bg: hsl(220 20% 98%);
+  --color-surface: hsl(0 0% 100%);
+  --color-surface-alt: hsl(220 14% 96%);
+  --color-border: hsl(220 15% 82%);
+  --color-text: hsl(220 25% 14%);
+  --color-text-dim: hsl(220 15% 45%);
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { @apply antialiased font-sans; }
+
+.scrollbar-thin::-webkit-scrollbar { width: 6px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: hsl(220 10% 30%); border-radius: 3px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: hsl(220 10% 38%); }

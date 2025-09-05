@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { get as dbGet, put } from '../db/database';
+import { summarizeWorld } from '../utils/promptAssembler';
 export const useWorldStore = create((set, get) => ({
     world: undefined,
     worldDerivedInvalidated: false,
@@ -14,5 +15,29 @@ export const useWorldStore = create((set, get) => ({
         await put('worldSettings', next);
         set({ world: next, worldDerivedInvalidated: true });
     },
-    invalidateDerived: () => set({ worldDerivedInvalidated: true })
+    invalidateDerived: () => set({ worldDerivedInvalidated: true }),
+    getWorldDerived: async (bookId) => {
+        const st = get();
+        const world = st.world && st.world.bookId === bookId ? st.world : undefined;
+        if (!world)
+            return undefined;
+        const derivedId = `${bookId}:${world.version}`;
+        if (!st.worldDerivedInvalidated) {
+            const cached = await dbGet('worldDerived', derivedId);
+            if (cached)
+                return cached.summary;
+        }
+        // 재생성
+        const summary = summarizeWorld(world);
+        const rec = {
+            id: derivedId,
+            bookId,
+            worldVersion: world.version,
+            summary,
+            createdAt: Date.now()
+        };
+        await put('worldDerived', rec);
+        set({ worldDerivedInvalidated: false });
+        return summary;
+    }
 }));

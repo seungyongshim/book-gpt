@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { nanoid } from 'nanoid';
-import { put, getAll } from '../db/database';
+import { put, getAll, get } from '../db/database';
+import { summarizeForReference } from '../utils/promptAssembler';
 export const usePagesStore = create((set, getStore) => ({
     pages: [],
     load: async (bookId) => {
@@ -39,5 +40,19 @@ export const usePagesStore = create((set, getStore) => ({
             author
         };
         await put('pageVersions', version);
+    },
+    getReferenceSummary: async (pageId) => {
+        // 캐시 조회
+        const cached = await get('referenceSummaries', pageId);
+        if (cached)
+            return cached.summary;
+        // 페이지 본문 확보
+        const page = getStore().pages.find(p => p.id === pageId);
+        if (!page || !page.rawContent)
+            return undefined;
+        const summary = summarizeForReference(page.rawContent);
+        const rec = { pageId, summary, updatedAt: Date.now() };
+        await put('referenceSummaries', rec);
+        return summary;
     }
 }));

@@ -7,7 +7,7 @@ const BookDashboard: React.FC = () => {
   const { bookId } = useParams();
   const { books, updateBook } = useBooksStore();
   const navigate = useNavigate();
-  const { pages, load: loadPages, createPage } = usePagesStore();
+  const { pages, load: loadPages, createPage, deletePage } = usePagesStore() as any;
   useEffect(()=>{ if(bookId) loadPages(bookId); }, [bookId, loadPages]);
   const book = books.find(b=>b.id===bookId);
   const [title, setTitle] = useState(book?.title || '');
@@ -28,12 +28,17 @@ const BookDashboard: React.FC = () => {
         </div>
       </header>
       <ul className="space-y-2">
-  {pages.filter(p=>p.bookId===bookId).map((p: any)=> (
-          <li key={p.id}>
-            <Link to={`/books/${bookId}/pages/${p.index}`} className="block p-3 rounded-md border border-border hover:bg-surfaceAlt">
+        {pages.filter((p: any)=>p.bookId===bookId).map((p: any)=> (
+          <li key={p.id} className="group relative">
+            <Link to={`/books/${bookId}/pages/${p.index}`} className="block p-3 rounded-md border border-border hover:bg-surfaceAlt pr-16">
               <div className="text-sm font-medium">#{p.index} {p.title || '(제목 없음)'}</div>
               <div className="text-xs text-text-dim">{p.status}</div>
             </Link>
+            <button
+              onClick={async (e: React.MouseEvent)=>{ e.preventDefault(); e.stopPropagation(); if (confirm(`페이지 #${p.index} 삭제? 되돌릴 수 없습니다.`)) { await deletePage(p.id); }} }
+              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] px-2 py-1 rounded bg-red-600 text-white"
+              title="페이지 삭제"
+            >삭제</button>
           </li>
         ))}
       </ul>

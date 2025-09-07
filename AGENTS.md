@@ -56,7 +56,7 @@ Page
 - rawContent (생성 결과 원문)
 - refinedContent (수정/후편집본)
 - summary (요약: 자동/수동)
-- tokensUsed, modelMeta
+- tokensUsed, tokensPrompt, tokensCompletion, modelMeta
 - references (파싱된 참조 배열)
 - versionHistory (별도 테이블 또는 collection)
 - createdAt, updatedAt
@@ -103,6 +103,7 @@ Page (N) — (N) Page (간접 참조: `referenceSummaries` 캐시 활용)
   - (미래) `embeddings`, `exports`
   
 > 마이그레이션: onupgradeneeded 훅에서 store/인덱스 추가 및 필드 확장. 대규모 텍스트는 비압축 기본, 50KB 초과 시 선택적 LZ-string(`compressed: true`).
+> 상세 마이그레이션 전략 및 향후 버전 계획은 `MIGRATIONS.md` 문서 참고.
 - 쓰기 전략: 트랜잭션 단위로 atomic (pages + pageVersions 동시 커밋)
 - 대규모 텍스트 필드는 그대로 저장(용량 제한 명시적 강제 없음; 브라우저 별 한도 내 자동 관리)
 - 압축 정책: 기본 비압축, 필요 시 threshold(>50KB) 이상 LZ-string 적용 → `compressed: true` 플래그 보관
@@ -172,6 +173,18 @@ GPT 연동
    - L4: pageSystem bullet 핵심화
 6. L4 후에도 초과 → 사용자 경고 + 참조 제거 UI
 7. 스트리밍 시 10K자 돌파 예상 시 사용자 인터럽트 옵션 노출
+
+#### (신규) 혼합 언어 토큰 추정 & 적응형 보정
+MVP 이후 개선된 휴리스틱(`estimateTokens` in `promptAssembler`)은 언어/문자 종류 비율과 엔트로피(혼합도), 긴 ASCII 연속, 숫자+단위 패턴, 연속 구두점 묶음을 반영하여 추정 정밀도를 향상시켰다. 
+
+보정(calibration) 파이프라인:
+1. 페이지 생성 호출 시 프롬프트 레이어 추정 토큰 계산
+2. 스트리밍 완료 후 본문 문자 길이 → 한글 중심 가중치(0.95)로 completion 근사
+3. (프롬프트추정 + completion근사) / (기존 추정 합) 비율을 이동 평균(α=0.15)으로 반영
+4. 결과 factor는 `settings` store (`key=tokenCalibration`)에 저장, 0.7~1.3 범위 클램프
+5. 앱 초기화 시 로드되어 미래 추정에 즉시 적용
+
+향후: 실제 모델 usage(토큰 수)가 응답에 포함될 경우 직접 ratio 계산으로 교체 예정.
 
 ### 품질용 메타 프롬프트 패턴
 ```

@@ -1,4 +1,5 @@
 import { PromptLayer, StreamChunk, GenerationConfig } from '../types/domain';
+import { promptLayerToMessages } from '../utils/promptToMessages';
 
 interface GenerateOptions {
   config?: Partial<GenerationConfig>;
@@ -13,21 +14,7 @@ const DEFAULT_CONFIG: GenerationConfig = {
 };
 
 // PromptLayer -> OpenAI Chat messages 변환
-function buildMessages(layer: PromptLayer) {
-  const systemChunks: string[] = [];
-  if (layer.system) systemChunks.push(`[GLOBAL]\n${layer.system}`);
-  if (layer.bookSystem) systemChunks.push(`[BOOK]\n${layer.bookSystem}`);
-  if (layer.worldDerived) systemChunks.push(`[WORLD]\n${layer.worldDerived}`);
-  if (layer.pageSystem) systemChunks.push(`[PAGE]\n${layer.pageSystem}`);
-  if (layer.dynamicContext?.length) {
-    systemChunks.push('[REFERENCES]\n' + layer.dynamicContext.map(r => `${r.ref}: ${r.summary}`).join('\n---\n'));
-  }
-  const systemContent = systemChunks.join('\n\n');
-  const messages: { role: 'system' | 'user'; content: string }[] = [];
-  if (systemContent) messages.push({ role: 'system', content: systemContent });
-  if (layer.userInstruction) messages.push({ role: 'user', content: layer.userInstruction });
-  return messages;
-}
+const buildMessages = promptLayerToMessages;
 
 function classifyError(status: number | undefined, body: any): string {
   if (!status) return 'network-error';

@@ -3,6 +3,7 @@ export function parseReferences(input) {
     const references = [];
     const map = new Map();
     let cleaned = input;
+    const warnings = [];
     const matches = [...input.matchAll(REF_REGEX)];
     for (const m of matches) {
         const raw = m[0];
@@ -23,8 +24,10 @@ export function parseReferences(input) {
             if (token.includes('-')) {
                 const [s, e] = token.split('-').map(n => parseInt(n, 10));
                 const span = [];
-                if (e - s > 50)
-                    return { cleanedText: input, references: [] }; // guard too large
+                if (e - s > 50) {
+                    warnings.push(`참조 범위가 너무 큽니다: @${token}`);
+                    continue;
+                }
                 for (let i = s; i <= e; i++)
                     span.push(String(i));
                 const pr = { type: 'page', refRaw, pageIds: span, weight: 1 };
@@ -39,5 +42,5 @@ export function parseReferences(input) {
         }
     }
     // cleanedText: remove raw tokens or keep? Keep but optional - for now keep.
-    return { cleanedText: cleaned, references };
+    return { cleanedText: cleaned, references, warnings };
 }

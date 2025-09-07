@@ -8,6 +8,7 @@ import { assemblePrompt } from '../../utils/promptAssembler';
 import { parseReferences } from '../../utils/referenceParser';
 import { usePageGeneration } from '../../hooks/usePageGeneration';
 import TokenMeter from '../../components/TokenMeter';
+import type { PageMeta } from '../../types/domain';
 
 interface PromptDrawerProps { open: boolean; onClose: () => void; layer: any }
 const PromptDrawer: React.FC<PromptDrawerProps> = ({ open, onClose, layer }: PromptDrawerProps) => (
@@ -55,7 +56,7 @@ const PageEditor: React.FC = () => {
   const { books } = useBooksStore();
   const { world, load: loadWorld, getWorldDerived } = useWorldStore();
   const navigate = useNavigate();
-  const page = pages.find(p => p.bookId === bookId && p.index === Number(pageIndex));
+  const page = pages.find((p: PageMeta) => p.bookId === bookId && p.index === Number(pageIndex));
   const [title, setTitle] = React.useState(page?.title || '');
   const [slug, setSlug] = React.useState(page?.slug || '');
   useEffect(()=>{ if (page) { setTitle(page.title||''); setSlug(page.slug||''); } }, [page?.id]);
@@ -69,7 +70,7 @@ const PageEditor: React.FC = () => {
   const [refSummaries, setRefSummaries] = React.useState<Record<string,string>>({});
 
   // 참조 파싱 (요약 로딩 useEffect보다 먼저 선언 필요)
-  const { references } = useMemo(() => parseReferences(instruction), [instruction]);
+  const { references, warnings } = useMemo(() => parseReferences(instruction), [instruction]);
 
   // worldDerived 로드
   useEffect(() => {
@@ -89,7 +90,7 @@ const PageEditor: React.FC = () => {
       for (const r of references) {
         if (r.pageIds.length === 0 && r.refRaw.startsWith('@p:')) {
           const slugToken = r.refRaw.slice(3); // @p:
-          const target = pages.find(p=>p.bookId===bookId && p.slug===slugToken);
+          const target = pages.find((p: PageMeta)=>p.bookId===bookId && p.slug===slugToken);
           if (target) {
             const sum = await getReferenceSummary(target.id);
             if (sum) acc[r.refRaw] = sum;
@@ -98,7 +99,7 @@ const PageEditor: React.FC = () => {
         }
         for (const idxStr of r.pageIds) {
           const idx = parseInt(idxStr, 10);
-          const target = pages.find(p=>p.bookId===bookId && p.index===idx);
+          const target = pages.find((p: PageMeta)=>p.bookId===bookId && p.index===idx);
           if (target) {
             const sum = await getReferenceSummary(target.id);
             if (sum) acc[r.refRaw] = (acc[r.refRaw] ? acc[r.refRaw] + '\n' : '') + sum;
@@ -152,6 +153,13 @@ const PageEditor: React.FC = () => {
       </header>
 
       <TokenMeter layer={layer} />
+      {(page.tokensPrompt || page.tokensCompletion) && (
+        <div className="text-[11px] text-text-dim flex gap-3">
+          {page.tokensPrompt !== undefined && <span>프롬프트 추정: <span className="font-medium">{page.tokensPrompt}</span></span>}
+          {page.tokensCompletion !== undefined && <span>생성 추정: <span className="font-medium">{page.tokensCompletion}</span></span>}
+          {page.tokensUsed !== undefined && <span>총합: <span className="font-medium">{page.tokensUsed}</span></span>}
+        </div>
+      )}
 
       <textarea
         className="w-full h-32 text-sm p-2 rounded-md bg-surfaceAlt border border-border focus:outline-none focus:ring-1 focus:ring-primary/50"
@@ -160,11 +168,16 @@ const PageEditor: React.FC = () => {
         onChange={(e) => setInstruction(e.target.value)}
       />
 
+      {(warnings && warnings.length>0) && (
+        <div className="text-[11px] text-warn space-y-0.5">
+          {warnings.map((w: string,i: number)=>(<div key={i}>⚠ {w}</div>))}
+        </div>
+      )}
       {references.length > 0 && (
         <div className="text-xs text-text-dim space-y-1">
           <div className="font-medium text-text">참조 ({references.length})</div>
           <ul className="list-disc pl-4 space-y-0.5">
-            {references.map(r => (
+            {references.map((r: any) => (
               <li key={r.refRaw}>{r.refRaw} <span className="text-[10px] opacity-70">pages:{r.pageIds.join(',') || 'slug'}</span></li>
             ))}
           </ul>

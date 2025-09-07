@@ -42,7 +42,14 @@ export interface PageMeta {
   rawContent?: string;
   refinedContent?: string;
   summary?: string;
+  /**
+   * 총 사용 토큰(레거시) - 신규 필드 계산 후에도 역호환 위해 유지
+   */
   tokensUsed?: number;
+  /** 추정/실제 프롬프트 토큰 (실제 usage 노출 시 대체) */
+  tokensPrompt?: number;
+  /** 추정/실제 생성(completion) 토큰 */
+  tokensCompletion?: number;
   modelMeta?: Record<string, any>;
   references?: ParsedReference[];
   createdAt: number;

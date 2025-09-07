@@ -1,6 +1,7 @@
 # TODO Roadmap
 
-갱신일: 2025-09-07 (자동 업데이트 반영)
+갱신일: 2025-09-07 (자동 업데이트 반영)  
+최근 변경: 혼합 언어 토큰 추정 고급 휴리스틱 + 적응형 보정(calibration) 저장
 
 ## 0. 기준 / 우선순위 레이블
 - P0: 반드시 즉시 (핵심 기능 공백 / 데이터 손실 가능)
@@ -17,23 +18,23 @@
 - [x] Page 생성 시 최초 버전 자동 기록  
 - [x] 새로고침 404 대응 (postbuild 스크립트)  
 - [x] `worldStore.load` 실패 시 초기 레코드 생성  
-- [ ] IndexedDB 버전 마이그레이션 전략 문서화 (현재 `DB_VERSION=1`)
+- [x] IndexedDB 버전 마이그레이션 전략 문서화 (현재 `DB_VERSION=1`) → `MIGRATIONS.md` 작성
 
 ## 2. 페이지/버전 관리 (P1)
 - [x] VersionTimeline 기본 목록 (시간/작성자/길이/링크)  
 - [x] DiffView 길이 & 단어 diff MVP  
 - [x] 페이지 제목/slug 편집 UI  
 - [x] 버전 diff 저장 (`PageVersion.diff`)  
-- [ ] VersionTimeline 고급(버전 비교 선택 UI)  
-- [ ] DiffView 고급(문장/문단 diff, collapse)  
-- [ ] 페이지 삭제 & 재인덱싱 정책  
+- [x] VersionTimeline 고급(버전 비교 선택 UI → 2개 선택 후 커스텀 diff)  
+- [x] DiffView 고급(문장/문단 diff, 긴 동일 구간 collapse 1차)  
+- [x] 페이지 삭제 & 재인덱싱 정책  
 
 ## 3. 프롬프트 & 참조 시스템 (P1)
-- [ ] `assemblePrompt` → OpenAI messages 변환 유틸 (현재 내부 변환 gpt.ts에 국한)  
+- [x] `assemblePrompt` → OpenAI messages 변환 유틸 (promptLayerToMessages)  
 - [x] 참조된 페이지 slug 지원 (`@p:slug`)  
-- [ ] 참조 범위 과도 (`@3-50`) 경고 UI  
-- [ ] reference summary TTL / 재생성 정책  
-- [ ] Token 예측 로직 개선 (언어 혼합)  
+- [x] 참조 범위 과도 (`@3-50`) 경고 UI  
+- [x] reference summary TTL / 재생성 정책 (24h TTL + page.updatedAt 비교 재생성)  
+- [x] Token 예측 로직 개선 (언어 혼합) → 엔트로피 기반 혼합 가중치, 긴 ASCII 런 패널티, 숫자+단위/구두점 묶음 할인, 이동 평균 보정(calibration factor)  
 
 ## 4. 세계관 (World) 기능 확장 (P2)
 - [ ] WorldBuilder 추가 필드 UI 확장  
@@ -45,6 +46,7 @@
 - [x] Abort 기능  
 - [ ] 임시 저장 조건 (시간/토큰 기반 선택)  
 - [ ] 레이어 별 토큰 분포 UI  
+	- [x] 1차: TokenMeter 레이어 분포 막대/최대 레이어 표시 (추가 압축 버튼 연동 훅)  
 - [ ] 모델/temperature 선택 UI  
 - [ ] 완료 후 focus/scroll 관리  
 - [ ] 통합 오류 메시지(Toast)  
@@ -66,9 +68,10 @@
 
 ## 8. 테스트 & 품질 (P2)
 - [ ] 유닛 테스트 환경 (Vitest/Jest)  
-	- [ ] referenceParser 경계 케이스  
-	- [ ] promptAssembler 길이/요약  
-	- [ ] worldDerived 캐시 재생성  
+	- [x] referenceParser 경계 케이스 (단일/범위/slug/중복/무효/경고)  
+	- [x] promptAssembler 토큰 휴리스틱 기본 비교/엔트로피/패널티/보정  
+	- [x] world summarize (summarizeWorld) 섹션 레이블 & 길이 한도  
+	- [ ] worldDerived 캐시 재생성 (미작성)  
 - [ ] E2E 기본 시나리오  
 - [ ] optional 필드 null guard 강화  
 - [ ] ESLint 규칙 확장  
@@ -80,7 +83,7 @@
 - [ ] CHANGELOG 및 릴리즈 태깅  
 
 ## 10. 데이터 모델 개선 (P3)
-- [ ] tokensUsed 분리 (prompt/completion)  
+- [x] tokensUsed 분리 (prompt/completion)  
 - [ ] PageVersion 메타: model/temperature  
 - [ ] WorldSetting 과거 버전 diff  
 - [ ] 다중 Book export/import  
@@ -109,7 +112,7 @@
 - [ ] worldDerived 초기 로딩 race  
 - [ ] 긴 스트림 비활성 탭 지연(백프레셔)  
 - [ ] 다중 탭 동시 편집 충돌  
-- [ ] 토큰 추정 과/과소 문제  
+- [ ] 토큰 추정 과/과소 문제 (1차 개선완료, 실제 모델 usage 수집시 추가 정밀 보정 예정)  
 
 ## 15. 빠른 승리 (Quick Wins)
 - [x] 404.html postbuild  

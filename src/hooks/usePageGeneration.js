@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { generatePage } from '../services/gpt';
 import { usePagesStore } from '../stores/pagesStore';
 import { summarizeForReference } from '../utils/promptAssembler';
@@ -8,12 +8,14 @@ export function usePageGeneration() {
     const [error, setError] = useState(null);
     const pagesStore = usePagesStore();
     const [lastSavedLen, setLastSavedLen] = useState(0);
+    const controllerRef = useRef(null);
     const run = useCallback(async (pageId, layer) => {
         setOutput('');
         setRunning(true);
         setError(null);
         setLastSavedLen(0);
         const controller = new AbortController();
+        controllerRef.current = controller;
         let buffer = '';
         try {
             await generatePage(layer, async (c) => {
@@ -27,7 +29,7 @@ export function usePageGeneration() {
                 }
                 else {
                     buffer += c.text;
-                    setOutput(prev => prev + c.text);
+                    setOutput((prev) => prev + c.text);
                     if (buffer.length - lastSavedLen >= 2000) {
                         await pagesStore.updatePage(pageId, { rawContent: buffer });
                         setLastSavedLen(buffer.length);
@@ -40,5 +42,9 @@ export function usePageGeneration() {
             setRunning(false);
         }
     }, [pagesStore, lastSavedLen]);
-    return { output, running, error, run };
+    const abort = useCallback(() => {
+        controllerRef.current?.abort();
+        setRunning(false);
+    }, []);
+    return { output, running, error, run, abort };
 }

@@ -1,14 +1,99 @@
-// OpenAI Chat Completions 호환 SSE 스트리밍 호출 (단순 스텁)
-export async function generatePage(layer, onChunk, signal) {
-    // 실제 구현 시 fetch + ReadableStream reader 사용
-    // 여기서는 모의 딜레이 + 가짜 텍스트 스트리밍
-    const fake = '이것은 생성된 예시 텍스트입니다. '.repeat(50);
-    const parts = fake.match(/.{1,80}/g) || [];
-    for (const p of parts) {
-        if (signal?.aborted)
+import { promptLayerToMessages } from '../utils/promptToMessages';
+const DEFAULT_CONFIG = {
+    model: 'gpt-4o-mini',
+    temperature: 0.8,
+    targetChars: 12000
+};
+// PromptLayer -> OpenAI Chat messages 변환
+const buildMessages = promptLayerToMessages;
+function classifyError(status, body) {
+    if (!status)
+        return 'network-error';
+    if (status === 401)
+        return 'auth';
+    if (status === 429)
+        return 'rate-limit';
+    if (status >= 500)
+        return 'server';
+    return body?.error?.type || 'unknown';
+}
+// SSE data: lines starting with 'data:'; '[DONE]' sentinel
+export async function generatePage(layer, onChunk, signal, opts) {
+    const cfg = { ...DEFAULT_CONFIG, ...(opts?.config || {}) };
+    const base = opts?.baseUrl || import.meta.env?.VITE_OPENAI_BASE_URL || 'http://localhost:4141/v1';
+    const apiKey = import.meta.env?.VITE_OPENAI_API_KEY;
+    const url = base.replace(/\/$/, '') + '/chat/completions';
+    const messages = buildMessages(layer);
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {})
+            },
+            body: JSON.stringify({
+                model: cfg.model,
+                temperature: cfg.temperature,
+                stream: true,
+                messages
+            }),
+            signal
+        });
+        if (!res.ok || !res.body) {
+            let bodyJson = undefined;
+            try {
+                bodyJson = await res.json();
+            }
+            catch { /* ignore */ }
+            const cat = classifyError(res.status, bodyJson);
+            onChunk({ text: `\n[ERROR:${cat}] 요청 실패`, done: true });
             return;
-        await new Promise(r => setTimeout(r, 10));
-        onChunk({ text: p });
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+            if (signal?.aborted)
+                return; // 조기 중단
+            const { done, value } = await reader.read();
+            if (done)
+                break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split(/\n/);
+            // 마지막 줄이 반쪽이면 유지
+            buffer = lines.pop() || '';
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed.startsWith('data:'))
+                    continue;
+                const data = trimmed.slice(5).trim();
+                if (data === '[DONE]') {
+                    onChunk({ text: '', done: true });
+                    return;
+                }
+                try {
+                    const json = JSON.parse(data);
+                    const content = json.choices?.[0]?.delta?.content;
+                    if (content)
+                        onChunk({ text: content });
+                }
+                catch {
+                    // ignore malformed chunk
+                }
+            }
+        }
+        onChunk({ text: '', done: true });
     }
-    onChunk({ text: '', done: true });
+    catch (e) {
+        if (signal?.aborted) {
+            onChunk({ text: '\n[중단됨]', done: true });
+        }
+        else {
+            onChunk({ text: `\n[ERROR:${e?.name || 'unknown'}] ${e?.message || ''}`, done: true });
+        }
+    }
+}
+export function estimateCompletionTokens(targetChars) {
+    // 한글 평균 0.7~1.2 토큰 → 보수 계수 0.9
+    return Math.round(targetChars * 0.9);
 }

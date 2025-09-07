@@ -2,13 +2,15 @@
 import React, { useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePagesStore } from '../../stores/pagesStore';
+import { useBooksStore } from '../../stores/booksStore';
 import { useWorldStore } from '../../stores/worldStore';
 import { assemblePrompt } from '../../utils/promptAssembler';
 import { parseReferences } from '../../utils/referenceParser';
 import { usePageGeneration } from '../../hooks/usePageGeneration';
 import TokenMeter from '../../components/TokenMeter';
 
-const PromptDrawer: React.FC<{ open: boolean; onClose: () => void; layer: any; }> = ({ open, onClose, layer }) => (
+interface PromptDrawerProps { open: boolean; onClose: () => void; layer: any }
+const PromptDrawer: React.FC<PromptDrawerProps> = ({ open, onClose, layer }: PromptDrawerProps) => (
   <div className={`fixed inset-0 z-40 ${open ? '' : 'pointer-events-none'}`}>
     <div className={`absolute inset-0 bg-black/30 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} />
     <div className={`absolute top-0 right-0 h-full w-[360px] bg-bg border-l border-border shadow-xl transform transition-transform duration-200 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
@@ -17,10 +19,10 @@ const PromptDrawer: React.FC<{ open: boolean; onClose: () => void; layer: any; }
         <button onClick={onClose} className="text-xs text-text-dim hover:text-text">닫기</button>
       </div>
       <div className="p-3 overflow-y-auto h-[calc(100%-48px)] space-y-4 text-xs">
-        {['system','bookSystem','worldDerived','pageSystem'].map(k => layer[k] && (
+        {(['system','bookSystem','worldDerived','pageSystem'] as const).map((k: 'system'|'bookSystem'|'worldDerived'|'pageSystem') => (layer as any)[k] && (
           <div key={k}>
             <div className="font-medium mb-1 text-[11px] uppercase tracking-wide text-text-dim">{k}</div>
-            <pre className="whitespace-pre-wrap bg-surfaceAlt p-2 rounded border border-border max-h-40 overflow-auto">{layer[k]}</pre>
+            <pre className="whitespace-pre-wrap bg-surfaceAlt p-2 rounded border border-border max-h-40 overflow-auto">{(layer as any)[k]}</pre>
           </div>
         ))}
         {layer.dynamicContext && layer.dynamicContext.length > 0 && (
@@ -49,10 +51,14 @@ const PromptDrawer: React.FC<{ open: boolean; onClose: () => void; layer: any; }
 
 const PageEditor: React.FC = () => {
   const { bookId, pageIndex } = useParams();
-  const { pages, load, getReferenceSummary } = usePagesStore();
+  const { pages, load, getReferenceSummary, updatePage } = usePagesStore() as any;
+  const { books } = useBooksStore();
   const { world, load: loadWorld, getWorldDerived } = useWorldStore();
   const navigate = useNavigate();
   const page = pages.find(p => p.bookId === bookId && p.index === Number(pageIndex));
+  const [title, setTitle] = React.useState(page?.title || '');
+  const [slug, setSlug] = React.useState(page?.slug || '');
+  useEffect(()=>{ if (page) { setTitle(page.title||''); setSlug(page.slug||''); } }, [page?.id]);
   const { output, running, run, abort } = usePageGeneration();
   const [instruction, setInstruction] = React.useState('');
   const [openDrawer, setOpenDrawer] = React.useState(false);
@@ -81,13 +87,22 @@ const PageEditor: React.FC = () => {
     (async () => {
       const acc: Record<string,string> = {};
       for (const r of references) {
+        if (r.pageIds.length === 0 && r.refRaw.startsWith('@p:')) {
+          const slugToken = r.refRaw.slice(3); // @p:
+          const target = pages.find(p=>p.bookId===bookId && p.slug===slugToken);
+          if (target) {
+            const sum = await getReferenceSummary(target.id);
+            if (sum) acc[r.refRaw] = sum;
+          }
+          continue;
+        }
         for (const idxStr of r.pageIds) {
           const idx = parseInt(idxStr, 10);
-            const target = pages.find(p=>p.bookId===bookId && p.index===idx);
-            if (target) {
-              const sum = await getReferenceSummary(target.id);
-              if (sum) acc[r.refRaw] = (acc[r.refRaw] ? acc[r.refRaw] + '\n' : '') + sum;
-            }
+          const target = pages.find(p=>p.bookId===bookId && p.index===idx);
+          if (target) {
+            const sum = await getReferenceSummary(target.id);
+            if (sum) acc[r.refRaw] = (acc[r.refRaw] ? acc[r.refRaw] + '\n' : '') + sum;
+          }
         }
       }
       if (!cancelled) setRefSummaries(acc);
@@ -113,9 +128,27 @@ const PageEditor: React.FC = () => {
 
   return (
     <div className="p-4 space-y-4">
-      <header className="flex items-center gap-2">
-        <button onClick={() => navigate(`/books/${bookId}`)} className="text-sm text-primary">← 목록</button>
-        <h2 className="text-xl font-semibold">페이지 #{page.index}</h2>
+      <header className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate(`/books/${bookId}`)} className="text-sm text-primary">← 목록</button>
+          <h2 className="text-xl font-semibold">페이지 #{page.index}</h2>
+        </div>
+        <div className="flex flex-col gap-2 md:flex-row md:items-center">
+          <input
+            value={title}
+            onChange={e=>setTitle(e.target.value)}
+            onBlur={()=> page && updatePage(page.id, { title })}
+            placeholder="제목"
+            className="px-2 py-1 rounded border border-border bg-surfaceAlt text-sm w-full md:w-64"
+          />
+          <input
+            value={slug}
+            onChange={e=>setSlug(e.target.value)}
+            onBlur={()=> page && updatePage(page.id, { slug })}
+            placeholder="slug"
+            className="px-2 py-1 rounded border border-border bg-surfaceAlt text-sm w-full md:w-48"
+          />
+        </div>
       </header>
 
       <TokenMeter layer={layer} />

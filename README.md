@@ -55,16 +55,32 @@ npm run preview
 - `src/stores/*` Zustand 상태 (책/세계관/페이지)
 - `src/utils/referenceParser.ts` @참조 파서
 - `src/utils/promptAssembler.ts` 프롬프트 합성 & 토큰 추정
-- `src/services/gpt.ts` (모의) 스트리밍 생성
+- `src/services/gpt.ts` OpenAI Chat Completions 호환 SSE 스트리밍
 - `src/hooks/usePageGeneration.ts` 생성 훅
 
-## 추후 작업 (설계 문서 대비)
-- 실제 OpenAI 호환 Chat Completions SSE 연동
-- worldDerived 캐시 생성 & 무효화 파이프라인
-- referenceSummaries 요약 생성 로직
-- TokenMeter & Prompt Preview UI
-- VersionTimeline 실제 데이터 조회 & Diff
-- 압축/축약 레벨 알고리즘
+## 환경 변수 (.env)
+
+`.env.example` 참고:
+```
+VITE_OPENAI_API_KEY=sk-xxxx (선택: 프록시/BFF 사용 시 미설정)
+VITE_OPENAI_BASE_URL=http://localhost:4141/v1
+```
+
+## 구현 현황 (설계 문서 대비)
+- SSE 스트리밍 연동 (Chat Completions) 완료
+- 기본 PromptLayer → system/user 메시지 변환 (`gpt.ts` 내부)
+- Page 최초 생성 시 빈 버전 기록
+- VersionTimeline & DiffView (단어 기반 diff)
+- 페이지 slug & 제목 편집 UI
+- 페이지 버전 diff JSON 캐시 (PageVersion.diff)
+- Abort(중단) 기능
+- 404 SPA fallback
+
+## 향후 작업
+- PromptLayer → messages 유틸 분리(export)
+- worldDerived / referenceSummaries 캐시 & TTL
+- Token 예측 개선 및 레이어별 토큰 UI
+- 요약/축약 레벨 전략 구현
 
 ## 라이선스
 MIT

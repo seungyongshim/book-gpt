@@ -53,7 +53,7 @@ export interface PageVersion {
   id: string;
   pageId: string;
   timestamp: number;
-  diff?: string;
+  diff?: string; // JSON.stringify([{t:'+'|'-'|'=', v:string}])
   contentSnapshot: string; // refinedContent 기준 (또는 raw)
   author: 'system' | 'user';
 }

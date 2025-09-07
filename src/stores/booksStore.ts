@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import { create } from 'zustand';
 import { BookMeta } from '../types/domain';
+import { generateUniqueSlug } from '../utils/slug';
 import { put, getAll } from '../db/database';
 
 interface BooksState {
@@ -22,6 +23,7 @@ export const useBooksStore = create<BooksState>((set: (partial: any, replace?: b
     const book: BookMeta = {
       id: nanoid(),
       title,
+      slug: generateUniqueSlug(title, get().books.map(b=>b.slug||'')),
       createdAt: Date.now(),
       updatedAt: Date.now()
     };

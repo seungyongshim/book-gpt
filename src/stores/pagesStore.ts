@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { nanoid } from 'nanoid';
 import { PageMeta, PageVersion, PageStatus, ReferenceSummaryCache } from '../types/domain';
+import { generateUniqueSlug } from '../utils/slug';
+import { diffWords } from '../utils/simpleDiff';
 import { put, getAll, get } from '../db/database';
 import { summarizeForReference } from '../utils/promptAssembler';
 
@@ -28,6 +30,7 @@ export const usePagesStore = create<PagesState>((set: (partial: any, replace?: b
       id: nanoid(),
       bookId,
       index: nextIndex,
+      slug: generateUniqueSlug(`page-${nextIndex}`, pages.map(p=>p.slug||'')),
       status: 'DRAFT',
       createdAt: Date.now(),
       updatedAt: Date.now()
@@ -60,6 +63,13 @@ export const usePagesStore = create<PagesState>((set: (partial: any, replace?: b
       contentSnapshot: snapshot,
       author
     };
+    // 직전 버전 diff 계산 (간단 word diff JSON 문자열)
+    const existingVersions = await getAll<PageVersion>('pageVersions', 'by-page', IDBKeyRange.only(pageId));
+    if (existingVersions.length) {
+      const last = existingVersions.sort((a,b)=>b.timestamp-a.timestamp)[0];
+      const diff = diffWords(last.contentSnapshot, snapshot).map(p=>({ t: p.added?'+':p.removed?'-':'=', v:p.value })).slice(0,5000); // 안전 자르기
+      version.diff = JSON.stringify(diff);
+    }
     await put('pageVersions', version);
     // 페이지 updatedAt 동기화 (TODO 항목: addVersion 후 pages 메타 갱신)
     const existing = getStore().pages.find((p: PageMeta)=>p.id===pageId);

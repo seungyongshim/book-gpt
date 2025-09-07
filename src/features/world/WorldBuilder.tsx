@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useWorldStore } from '../../stores/worldStore';
+import { summarizeWorld } from '../../utils/promptAssembler';
 
 const fields: { key: keyof any; label: string; placeholder: string; rows?: number }[] = [
   { key: 'premise', label: 'Premise (핵심 전제)', placeholder: '세계관 핵심 전제 / 갈등의 씨앗 요약' },
@@ -18,6 +19,10 @@ const WorldBuilder: React.FC = () => {
   const { world, load, save, worldDerivedInvalidated, getWorldDerived } = useWorldStore();
   const [summary, setSummary] = useState<string>('');
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [editing, setEditing] = useState<Record<string,string>>({});
+  const [autoSummary, setAutoSummary] = useState<string>('');
+  const [autoMode, setAutoMode] = useState(true);
+  const debounceRef = useRef<number | null>(null);
 
   useEffect(()=>{ if(bookId) load(bookId); }, [bookId, load]);
 
@@ -31,10 +36,25 @@ const WorldBuilder: React.FC = () => {
 
   useEffect(()=>{ if(bookId) refreshSummary(); }, [bookId, refreshSummary]);
 
+  const handleChange = (key: string, value: string) => {
+    setEditing(prev => ({ ...prev, [key]: value }));
+    // 디바운스된 자동 요약
+    if (autoMode) {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(()=>{
+        const draft = { ...world, ...editing, [key]: value } as any;
+        const s = summarizeWorld(draft);
+        setAutoSummary(s);
+      }, 700);
+    }
+  };
+
   const handleBlur = (key: string, value: string) => {
     if (!bookId) return;
     save(bookId, { [key]: value } as any);
   };
+
+  const effectiveSummary = autoMode ? (autoSummary || summary) : summary;
 
   return (
     <div className="p-4 space-y-6 max-w-3xl mx-auto">
@@ -44,7 +64,8 @@ const WorldBuilder: React.FC = () => {
       </div>
       <div className="grid gap-5">
         {fields.map(f=>{
-          const val = (world as any)?.[f.key] || '';
+          const initialVal = (world as any)?.[f.key] || '';
+          const liveVal = editing[f.key as string] ?? initialVal;
           return (
             <div key={String(f.key)} className="space-y-1">
               <label className="text-xs font-medium text-text-dim block">{f.label}</label>
@@ -52,7 +73,8 @@ const WorldBuilder: React.FC = () => {
                 className="w-full text-sm p-2 rounded-md bg-surfaceAlt border border-border resize-y"
                 style={{ minHeight: '120px' }}
                 placeholder={f.placeholder}
-                defaultValue={val}
+                value={liveVal}
+                onChange={e=>handleChange(f.key as string, e.target.value)}
                 onBlur={e=>handleBlur(f.key as string, e.target.value)}
               />
             </div>
@@ -60,11 +82,19 @@ const WorldBuilder: React.FC = () => {
         })}
       </div>
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold flex items-center gap-2">자동 요약 Preview <span className="text-[10px] text-text-dim">(world.summary 캐시)</span></h3>
-        <div className="border border-border rounded bg-surfaceAlt p-3 text-xs whitespace-pre-wrap leading-relaxed max-h-72 overflow-auto">
-          {loadingSummary ? '요약 생성 중...' : (summary || '요약이 비어 있습니다. 내용을 입력 후 새로고침을 눌러 생성하세요.')}
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold flex items-center gap-2">자동 요약 Preview <span className="text-[10px] text-text-dim">(world.summary 캐시 / 로컬)</span></h3>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1 cursor-pointer select-none text-[11px]">
+              <input type="checkbox" className="scale-90" checked={autoMode} onChange={e=>setAutoMode(e.target.checked)} /> Auto
+            </label>
+            <button onClick={refreshSummary} className="text-[10px] px-2 py-1 rounded bg-surfaceAlt border border-border hover:bg-surface focus:outline-none focus:ring-1 focus:ring-primary">캐시 재생성</button>
+          </div>
         </div>
-        <p className="text-[10px] text-text-dim">저장 시 버전이 증가하고 캐시가 무효화됩니다. 새 요약을 반영하려면 새로고침을 눌러 주세요.</p>
+        <div className="border border-border rounded bg-surfaceAlt p-3 text-xs whitespace-pre-wrap leading-relaxed max-h-72 overflow-auto">
+          {loadingSummary ? '요약 생성 중...' : (effectiveSummary || '요약이 비어 있습니다. 내용을 입력하면 자동 또는 캐시 불러오기가 표시됩니다.')}
+        </div>
+        <p className="text-[10px] text-text-dim">입력 변경 시 {autoMode ? '약 0.7초 후 자동 요약 미리보기(저장 전 임시)' : '자동 요약 비활성화됨'} · 저장 시 버전 증가 & 캐시 무효화 → "캐시 재생성" 클릭 시 worldDerived 저장.</p>
       </div>
     </div>
   );

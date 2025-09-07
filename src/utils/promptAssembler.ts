@@ -175,3 +175,19 @@ export function summarizeWorld(setting: Partial<{ premise?: string; timeline?: s
   const joined = parts.join('\n');
   return joined.length > 1200 ? simpleSummarize(joined, 1200) : joined;
 }
+
+// ===== Dynamic target length heuristic =====
+// contextLimitTokens: 모델 전체 컨텍스트 한도 (예: 16000)
+// reserveTokens: 응답 후반/안전 버퍼 (기본 200~500)
+// avgCharsPerToken: 한글 혼합 기준 평균 문자/토큰 (기본 1.2 보수)
+export function suggestTargetChars(params: { contextLimitTokens: number; promptTokens: number; reserveTokens?: number; avgCharsPerToken?: number; desiredChars?: number; maxChars?: number; }): number {
+  const { contextLimitTokens, promptTokens } = params;
+  const reserve = params.reserveTokens ?? 400;
+  const avgC = params.avgCharsPerToken ?? 1.2;
+  const maxChars = params.maxChars ?? 14000; // 절대 상한 (UX 보호)
+  const desired = params.desiredChars ?? 12000;
+  const remainingTokens = Math.max(0, contextLimitTokens - promptTokens - reserve);
+  const estimatedCharsCapacity = Math.floor(remainingTokens * avgC);
+  // 여유가 충분하면 desired, 아니면 capacity 한도
+  return Math.min(maxChars, Math.min(desired, estimatedCharsCapacity));
+}

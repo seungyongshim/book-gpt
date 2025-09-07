@@ -1,7 +1,7 @@
 # TODO Roadmap
 
 갱신일: 2025-09-07 (자동 업데이트 반영)  
-최근 변경: 혼합 언어 토큰 추정 고급 휴리스틱 + 적응형 보정(calibration) 저장
+최근 변경: WorldBuilder 자동 요약 디바운스(Auto toggle) & worldDerived 캐시 재생성 테스트 추가
 
 ## 0. 기준 / 우선순위 레이블
 - P0: 반드시 즉시 (핵심 기능 공백 / 데이터 손실 가능)
@@ -37,9 +37,9 @@
 - [x] Token 예측 로직 개선 (언어 혼합) → 엔트로피 기반 혼합 가중치, 긴 ASCII 런 패널티, 숫자+단위/구두점 묶음 할인, 이동 평균 보정(calibration factor)  
 
 ## 4. 세계관 (World) 기능 확장 (P2)
-- [ ] WorldBuilder 추가 필드 UI 확장  
-- [ ] 자동 요약 프리뷰 패널  
-- [ ] 변경 debounce 재요약 옵션  
+- [x] WorldBuilder 추가 필드 UI 확장  
+- [x] 자동 요약 프리뷰 패널  
+- [x] 변경 debounce 재요약 옵션 (Auto toggle + 0.7s)  
 - [ ] 캐릭터/파벌 구조화 + validator  
 
 ## 5. 생성 흐름 개선 (P2)
@@ -47,9 +47,15 @@
 - [ ] 임시 저장 조건 (시간/토큰 기반 선택)  
 - [ ] 레이어 별 토큰 분포 UI  
 	- [x] 1차: TokenMeter 레이어 분포 막대/최대 레이어 표시 (추가 압축 버튼 연동 훅)  
-- [ ] 모델/temperature 선택 UI  
+- [x] 모델/temperature 선택 UI  
 - [ ] 완료 후 focus/scroll 관리  
 - [ ] 통합 오류 메시지(Toast)  
+- [x] 목표 길이 초과 자동 중단 (target *1.02)  
+- [x] Extend 이어쓰기 (미달 시 추가 생성)  
+- [x] 진행률(progress bar) 및 char 카운트 표시  
+- [x] tokensPrompt / tokensCompletion 분리 저장  
+- [x] 동적 targetChars 추천 (promptTokens 기반)  
+- [x] 컨텍스트 잔여 토큰 예산 패널  
 
 ## 6. 성능 & 안정성 (P2)
 - [ ] IndexedDB Quota/에러 핸들링  
@@ -71,7 +77,7 @@
 	- [x] referenceParser 경계 케이스 (단일/범위/slug/중복/무효/경고)  
 	- [x] promptAssembler 토큰 휴리스틱 기본 비교/엔트로피/패널티/보정  
 	- [x] world summarize (summarizeWorld) 섹션 레이블 & 길이 한도  
-	- [ ] worldDerived 캐시 재생성 (미작성)  
+	- [x] worldDerived 캐시 재생성  
 - [ ] E2E 기본 시나리오  
 - [ ] optional 필드 null guard 강화  
 - [ ] ESLint 규칙 확장  

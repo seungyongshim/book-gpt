@@ -23,21 +23,20 @@ npm run dev
 GitHub Actions 탭에서 `Deploy SPA to GitHub Pages` 워크플로를 선택 후 `Run workflow`.
 
 ### SPA 404 처리
-GitHub Pages는 라우팅이 없는 경로 새로고침 시 404를 반환합니다. 해결을 위해 `index.html`을 복사한 `404.html`을 제공하는 방법을 사용할 수 있습니다. (현재 워크플로에는 미포함)
+GitHub Pages는 라우팅이 없는 경로 새로고침 시 404를 반환합니다. 해결을 위해 빌드 후 `scripts/postbuild.cjs`가 `dist/index.html`을 `dist/404.html`로 복사하도록 구성되었습니다.
 
-추가하려면 빌드 후 스크립트 예:
-```bash
-cp dist/index.html dist/404.html
-```
-필요 시 `package.json`에:
+`package.json`:
 ```jsonc
-"scripts": {
-	"postbuild": "cp dist/index.html dist/404.html"
+{
+	"scripts": {
+		"build": "tsc -b && vite build",
+		"postbuild": "node scripts/postbuild.cjs"
+	}
 }
 ```
-Windows PowerShell 호환:
+로컬에서 직접 실행하려면:
 ```powershell
-Copy-Item dist/index.html dist/404.html
+npm run build; node scripts/postbuild.cjs
 ```
 
 ### 로컬 미리보기

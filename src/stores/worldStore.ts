@@ -12,14 +12,19 @@ interface WorldState {
   getWorldDerived: (bookId: string) => Promise<string | undefined>;
 }
 
-export const useWorldStore = create<WorldState>((set, get) => ({
+export const useWorldStore = create<WorldState>((set: (partial: any, replace?: boolean)=>void, get: ()=>WorldState) => ({
   world: undefined,
   worldDerivedInvalidated: false,
   load: async (bookId: string) => {
-    const ws = await dbGet('worldSettings', bookId) as WorldSetting | undefined;
-    if (ws) set({ world: ws });
+    let ws = await dbGet('worldSettings', bookId) as WorldSetting | undefined;
+    if (!ws) {
+      // 존재하지 않으면 초기 레코드 생성 (TODO 항목 처리: worldStore.load 실패 정책)
+      ws = { bookId, premise: '', version: 0, updatedAt: Date.now() } as WorldSetting;
+      await put('worldSettings', ws);
+    }
+    set({ world: ws });
   },
-  save: async (bookId, patch) => {
+  save: async (bookId: string, patch: Partial<WorldSetting>) => {
     const prev = get().world || { bookId, version: 0, updatedAt: 0 } as WorldSetting;
     const next: WorldSetting = { ...prev, ...patch, bookId, version: prev.version + 1, updatedAt: Date.now() };
     await put('worldSettings', next);

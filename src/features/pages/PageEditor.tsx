@@ -53,7 +53,7 @@ const PageEditor: React.FC = () => {
   const { world, load: loadWorld, getWorldDerived } = useWorldStore();
   const navigate = useNavigate();
   const page = pages.find(p => p.bookId === bookId && p.index === Number(pageIndex));
-  const { output, running, run } = usePageGeneration();
+  const { output, running, run, abort } = usePageGeneration();
   const [instruction, setInstruction] = React.useState('');
   const [openDrawer, setOpenDrawer] = React.useState(false);
 
@@ -146,6 +146,12 @@ const PageEditor: React.FC = () => {
         >
           {running ? '생성중...' : '생성'}
         </button>
+        {running && (
+          <button
+            onClick={abort}
+            className="px-3 py-1.5 rounded border border-warn text-warn text-sm"
+          >중단</button>
+        )}
         <button
           onClick={() => setOpenDrawer(true)}
           className="px-3 py-1.5 rounded border border-border text-sm"

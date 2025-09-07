@@ -8,9 +8,10 @@ interface BooksState {
   loaded: boolean;
   load: () => Promise<void>;
   createBook: (title: string) => Promise<BookMeta>;
+  updateBook: (id: string, patch: Partial<BookMeta>) => Promise<void>;
 }
 
-export const useBooksStore = create<BooksState>((set, get) => ({
+export const useBooksStore = create<BooksState>((set: (partial: any, replace?: boolean)=>void, get: ()=>BooksState) => ({
   books: [],
   loaded: false,
   load: async () => {
@@ -27,5 +28,12 @@ export const useBooksStore = create<BooksState>((set, get) => ({
     await put('books', book);
     set({ books: [book, ...get().books] });
     return book;
+  },
+  updateBook: async (id: string, patch: Partial<BookMeta>) => {
+    const existing = get().books.find(b=>b.id===id);
+    if (!existing) return;
+    const updated: BookMeta = { ...existing, ...patch, updatedAt: Date.now() };
+    await put('books', updated);
+    set({ books: get().books.map(b=>b.id===id?updated:b) });
   }
 }));

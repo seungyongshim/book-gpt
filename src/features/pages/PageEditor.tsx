@@ -5,50 +5,13 @@ import { usePagesStore } from '../../stores/pagesStore';
 import { useBooksStore } from '../../stores/booksStore';
 import { useWorldStore } from '../../stores/worldStore';
 import { assemblePrompt, totalPromptTokens, suggestTargetChars } from '../../utils/promptAssembler';
+import { compressReferences, compressWorldSummary } from '../../utils/compression';
 import { parseReferences } from '../../utils/referenceParser';
 import { usePageGeneration } from '../../hooks/usePageGeneration';
 import TokenMeter from '../../components/TokenMeter';
+import PromptDrawer from '../../components/PromptDrawer';
 import type { PageMeta } from '../../types/domain';
 
-interface PromptDrawerProps { open: boolean; onClose: () => void; layer: any }
-const PromptDrawer: React.FC<PromptDrawerProps> = ({ open, onClose, layer }: PromptDrawerProps) => (
-  <div className={`fixed inset-0 z-40 ${open ? '' : 'pointer-events-none'}`}>
-    <div className={`absolute inset-0 bg-black/30 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} />
-    <div className={`absolute top-0 right-0 h-full w-[360px] bg-bg border-l border-border shadow-xl transform transition-transform duration-200 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
-      <div className="p-4 flex items-center justify-between border-b border-border">
-        <h3 className="text-sm font-semibold">Prompt Preview</h3>
-        <button onClick={onClose} className="text-xs text-text-dim hover:text-text">닫기</button>
-      </div>
-      <div className="p-3 overflow-y-auto h-[calc(100%-48px)] space-y-4 text-xs">
-        {(['system','bookSystem','worldDerived','pageSystem'] as const).map((k: 'system'|'bookSystem'|'worldDerived'|'pageSystem') => (layer as any)[k] && (
-          <div key={k}>
-            <div className="font-medium mb-1 text-[11px] uppercase tracking-wide text-text-dim">{k}</div>
-            <pre className="whitespace-pre-wrap bg-surfaceAlt p-2 rounded border border-border max-h-40 overflow-auto">{(layer as any)[k]}</pre>
-          </div>
-        ))}
-        {layer.dynamicContext && layer.dynamicContext.length > 0 && (
-          <div>
-            <div className="font-medium mb-1 text-[11px] uppercase tracking-wide text-text-dim">dynamicContext</div>
-            <ul className="space-y-1">
-              {layer.dynamicContext.map((d: any, i: number) => (
-                <li key={i} className="border border-border rounded p-2 bg-surfaceAlt">
-                  <div className="text-[11px] font-medium mb-1">{d.ref}</div>
-                  <div className="whitespace-pre-wrap leading-relaxed">{d.summary}</div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {layer.userInstruction && (
-          <div>
-            <div className="font-medium mb-1 text-[11px] uppercase tracking-wide text-text-dim">userInstruction</div>
-            <pre className="whitespace-pre-wrap bg-surfaceAlt p-2 rounded border border-border max-h-40 overflow-auto">{layer.userInstruction}</pre>
-          </div>
-        )}
-      </div>
-    </div>
-  </div>
-);
 
 const PageEditor: React.FC = () => {
   const { bookId, pageIndex } = useParams();
@@ -72,9 +35,11 @@ const PageEditor: React.FC = () => {
 
   const [worldSummary, setWorldSummary] = React.useState<string>('');
   const [refSummaries, setRefSummaries] = React.useState<Record<string,string>>({});
+  const [compressedRefs, setCompressedRefs] = React.useState<Record<string,string>>({});
+  const [worldCompressed, setWorldCompressed] = React.useState(false);
 
   // 참조 파싱 (요약 로딩 useEffect보다 먼저 선언 필요)
-  const { references, warnings } = useMemo(() => parseReferences(instruction), [instruction]);
+  const { references, warnings } = useMemo(() => parseReferences(instruction, { selfPageIndex: page?.index }), [instruction, page?.index]);
 
   // worldDerived 로드
   useEffect(() => {
@@ -90,27 +55,37 @@ const PageEditor: React.FC = () => {
     if (!references.length || !bookId) { setRefSummaries({}); return; }
     let cancelled = false;
     (async () => {
-      const acc: Record<string,string> = {};
+      const tasks: Promise<{ key: string; text: string } | null>[] = [];
       for (const r of references) {
         if (r.pageIds.length === 0 && r.refRaw.startsWith('@p:')) {
-          const slugToken = r.refRaw.slice(3); // @p:
+          const slugToken = r.refRaw.slice(3);
           const target = pages.find((p: PageMeta)=>p.bookId===bookId && p.slug===slugToken);
           if (target) {
-            const sum = await getReferenceSummary(target.id);
-            if (sum) acc[r.refRaw] = sum;
+            tasks.push((async()=>{
+              const sum = await getReferenceSummary(target.id);
+              return sum ? { key: r.refRaw, text: sum } : null;
+            })());
           }
           continue;
         }
-        for (const idxStr of r.pageIds) {
-          const idx = parseInt(idxStr, 10);
-          const target = pages.find((p: PageMeta)=>p.bookId===bookId && p.index===idx);
-          if (target) {
-            const sum = await getReferenceSummary(target.id);
-            if (sum) acc[r.refRaw] = (acc[r.refRaw] ? acc[r.refRaw] + '\n' : '') + sum;
+        tasks.push((async()=>{
+          let merged = '';
+          for (const idxStr of r.pageIds) {
+            const idx = parseInt(idxStr, 10);
+            const target = pages.find((p: PageMeta)=>p.bookId===bookId && p.index===idx);
+            if (target) {
+              const sum = await getReferenceSummary(target.id);
+              if (sum) merged = merged ? merged + '\n' + sum : sum;
+            }
           }
-        }
+            return merged ? { key: r.refRaw, text: merged } : null;
+        })());
       }
-      if (!cancelled) setRefSummaries(acc);
+      const results = await Promise.all(tasks);
+      if (cancelled) return;
+      const acc: Record<string,string> = {};
+      for (const r of results) if (r) acc[r.key] = r.text;
+      setRefSummaries(acc);
     })();
     return () => { cancelled = true; };
   }, [references, pages, bookId, getReferenceSummary]);
@@ -122,10 +97,10 @@ const PageEditor: React.FC = () => {
     pageSystem: '페이지 시스템',
     referencedSummaries: references.map(r => ({
       ref: r.refRaw,
-      summary: refSummaries[r.refRaw] || '로딩 중...'
+      summary: (compressedRefs[r.refRaw] ?? refSummaries[r.refRaw]) || '로딩 중...'
     })),
     userInstruction: instruction
-  }), [references, instruction, worldSummary, refSummaries]);
+  }), [references, instruction, worldSummary, refSummaries, compressedRefs]);
 
   const promptTokens = React.useMemo(()=> totalPromptTokens(layer), [layer]);
   // Suggest target (assumes 16K context model for now; future: per-model config map)
@@ -168,7 +143,20 @@ const PageEditor: React.FC = () => {
         </div>
       </header>
 
-      <TokenMeter layer={layer} />
+      <TokenMeter layer={layer} onSuggestCompress={(strategy)=>{
+        if (strategy === 'L1') {
+          const list = references.map(r => ({ ref: r.refRaw, summary: refSummaries[r.refRaw] || '' }));
+            const compressed = compressReferences({ summaries: list, level: 'L1' });
+            const map: Record<string,string> = {};
+            compressed.forEach((c: { ref: string; summary: string }) => { map[c.ref] = c.summary; });
+            setCompressedRefs(map);
+        } else if (strategy === 'world-compact') {
+          if (!worldCompressed) {
+            setWorldSummary(ws => compressWorldSummary(ws, 'world-compact'));
+            setWorldCompressed(true);
+          }
+        }
+      }} />
       <div className="border border-border rounded p-3 space-y-3 bg-surfaceAlt">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex flex-col">

@@ -6,6 +6,7 @@ import WorldBuilder from './features/world/WorldBuilder';
 import PageEditor from './features/pages/PageEditor';
 import VersionTimeline from './features/pages/VersionTimeline';
 import DiffView from './features/pages/DiffView';
+import ToastHost from './components/ToastHost';
 
 const Placeholder: React.FC<{ title: string }> = ({ title }) => (
   <div className="p-4">
@@ -27,6 +28,7 @@ const App: React.FC = () => {
         <Route path="/books/:bookId/pages/:pageIndex/diff/:versionId" element={<DiffView />} />
         <Route path="*" element={<Placeholder title="Not Found" />} />
       </Routes>
+      <ToastHost />
     </div>
   );
 };

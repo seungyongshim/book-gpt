@@ -16,6 +16,7 @@ interface PagesState {
   listVersions: (pageId: string) => Promise<PageVersion[]>;
   getVersion: (versionId: string) => Promise<PageVersion | undefined>;
   deletePage: (pageId: string) => Promise<void>;
+  rollbackVersion: (versionId: string) => Promise<boolean>; // true if success
 }
 
 export const usePagesStore = create<PagesState>((set: (partial: any, replace?: boolean)=>void, getStore: ()=>PagesState) => ({
@@ -148,5 +149,31 @@ export const usePagesStore = create<PagesState>((set: (partial: any, replace?: b
       return repl ? repl : p;
     }).sort((a: PageMeta,b: PageMeta)=>a.index-b.index);
     set({ pages: updatedPages });
+  },
+  rollbackVersion: async (versionId: string) => {
+    // 1) 대상 버전 조회
+    const version = await get<PageVersion>('pageVersions', versionId);
+    if (!version) return false;
+    const page = getStore().pages.find(p=>p.id===version.pageId);
+    if (!page) return false;
+    // 2) 현재 snapshot 과 동일하면 noop
+    if (page.rawContent === version.contentSnapshot) return true;
+    const newContent = version.contentSnapshot || '';
+    // 3) 페이지 내용 업데이트 (summary 재생성 포함)
+    const summary = summarizeForReference(newContent).slice(0,400);
+    const updated: PageMeta = { ...page, rawContent: newContent, summary, updatedAt: Date.now() } as PageMeta;
+    await put('pages', updated);
+    set({ pages: getStore().pages.map(p=>p.id===page.id?updated:p) });
+    // 4) 롤백 행위 자체를 새 버전으로 기록 (author:user)
+    const rollbackVersion: PageVersion = {
+      id: nanoid(),
+      pageId: page.id,
+      timestamp: Date.now(),
+      contentSnapshot: newContent,
+      author: 'user',
+      diff: JSON.stringify([{ t: '=', v: 'rollback->'+versionId }])
+    };
+    await put('pageVersions', rollbackVersion);
+    return true;
   }
 }));

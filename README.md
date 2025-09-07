@@ -58,6 +58,18 @@ npm run preview
 - `src/services/gpt.ts` OpenAI Chat Completions 호환 SSE 스트리밍
 - `src/hooks/usePageGeneration.ts` 생성 훅
 
+## 아키텍처 & 프롬프트 전략 개요
+전체 설계(세계관 캐시 `worldDerived`, @참조 요약 `referenceSummaries`, 다층 PromptLayer, 토큰 축약 L0~L4, Tool Orchestrator)는 `AGENTS.md`에 요약 정리되어 있습니다.
+
+빠른 핵심:
+- Prompt Layer: system / book / worldDerived / page / dynamic(@refs) / user
+- 축약 단계: L1 참조 50% → L2 world 1200→800 → L3 참조 bullet 120자 → L4 pageSystem bullet
+- @참조 문법: `@3`, `@2-5`, `@p:slug` (최대 15페이지)
+- 캐시: worldDerived(세계관 요약), referenceSummaries(페이지 300자 요약)
+- 토큰 보정: 생성 후 길이 기반 이동평균 factor (0.7~1.3)
+
+자세한 정책과 백로그는 `AGENTS.md` 참고.
+
 ## 환경 변수 (.env)
 
 `.env.example` 참고:

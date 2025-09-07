@@ -79,9 +79,29 @@ Tools:
 9 Import 스키마 차이: 마이그레이션 실행
 10 손상 참조: 건너뛰고 경고 리스트
 
-## 10. 백로그 (압축)
-P1: G1 SSE, G2 Partial Flush, G3 worldDerived, G4 referenceSummaries, G5 TokenMeter, G6 Prompt Preview, V1 Version List, V2 Diff, V3 Rollback, U2 Toast, Q2 referenceParser Tests.
-P2: G7 Compression UI, G8 @Highlight, V4 Refined Editor, V5 Auto Page Summary, W1 Wizard 확장, W2 world.summary Tool, W3 references.context Tool, W4 style/ethics merge, C1 Token Calibration, C2 재요약 구현, P1 Export, P2 Import, U1 Common Components, U3 Shortcuts, U4 Focus Trap, Q3 promptAssembler Test, Q4 ESLint CI, W5(일부 P3 이전?), Tool Orchestrator MVP(W6) → 착수 전 핵심 캐시 안정.
+## 10. 백로그 (압축 + 통합)
+이 섹션은 기존 `TODO.md`를 흡수하였으며 `TODO.md` 파일은 제거됨(AGENTS 단일 소스). 완료된 항목은 제외하고 "열린(Open)" 핵심만 유지.
+
+P1 (핵심 진행): SSE 안정화(G1) · Partial Flush(G2) · worldDerived 재생성(G3) · referenceSummaries 캐시(G4) · TokenMeter(G5) · Prompt Preview(G6) · Version List/Diff/Rollback(V1~V3) · Toast(U2) · referenceParser Tests(Q2).
+
+P2 (품질/확장):
+- 컨텍스트/압축: Compression UI(G7) · @Highlight(G8) · 재요약 구현(C2) · Token Calibration(C1)
+- 편집/버전: Refined Editor(V4) · Auto Page Summary(V5)
+- World & Tools: Wizard 확장(W1) · world.summary Tool(W2) · references.context Tool(W3) · style/ethics merge(W4) · Tool Orchestrator MVP(W6)
+- Persistence & I/O: Export(P1) · Import(P2)
+- UI/UX Core: Common Components(U1) · Shortcuts(U3) · Focus Trap(U4)
+- 테스트 & 품질: promptAssembler Test(Q3) · ESLint CI(Q4)
+- 성능/안정성: Quota 핸들링(IndexedDB) · Virtualized Page List · Diff Worker 오프로드 · 캐시 LRU 구현 · 자동 임시 저장(debounce)
+- 문서/가시성: 아키텍처 다이어그램(시퀀스/프롬프트 계층) · 토큰 최적화 노트 · CHANGELOG 태깅
+- UX 마감: Dark/Light Toggle · Skeleton 로딩 · 접근성(aria/heading) · i18n 베이스
+- 보안/프라이버시: API 키 저장 전략(옵션) · 민감 데이터 삭제 UX · 오프라인 모드 안내
+- 관찰/메트릭: 로컬 usage 집계 · 토큰 추정 오차/스트림 latency 기록 · 에러/Abort 분류
+
+P3 (후순위 연구): characters.lookup 확장(W5) · embeddings(v3) · PageVersion meta 확장(model/temperature) · WorldSetting 과거 diff · batch reference summary 프리컴퓨트 · consistency/style drift detector 초기 스텁 · lazy code-splitting(Diff/Timeline) · Zustand selector 최적화 · i18n 실제 다국어 · metrics dashboard.
+
+Quick Wins 후보: referenceParser span guard UI · 완료 후 focus/scroll 관리 · Extend 이어쓰기 UX 다듬기 · progress bar 미세 가독성 개선.
+
+위 항목 외 추가 아이디어는 PR 제안 시 "Backlog → Candidate" 라벨 후 정기 정리.
 
 ## 11. 구현 규칙 & Done Definition
 1 P1 선행 후 P2 (테스트 예외 병행 가능)
@@ -570,6 +590,16 @@ system + bookSystem + worldDerived(또는 world.summary 결과) + style.guide + 
 - 문서화: README 또는 AGENTS.md 내 해당 기능 2~5줄 기술
 
 > 본 백로그는 구현 진행에 따라 재우선순위화(Reprioritization) 가능하며, 완료 항목은 CHANGELOG 혹은 별도 Release Notes로 이동 권장.
+
+### 16.x Recently Implemented (2025-09-07)
+- Version Rollback: `pagesStore.rollbackVersion(versionId)` 복구 후 새 버전(rollback trace diff) 기록.
+- Toast System: `toastStore` + `ToastHost` (aria-live polite) — 생성 완료/중단/에러/롤백 알림.
+- Reference Parser 강화: 최대 참조 pageId 누적 15개 제한 + self 페이지 단일 참조 무시.
+- Diff Tests & Parser Tests 보강: `simpleDiff.test.ts`, parser truncation/self exclusion 케이스 추가.
+- Prompt Drawer 분리 및 Copy 기능: `PromptDrawer.tsx` + TokenMeter 내장.
+- 압축 액션 초기: TokenMeter → L1 참조 축약(후반 50% 절단) & world summary compact(800자) 적용.
+- 참조 요약 병렬 로딩: PageEditor에서 Promise.all 기반 동시 fetch.
+- EXTEND_CONTEXT_TAIL_CHARS 상수 도입(800) 이어쓰기 tail 관리.
 
 ## 16.a GPT 모듈 통합 (Refactor 기록)
 ### 배경

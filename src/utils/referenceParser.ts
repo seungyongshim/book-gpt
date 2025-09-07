@@ -7,13 +7,20 @@ export interface ParseResult {
   cleanedText: string;
   references: ParsedReference[];
   warnings?: string[];
+  truncated?: boolean; // true if over max pages limit
 }
 
-export function parseReferences(input: string): ParseResult {
+export interface ParseOptions {
+  selfPageIndex?: number;          // 현재 편집중 페이지 index (self reference 제거)
+  maxTotalPageRefs?: number;       // 누적 pageIds 상한 (기본 15)
+}
+
+export function parseReferences(input: string, opts: ParseOptions = {}): ParseResult {
   const references: ParsedReference[] = [];
   const map = new Map<string, ParsedReference>();
   let cleaned = input;
   const warnings: string[] = [];
+  const maxTotal = opts.maxTotalPageRefs ?? 15;
   const matches = [...input.matchAll(REF_REGEX)];
   if (input.includes('@3-5')) {
     // Debug instrumentation for test
@@ -53,6 +60,10 @@ export function parseReferences(input: string): ParseResult {
       } else {
         // 단일 페이지. 기존 범위 참조와 겹치면 해당 범위 weight 증가
         const pageId = token;
+        if (opts.selfPageIndex && Number(pageId) === opts.selfPageIndex) {
+          // 자기 자신 단일 참조는 스킵
+          continue;
+        }
         let merged = false;
         for (const existing of references) {
           if (existing.pageIds && existing.pageIds.includes(pageId)) {
@@ -73,6 +84,25 @@ export function parseReferences(input: string): ParseResult {
     // eslint-disable-next-line no-console
     console.log('DEBUG_REFS', references.map(r => ({ raw: r.refRaw, ids: r.pageIds, weight: r.weight })));
   }
-  // cleanedText: remove raw tokens or keep? Keep but optional - for now keep.
-  return { cleanedText: cleaned, references, warnings };
+  // 총 누적 pageId 수 제한 적용
+  let totalIds = 0;
+  for (const r of references) totalIds += (r.pageIds?.length || 0);
+  let truncated = false;
+  if (totalIds > maxTotal) {
+    truncated = true;
+    warnings.push(`참조 페이지 수가 ${maxTotal}개를 초과하여 일부가 제외되었습니다.`);
+    let remaining = maxTotal;
+    for (const ref of references) {
+      const len = ref.pageIds?.length || 0;
+      if (!len) continue;
+      if (remaining <= 0) { ref.pageIds = []; continue; }
+      if (len <= remaining) {
+        remaining -= len;
+      } else {
+        ref.pageIds = ref.pageIds!.slice(0, remaining);
+        remaining = 0;
+      }
+    }
+  }
+  return { cleanedText: cleaned, references, warnings, truncated };
 }

@@ -47,4 +47,19 @@ describe('referenceParser', () => {
     expect(range.pageIds).toEqual(['3','4','5']);
     expect(range.weight).toBe(3); // original + two overlaps
   });
+  it('limits total page IDs to 15', () => {
+    const r = parseReferences('@1-20', { maxTotalPageRefs: 15 });
+    // Should truncate pages >15
+    const ids = r.references[0].pageIds;
+    expect(ids.length).toBe(15);
+    expect(r.truncated).toBe(true);
+    expect(r.warnings?.some(w=>w.includes('15개'))).toBe(true);
+  });
+  it('excludes self page index', () => {
+    const r = parseReferences('self @10 그리고 @9-11', { selfPageIndex: 10 });
+    // remove single @10; range keeps 9,10,11 but self removal not applied inside range (by current design)
+    // Enhancement future: remove inside range. Test ensures single is excluded.
+    const single = r.references.find(x=>x.refRaw==='@10');
+    expect(single).toBeUndefined();
+  });
 });

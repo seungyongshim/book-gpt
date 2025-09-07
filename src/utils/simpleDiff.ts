@@ -3,6 +3,9 @@ export interface DiffToken { value: string; added?: boolean; removed?: boolean; 
 
 export function diffWords(a: string, b: string): DiffToken[] {
   if (a === b) return [{ value: a }];
+  if (!a && b) {
+    return b.split(/\s+/).filter(Boolean).map(w=>({ value: w, added: true }));
+  }
   const aWords = a.split(/\s+/);
   const bWords = b.split(/\s+/);
   const dp: number[][] = Array(aWords.length + 1).fill(0).map(()=>Array(bWords.length + 1).fill(0));

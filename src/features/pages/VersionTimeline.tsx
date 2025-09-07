@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { usePagesStore } from '../../stores/pagesStore';
+import { toast } from '../../stores/toastStore';
 import { PageVersion } from '../../types/domain';
 
 const VersionTimeline: React.FC = () => {
   const { bookId, pageIndex } = useParams();
   const navigate = useNavigate();
-  const { pages, load, listVersions } = usePagesStore();
-  const page = pages.find(p=>p.bookId===bookId && p.index===Number(pageIndex));
+  const { pages, load, listVersions, rollbackVersion } = usePagesStore() as any;
+  const page = pages.find((p: any)=>p.bookId===bookId && p.index===Number(pageIndex));
   const [versions, setVersions] = useState<PageVersion[]>([]);
   const [pick, setPick] = useState<string[]>([]); // 선택된 2개 버전 ID
   useEffect(()=>{ if(bookId) load(bookId); }, [bookId, load]);
@@ -39,6 +40,21 @@ const VersionTimeline: React.FC = () => {
                   });
                 }}
               >{pick.includes(v.id)?'해제':'비교'}</button>
+              <button
+                className="text-[11px] px-2 py-0.5 border border-warn text-warn rounded hover:bg-warn/10"
+                onClick={async()=>{
+                  const ok = await rollbackVersion(v.id);
+                  if (ok) {
+                    toast('롤백 완료', 'success');
+                    if (page) {
+                      const vs = await listVersions(page.id);
+                      setVersions(vs);
+                    }
+                  } else {
+                    toast('롤백 실패', 'error');
+                  }
+                }}
+              >롤백</button>
             </div>
           </li>
         ))}

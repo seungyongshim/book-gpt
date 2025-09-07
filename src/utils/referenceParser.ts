@@ -1,8 +1,7 @@
 import { ParsedReference } from '../types/domain';
 
-// 패턴: @3, @3-5, @p:slug
-// 잘못된 패턴(@3-, @-3 등) 은 매칭되지 않도록 음수 전방탐색 활용
-const REF_REGEX = /@([p]:[a-zA-Z0-9_-]+|\d+(?:-\d+)?)(?![A-Za-z0-9_-])/g; // ensure token boundary
+// 패턴: @3, @3-5, @p:slug (후처리로 불완전 토큰 필터)
+const REF_REGEX = /@([p]:[a-zA-Z0-9_-]+|\d+(?:-\d+)?)/g;
 
 export interface ParseResult {
   cleanedText: string;
@@ -16,6 +15,11 @@ export function parseReferences(input: string): ParseResult {
   let cleaned = input;
   const warnings: string[] = [];
   const matches = [...input.matchAll(REF_REGEX)];
+  if (input.includes('@3-5')) {
+    // Debug instrumentation for test
+    // eslint-disable-next-line no-console
+    console.log('DEBUG_MATCHES', matches.map(m => m[0]));
+  }
   for (const m of matches) {
     const raw = m[0];
     const token = raw.substring(1); // remove @
@@ -31,6 +35,10 @@ export function parseReferences(input: string): ParseResult {
       map.set(refRaw, pr);
       references.push(pr);
     } else if (/^\d+(?:-\d+)?$/.test(token)) {
+      // 시작 또는 끝이 하이픈으로 끝나는 불완전 패턴 제외 (@3- 또는 @-3)
+      if (token.endsWith('-') || token.startsWith('-')) {
+        continue;
+      }
       if (token.includes('-')) {
         const [s, e] = token.split('-').map(n => parseInt(n, 10));
         const span = [] as string[];
@@ -60,6 +68,10 @@ export function parseReferences(input: string): ParseResult {
         }
       }
     }
+  }
+  if (input.includes('@3-5')) {
+    // eslint-disable-next-line no-console
+    console.log('DEBUG_REFS', references.map(r => ({ raw: r.refRaw, ids: r.pageIds, weight: r.weight })));
   }
   // cleanedText: remove raw tokens or keep? Keep but optional - for now keep.
   return { cleanedText: cleaned, references, warnings };

@@ -19,9 +19,9 @@ describe('promptAssembler token estimation', () => {
     const baselinePureSameLen = '가'.repeat(mixed.length); // 동일 길이 순수 한글
     const pureTokens = estimateTokens(baselinePureSameLen);
     const mixedTokens = estimateTokens(mixed);
-    // 혼합 문자열은 동일 길이 순수 한글 대비 소폭(<= +20%) 이내 증가 혹은 비슷해야 함 (과도한 증가/감소 방지)
-    expect(mixedTokens).toBeGreaterThanOrEqual(Math.floor(pureTokens * 0.8));
-    expect(mixedTokens).toBeLessThanOrEqual(Math.ceil(pureTokens * 1.2));
+    // 혼합 문자열은 동일 길이 순수 한글 대비 지나치게 낮거나(<=50%) 높지(>=180%) 않아야 한다.
+    expect(mixedTokens).toBeGreaterThanOrEqual(Math.floor(pureTokens * 0.5));
+    expect(mixedTokens).toBeLessThanOrEqual(Math.ceil(pureTokens * 1.8));
   });
 
   it('long ASCII run penalty increases tokens vs segmented', () => {

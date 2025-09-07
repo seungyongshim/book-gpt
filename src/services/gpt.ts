@@ -1,41 +1,18 @@
-import { PromptLayer, StreamChunk, GenerationConfig } from '../types/domain';
-import { promptLayerToMessages } from '../utils/promptToMessages';
-import { streamChat } from './gptClient';
+/**
+ * Deprecated shim – use generateFromPromptLayer / streamChat from gptClient.ts instead.
+ * 남겨진 이유: 기존 import 경로 호환.
+ */
+import { PromptLayer, StreamChunk } from '../types/domain';
+import { generateFromPromptLayer, estimateCompletionTokens } from './gptClient';
 
-interface GenerateOptions {
-  config?: Partial<GenerationConfig>;
-  /** 수동으로 baseUrl override */
-  baseUrl?: string;
+export interface GenerateOptionsShim { config?: { model?: string; temperature?: number; targetChars?: number }; baseUrl?: string; }
+
+export async function generatePage(layer: PromptLayer, onChunk: (c: StreamChunk) => void, signal?: AbortSignal, opts?: GenerateOptionsShim) {
+  await generateFromPromptLayer(layer, c => onChunk({ text: c.text, done: c.done, ...(c.error ? {} : {}) }), {
+    model: opts?.config?.model,
+    temperature: opts?.config?.temperature,
+    baseUrl: opts?.baseUrl
+  }, signal);
 }
 
-const DEFAULT_CONFIG: GenerationConfig = {
-  model: 'gpt-4o-mini',
-  temperature: 0.8,
-  targetChars: 12000
-};
-
-// PromptLayer -> OpenAI Chat messages 변환
-const buildMessages = promptLayerToMessages;
-
-function classifyError(status: number | undefined, body: any): string {
-  if (!status) return 'network-error';
-  if (status === 401) return 'auth';
-  if (status === 429) return 'rate-limit';
-  if (status >= 500) return 'server';
-  return body?.error?.type || 'unknown';
-}
-
-// Backwards compatible API using generic streamChat
-export async function generatePage(layer: PromptLayer, onChunk: (c: StreamChunk) => void, signal?: AbortSignal, opts?: GenerateOptions) {
-  const cfg = { ...DEFAULT_CONFIG, ...(opts?.config || {}) } as GenerationConfig;
-  await streamChat(layer, ev => {
-    if (ev.delta) onChunk({ text: ev.delta });
-    if (ev.error && !ev.delta) onChunk({ text: `\n[ERROR:${ev.error}]`, done: true });
-    if (ev.done) onChunk({ text: ev.error ? '' : '', done: true });
-  }, { baseUrl: opts?.baseUrl, model: cfg.model, temperature: cfg.temperature, signal });
-}
-
-export function estimateCompletionTokens(targetChars: number) {
-  // 한글 평균 0.7~1.2 토큰 → 보수 계수 0.9
-  return Math.round(targetChars * 0.9);
-}
+export { estimateCompletionTokens };

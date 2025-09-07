@@ -1,5 +1,16 @@
 import { PromptLayer } from '../types/domain';
+import { getGPTConfig } from './gptCommon';
 import { promptLayerToMessages } from '../utils/promptToMessages';
+import { estimateCompletionTokens as simpleCharTokenEstimate } from '../utils/promptAssembler';
+
+/**
+ * Unified GPT streaming + high level helpers.
+ * This file is now the canonical place for:
+ *  - Streaming chat completions (SSE)
+ *  - PromptLayer -> messages 변환 (위임)
+ *  - High-level generateFromPromptLayer (이전 generatePage 대체)
+ *  - Error classification utility
+ */
 
 export interface ChatMessage { role: 'system' | 'user' | 'assistant'; content: string }
 
@@ -22,9 +33,9 @@ export interface StreamOptions {
 
 export type StreamCallback = (ev: StreamEvent) => void;
 
-const DEFAULT_MODEL = 'gpt-4o-mini';
+const { defaultModel: DEFAULT_MODEL, baseUrl: DEFAULT_BASE_URL } = getGPTConfig();
 
-function classifyError(status: number | undefined, body: any): string {
+export function classifyGPTError(status: number | undefined, body: any): string {
   if (!status) return 'network-error';
   if (status === 401) return 'auth';
   if (status === 429) return 'rate-limit';
@@ -33,7 +44,7 @@ function classifyError(status: number | undefined, body: any): string {
 }
 
 export async function streamChat(input: PromptLayer | ChatMessage[], onEvent: StreamCallback, opts?: StreamOptions) {
-  const base = opts?.baseUrl || (import.meta as any).env?.VITE_OPENAI_BASE_URL || 'http://localhost:4141/v1';
+  const base = opts?.baseUrl || DEFAULT_BASE_URL;
   const apiKey = opts?.apiKey || (import.meta as any).env?.VITE_OPENAI_API_KEY;
   const url = base.replace(/\/$/, '') + '/chat/completions';
   const messages: ChatMessage[] = Array.isArray(input) && opts?.directMessages
@@ -57,7 +68,7 @@ export async function streamChat(input: PromptLayer | ChatMessage[], onEvent: St
     if (!res.ok || !res.body) {
       let bodyJson: any = undefined;
       try { bodyJson = await res.json(); } catch { /* noop */ }
-      const cat = classifyError(res.status, bodyJson);
+      const cat = classifyGPTError(res.status, bodyJson);
       onEvent({ done: true, error: cat });
       return;
     }
@@ -107,3 +118,22 @@ export function createChatStream(input: PromptLayer | ChatMessage[], onEvent: St
     abort: () => controller.abort()
   };
 }
+
+// ===== High-level Page Generation Wrapper (Deprecated generatePage replacement) =====
+// Maintains backward compatibility contract used by usePageGeneration.
+export interface GenerateFromPromptOptions {
+  model?: string; temperature?: number; baseUrl?: string; apiKey?: string;
+}
+
+export interface GenerateFromPromptChunk { text: string; done?: boolean; error?: string; }
+
+export async function generateFromPromptLayer(layer: PromptLayer, onChunk: (c: GenerateFromPromptChunk) => void, opts?: GenerateFromPromptOptions, signal?: AbortSignal) {
+  await streamChat(layer, ev => {
+    if (ev.delta) onChunk({ text: ev.delta });
+    if (ev.error && !ev.delta) onChunk({ text: `\n[ERROR:${ev.error}]`, error: ev.error, done: true });
+    if (ev.done) onChunk({ text: '', done: true });
+  }, { model: opts?.model, temperature: opts?.temperature, baseUrl: opts?.baseUrl, apiKey: opts?.apiKey, signal });
+}
+
+// Simple completion token estimate (legacy helper) kept for compatibility
+export const estimateCompletionTokens = simpleCharTokenEstimate;

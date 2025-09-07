@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { PromptLayer, GenerationConfig } from '../types/domain';
-import { generatePage } from '../services/gpt';
+import { generateFromPromptLayer } from '../services/gptClient';
 import { usePagesStore } from '../stores/pagesStore';
 import { summarizeForReference, totalPromptTokens } from '../utils/promptAssembler';
 import { updateCalibrationWithSample, saveCalibration } from '../utils/calibration';
@@ -53,7 +53,7 @@ export function usePageGeneration() {
     let buffer = '';
     baseContinuationRef.current = '';
     try {
-  await generatePage(layer, async c => {
+  await generateFromPromptLayer(layer, async c => {
         if (c.done) {
           if (!finalized) {
             await finalizeAndPersist(pageId, buffer, promptEstimated);
@@ -77,7 +77,7 @@ export function usePageGeneration() {
             setRunning(false);
           }
         }
-  }, controller.signal, { config: { targetChars: tChars, ...(cfg||{}) } });
+  }, { model: cfg?.model, temperature: cfg?.temperature }, controller.signal);
     } catch (e: any) {
       if (!finalized) setError(e.message || '생성 오류');
       setRunning(false);

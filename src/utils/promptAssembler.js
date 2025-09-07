@@ -175,3 +175,12 @@ export function suggestTargetChars(params) {
     // 여유가 충분하면 desired, 아니면 capacity 한도
     return Math.min(maxChars, Math.min(desired, estimatedCharsCapacity));
 }
+// ===== Simple legacy char->token estimation (for UI incremental counters) =====
+// Centralizing here so hooks & client share identical logic.
+export function simpleCharTokenEstimate(chars, factor = 0.9) {
+    if (!chars)
+        return 0;
+    return Math.round(chars * factor);
+}
+// Backward compatibility alias (used previously in gptClient / hooks)
+export const estimateCompletionTokens = simpleCharTokenEstimate;

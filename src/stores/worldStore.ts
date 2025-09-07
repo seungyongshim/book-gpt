@@ -6,7 +6,7 @@ import { summarizeWorld } from '../utils/promptAssembler';
 interface WorldState {
   world?: WorldSetting;
   worldDerivedInvalidated: boolean;
-  load: (bookId: string) => Promise<void>;
+  load: (bookId: string) => Promise<WorldSetting>;
   save: (bookId: string, patch: Partial<WorldSetting>) => Promise<void>;
   invalidateDerived: () => void;
   getWorldDerived: (bookId: string) => Promise<string | undefined>;
@@ -23,9 +23,15 @@ export const useWorldStore = create<WorldState>((set: (partial: any, replace?: b
       await put('worldSettings', ws);
     }
     set({ world: ws });
+    return ws;
   },
   save: async (bookId: string, patch: Partial<WorldSetting>) => {
-    const prev = get().world || { bookId, version: 0, updatedAt: 0 } as WorldSetting;
+    let prev = get().world;
+    if (!prev || prev.bookId !== bookId) {
+      // fetch from DB to ensure correct latest version
+      prev = (await dbGet('worldSettings', bookId)) as WorldSetting | undefined;
+    }
+    prev = prev || { bookId, version: 0, updatedAt: 0 } as WorldSetting;
     const next: WorldSetting = { ...prev, ...patch, bookId, version: prev.version + 1, updatedAt: Date.now() };
     await put('worldSettings', next);
     set({ world: next, worldDerivedInvalidated: true });

@@ -1,6 +1,8 @@
+import { getGPTConfig } from './gptCommon';
 import { promptLayerToMessages } from '../utils/promptToMessages';
-const DEFAULT_MODEL = 'gpt-4o-mini';
-function classifyError(status, body) {
+import { estimateCompletionTokens as simpleCharTokenEstimate } from '../utils/promptAssembler';
+const { defaultModel: DEFAULT_MODEL, baseUrl: DEFAULT_BASE_URL } = getGPTConfig();
+export function classifyGPTError(status, body) {
     if (!status)
         return 'network-error';
     if (status === 401)
@@ -12,7 +14,7 @@ function classifyError(status, body) {
     return body?.error?.type || 'unknown';
 }
 export async function streamChat(input, onEvent, opts) {
-    const base = opts?.baseUrl || import.meta.env?.VITE_OPENAI_BASE_URL || 'http://localhost:4141/v1';
+    const base = opts?.baseUrl || DEFAULT_BASE_URL;
     const apiKey = opts?.apiKey || import.meta.env?.VITE_OPENAI_API_KEY;
     const url = base.replace(/\/$/, '') + '/chat/completions';
     const messages = Array.isArray(input) && opts?.directMessages
@@ -39,7 +41,7 @@ export async function streamChat(input, onEvent, opts) {
                 bodyJson = await res.json();
             }
             catch { /* noop */ }
-            const cat = classifyError(res.status, bodyJson);
+            const cat = classifyGPTError(res.status, bodyJson);
             onEvent({ done: true, error: cat });
             return;
         }
@@ -91,3 +93,15 @@ export function createChatStream(input, onEvent, opts) {
         abort: () => controller.abort()
     };
 }
+export async function generateFromPromptLayer(layer, onChunk, opts, signal) {
+    await streamChat(layer, ev => {
+        if (ev.delta)
+            onChunk({ text: ev.delta });
+        if (ev.error && !ev.delta)
+            onChunk({ text: `\n[ERROR:${ev.error}]`, error: ev.error, done: true });
+        if (ev.done)
+            onChunk({ text: '', done: true });
+    }, { model: opts?.model, temperature: opts?.temperature, baseUrl: opts?.baseUrl, apiKey: opts?.apiKey, signal });
+}
+// Simple completion token estimate (legacy helper) kept for compatibility
+export const estimateCompletionTokens = simpleCharTokenEstimate;

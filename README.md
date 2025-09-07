@@ -76,6 +76,35 @@ VITE_OPENAI_BASE_URL=http://localhost:4141/v1
 - Abort(중단) 기능
 - 404 SPA fallback
 
+### GPTComposer Chat Mode (신규)
+`GPTComposer`는 이제 단일 지시문 생성뿐 아니라 간단한 채팅 인터페이스로도 사용할 수 있습니다.
+
+```tsx
+import { GPTComposer } from './src/components/GPTComposer';
+
+<GPTComposer
+	chatMode
+	chatSystem="You are a helpful Korean writing assistant."
+	initialMessages={[{ role:'assistant', content:'안녕하세요! 무엇을 도와드릴까요?' }]}
+	onMessagesChange={(msgs)=> console.log('chat messages', msgs)}
+	chatApplyStrategy="last"
+	buildPrompt={(instr)=>({
+		system: 'fallback system (chatMode에서는 직접 messages 사용)',
+		userInstruction: instr
+	})}
+	onApply={(text)=> console.log('적용 내용', text)}
+/>
+```
+
+주요 props:
+- `chatMode`: true 시 채팅 UI 활성화 (PromptLayer 대신 전체 대화 기록을 직접 전송)
+- `chatSystem`: 시스템 지침 (대화 기록 첫 메시지로만 내부에서 사용, 트랜스크립트에는 미표시)
+- `initialMessages`: 최초 사용자/어시스턴트 메시지 배열
+- `chatApplyStrategy`: `last` (마지막 assistant) 또는 `allAssistantMerged`
+- `onMessagesChange`: 메시지 변경 시 콜백
+
+단일 모드와 병행 사용 시 조건부 렌더링으로 선택 가능합니다.
+
 ## 향후 작업
 - PromptLayer → messages 유틸 분리(export)
 - worldDerived / referenceSummaries 캐시 & TTL

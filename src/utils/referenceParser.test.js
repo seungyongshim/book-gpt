@@ -38,14 +38,12 @@ describe('referenceParser', () => {
             }
         }
     });
-    it('merges overlapping range and single with weight accumulation', () => {
+    it('increments weight when single refs overlap existing range', () => {
         const r = parseReferences('텍스트 @3-5 그리고 다시 @4 그리고 @5');
-        // 현재 구현: 범위와 개별 단일 참조가 별도 엔트리로 유지 (미래 개선: 병합 후 weight 증가)
-        // 기대: 3개의 레코드 (@3-5, @4, @5)
-        expect(r.references.length).toBe(3);
-        const idsSets = r.references.map(x => x.pageIds.join(','));
-        expect(idsSets).toContain('3,4,5');
-        expect(idsSets).toContain('4');
-        expect(idsSets).toContain('5');
+        // 구현: 범위 참조 하나, 단일 @4, @5 는 범위에 포함되어 weight 증가
+        expect(r.references.length).toBe(1);
+        const range = r.references[0];
+        expect(range.pageIds).toEqual(['3', '4', '5']);
+        expect(range.weight).toBe(3); // original + two overlaps
     });
 });

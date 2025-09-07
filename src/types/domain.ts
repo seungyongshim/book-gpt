@@ -106,3 +106,13 @@ export interface StreamChunk {
   text: string;
   done?: boolean;
 }
+
+// Model metadata (optional usage across UI)
+export interface ModelInfo {
+  id: string;
+  label?: string;
+  contextWindow?: number;
+  recTemp?: number; // recommended temperature
+  caps?: string[];  // capabilities
+  meta?: Record<string, any>;
+}

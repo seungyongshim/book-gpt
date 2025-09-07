@@ -1,136 +1,120 @@
-## 프로젝트 개요
-React 기반 모바일 전용 SPA로 OpenAI 호환 GPT 엔드포인트(`http://localhost:4141/v1`)를 활용해 장편 서사를 "책(Book) → 페이지(Page)" 단위로 생성·편집·확장하는 저작 도구. 핵심은 (1) 세계관(World Setting) 구조화 관리, (2) 다층(System + Book + World Summary + Page + 동적 참조) 프롬프트 합성, (3) @참조 기반 맥락 재활용, (4) 토큰 예산 내 자동 요약/축약 파이프라인이다.
+## 0. 개요 (Concise Overview)
+모바일 우선 React + Vite SPA. OpenAI Chat Completions 호환 GPT 엔드포인트 `http://localhost:4141/v1` 사용.
+목표: 장편 소설을 Book → Page 단위로 AI 보조 생성/편집. 핵심 4축:
+1) 구조화된 세계관(World Setting) 관리 & 캐시(worldDerived)
+2) 다층 Prompt Layer(System / Book / World / Page / Dynamic @References / User Instruction)
+3) `@` 참조를 통한 과거 페이지 요약 재활용 (referenceSummaries 캐시)
+4) 토큰 예산 기반 자동 축약/재요약 파이프라인 (L0~L4)
 
-> 변경/정리 안내: 본 문서는 중복 서술과 용어 혼선을 최소화하도록 재구성되었음. 기존 `worldDerived`와 `world.summary` 용어를 통합 설명(캐시 레이어 명: `worldDerived`, 툴 인터페이스 명: `world.summary`)하였고, `ReferenceIndex` 개념을 실제 IndexedDB store 이름 `referenceSummaries`로 명확히 연결하였다.
+용어 정리: `worldDerived` = 세계관 요약 캐시 레코드, 동일 내용을 Tool 레벨에서 `world.summary`로 노출. `referenceSummaries` = 과거 페이지 300자(최대 800자) 요약 캐시.
 
-## 1. 요구사항 정리
-### 명시적 요구
-- React 기반 모바일 SPA (PC 대응은 후순위)
-- 책 선택 → 세계관(세계 설정) 정의 가능 도구 필요
-- 페이지 단위 글 작성 (최대 응답 토큰 활용, 한글 12k자 내외)
-- GPT 호출 엔드포인트: `http://localhost:4141/v1`
-- 책/페이지 단위로 시스템 프롬프트 추가 가능 (글톤, 스타일, 검열 규칙 등)
-- `@` 문법으로 기존 페이지 참조 (예: `@3`, `@12-14`, `@prologue`, `@p:ch1`)
-- 참조된 페이지 내용을 요약/부분 인용해 프롬프트에 삽입하는 툴 필요
+## 1. 요구사항 (정제)
+주요 요구: 모바일 SPA, 세계관 편집, 12K자 수준 장문 페이지 생성, 다층 시스템 프롬프트, @참조 요약 재활용.
+추가 요구: Draft/Pub 상태, 캐시 무효화, 토큰 축약 단계, 버전 이력.
+비범위: 실시간 협업, 권한 관리, 멀티 디바이스 동기화.
+가정: OpenAI 호환 SSE; 한글 12K자 ≈ 6~9K 토큰; 모델 총 context 16K 이상.
 
-### 암묵/추가 요구 (추론)
-- 장문 페이지 안정 저장 (Draft/Published 상태 분리)
-- 세계관 변경이 이후 페이지 생성 프롬프트에 즉시 반영 (캐시 무효화)
-- 토큰 초과 방지를 위한 다단계 동적 컨텍스트 축약
-- 버전 기록(생성/편집 diff)으로 회귀/감사 가능성 확보
-- 다국어 확장 대비 한글 우선 설계 (i18n 추후 적용 여지)
+## 2. 도메인 모델 (요약)
+Book: 식별/메타 + book-level systemPrompt + worldSettingId.
+WorldSetting: premise, timeline, geography, factions, characters, magicOrTech, constraints, styleGuide, version.
+Page: index, status(DRAFT|PUBLISHED|ARCHIVED), systemPrompt, rawContent, refinedContent, summary, tokens( prompt/completion ), references[], modelMeta, created/updated.
+PageVersion: diff + snapshot + author + timestamp.
+Caches: worldDerived(요약), referenceSummaries(페이지 요약), settings(tokenCalibration 등).
+관계: Book 1-1 WorldSetting / Book 1-N Page / Page 1-N PageVersion / Page N-N Page(간접 @참조).
 
-### 제외(초기 범위 밖)
-- 협업 동시 편집(실시간 커서 공유)
-- 사용자 권한/역할 관리
-- 오프라인 동기화
+## 3. 아키텍처 & 저장소
+스택: React + Vite, TypeScript, Zustand(로컬 상태) + IndexedDB, Tailwind.
+IndexedDB Stores(v1): books, worldSettings, pages, pageVersions, referenceSummaries, worldDerived, settings (미래: embeddings, exports).
+쓰기 트랜잭션: 페이지 생성 시 pages + pageVersions 원자.
+Partial Flush: 스트림 수신 2K자 단위 저장 → 장애 복구.
+압축: >50KB 선택적 LZ-string (`compressed:true`).
+보안: 완전 클라이언트 → 민감 정보 입력 지양.
 
-### 가정
-1. 백엔드는 초기 단계에서 별도 서버 없이 직접 호출 가능하나, 키 보호/사용량 제어 목적의 BFF(Node/Express) 도입 가능 (Phase Future)
-2. GPT 엔드포인트는 OpenAI Chat Completions 호환(JSON: `model`, `messages`, `temperature`, SSE stream)
-3. 한글 1자 = 0.5~1.3 토큰(모델별 상이)으로 12,000자 ≈ 6~9K 토큰 수준 (보수 추정). 문서 내 정책 수치는 전략적 목표치이며 실제 모델 한도(예: 16K/128K context)에 맞춰 동적 조정.
+## 4. 페이지 생성 파이프라인
+1) Instruction 파싱(@참조) → references[]
+2) referenceSummaries 확보(캐시 혹은 생성) & worldDerived 검증/재생성
+3) Prompt Layer 합성 + 토큰 예측(estimateTokens + calibration factor)
+4) 필요 시 L1~L4 축약 적용
+5) GPT SSE 스트림 수신 → partial flush → 완료 시 Page/Version 기록
+6) rawContent 요약(summary) 생성 (후순위 자동화) 및 calibration 업데이트
 
-## 2. 도메인 모델
-### 엔티티
-Book
-- id, title, slug, description
-- worldSettingId (1:1), systemPrompt (book level)
-- meta: genre, targetAudience, tone, createdAt, updatedAt
+## 5. Prompt Layer & 토큰 전략
+레이어 순서: system → bookSystem → worldDerived → pageSystem → dynamicContext(references) → userInstruction.
+목표: 프롬프트 ≤ 2,800 tokens (상한 3,000), 본문 11,500~12,000자.
+축약 레벨:
+L0 원본 / L1 저우선 참조 50% / L2 worldDerived 1200→800자 / L3 참조 120자 bullet / L4 pageSystem 핵심 bullet.
+초과 지속 시 사용자 경고 & 참조 제거 UI.
+토큰 추정 보정: settings.tokenCalibration (0.7~1.3) 이동 평균.
 
-WorldSetting
-- id, bookId
-- premise (핵심 전제)
-- timeline (주요 사건 연표)
-- geography (지리/지도 요약)
-- factions (세력 배열)
-- characters (핵심 인물 요약 목록)
-- magicOrTech (마법/기술 규칙)
-- constraints (금기/금지 사항)
-- styleGuide (문체, 구어체, 표현 규칙)
-- version, updatedAt
+## 6. `@` 참조 구문
+형식: `@3`, `@3-5`, `@p:slug`, 혼합 가능. 범위 최대 15페이지. 중복 병합, 순환(자기) 참조 차단. 누락 slug 경고.
+파서 출력: { cleanedText, references:[{pageId, weight}] }.
 
-Page
-- id, bookId, index(1-based), slug(optional)
-- title, status(DRAFT|PUBLISHED|ARCHIVED)
-- systemPrompt (page-specific 추가 규칙)
-- rawContent (생성 결과 원문)
-- refinedContent (수정/후편집본)
-- summary (요약: 자동/수동)
-- tokensUsed, tokensPrompt, tokensCompletion, modelMeta
-- references (파싱된 참조 배열)
-- versionHistory (별도 테이블 또는 collection)
-- createdAt, updatedAt
+## 7. Tool & Orchestrator (핵심 스키마)
+공통 입력: { query, select?, constraints? }
+공통 결과: { tool, payload, tokensEstimated, compressionLevel? }
+Tools:
+- world.summary: premise, timelineKeyEvents[], factions[], geography, magicRules, constraints[], styleInfluence
+- references.context: { requested[], resolved:[{ref,summary,priority}], compressionApplied }
+- style.guide: narrationPOV, tone, sentencePacing, dictionRules[], prohibited[], preferredPatterns[]
+- ethics.checklist: violence, sexual, discrimination, sensitive[], metaPolicy
+- characters.lookup (후속): characters[{id,name,role,traits[],secret?,currentState,arcProgress?}]
+오케스트레이션: 필요 툴 계획 → 호출 → 토큰 예산 평가 → 선택적 재요약 (Level1~3) → 최종 PromptLayer 조합.
 
-PageVersion
-- id, pageId, timestamp, diff, contentSnapshot, author (system/user)
+## 8. 토큰 절약 규칙 (요약)
+1) world.summary 1200자 상한 → 초과 시 bullet 압축(800자)
+2) 참조 기본 300자, 저우선 150자
+3) 긴 참조: 앞/중간/끝 분절 650자 → 필요 시 400자 하이브리드
+4) 초과 시 레벨 순차 적용, L4 후에도 초과면 제거 후보 안내.
 
-referenceSummaries (가속 접근 캐시, 기존 개념 ReferenceIndex 명확화)
-- pageId, summary(기본 300자 목표, 최대 500~800자), updatedAt, (향후) vectorEmbedding
+## 9. 에지 케이스 & 품질 (핵심 10)
+1 Draft 참조 표기
+2 순환 참조 차단
+3 토큰 초과 단계 로그
+4 세계관 대규모 수정 후 톤 경고
+5 스트림 중단 후 partial 복구
+6 조기 종료 이어쓰기 옵션
+7 Quota 근접: 압축→PageVersion GC→알림
+8 다중 탭 충돌: lastWrite 비교
+9 Import 스키마 차이: 마이그레이션 실행
+10 손상 참조: 건너뛰고 경고 리스트
 
-PromptLayer (가상 계층 합성)
-- globalSystem (전역)
-- bookSystem
-- worldDerived (세계관 요약/규칙 동적 생성)
-- pageSystem
-- dynamicContext (참조 페이지 압축 삽입)
-- userInstruction (사용자가 이번 생성에 입력한 지시)
+## 10. 백로그 (압축)
+P1: G1 SSE, G2 Partial Flush, G3 worldDerived, G4 referenceSummaries, G5 TokenMeter, G6 Prompt Preview, V1 Version List, V2 Diff, V3 Rollback, U2 Toast, Q2 referenceParser Tests.
+P2: G7 Compression UI, G8 @Highlight, V4 Refined Editor, V5 Auto Page Summary, W1 Wizard 확장, W2 world.summary Tool, W3 references.context Tool, W4 style/ethics merge, C1 Token Calibration, C2 재요약 구현, P1 Export, P2 Import, U1 Common Components, U3 Shortcuts, U4 Focus Trap, Q3 promptAssembler Test, Q4 ESLint CI, W5(일부 P3 이전?), Tool Orchestrator MVP(W6) → 착수 전 핵심 캐시 안정.
 
-### 관계
-Book (1) — (1) WorldSetting
-Book (1) — (N) Page
-Page (1) — (N) PageVersion
-Page (N) — (N) Page (간접 참조: `referenceSummaries` 캐시 활용)
+## 11. 구현 규칙 & Done Definition
+1 P1 선행 후 P2 (테스트 예외 병행 가능)
+2 새 store 필드 추가 시 MIGRATIONS.md 갱신
+3 Token/Prompt 변경 시 promptAssembler 테스트 스냅샷 업데이트
+4 생성 호출 로그(요약 길이/레벨) 구조화 저장 (품질 지표)
+Done: 타입 오류 0, 빌드 성공, 주요 Happy Path 수동 검증, 문서 2~5줄 요약 반영.
 
-## 3. 아키텍처 & 기술 스택 (백엔드 없음 / 100% 클라이언트)
-프론트엔드
-- React + Vite (빠른 HMR)
-- 상태관리: Zustand (경량 + 직관적 selector) + React Context 최소화
-- React Query (외부 GPT 호출 캐시 / 재시도). 단, 로컬 데이터는 직접 Zustand + IndexedDB sync layer
-- 라우팅: React Router (모바일 SPA 구조)
-- UI: Tailwind CSS + Headless UI (모바일 최적화)
-- 타입: TypeScript
+## 12. GPT 모듈 통합 (요약)
+단일 진입점 `services/gptClient.ts`: streamChat, generateFromPromptLayer, classifyGPTError. 기존 `generatePage` 는 shim. 토큰 추정 중앙화(promptAssembler). 향후: 실제 usage 등장 시 calibration 직접 반영. JS 스텁 제거 예정.
 
-영속성 (IndexedDB Only)
-- DB Name: `book-gpt`
-- Object Stores (v1 기준):
-  - `books` { id, title, slug, meta, worldSettingId, systemPrompt, createdAt, updatedAt }
-  - `worldSettings` { bookId(PK), premise, timeline, geography, factions, characters, magicOrTech, constraints, styleGuide, version, updatedAt }
-  - `pages` { id, bookId, index, slug, title, status, systemPrompt, rawContent, refinedContent, summary, tokensUsed, modelMeta, references, createdAt, updatedAt }
-  - `pageVersions` { id, pageId, timestamp, diff, contentSnapshot, author }
-  - `referenceSummaries` { pageId(PK), summary, updatedAt }
-  - `worldDerived` { id: bookId+worldVersion, bookId, worldVersion, summary, createdAt }
-  - `settings` { key(PK), value }
-  - (미래) `embeddings`, `exports`
-  
-> 마이그레이션: onupgradeneeded 훅에서 store/인덱스 추가 및 필드 확장. 대규모 텍스트는 비압축 기본, 50KB 초과 시 선택적 LZ-string(`compressed: true`).
-> 상세 마이그레이션 전략 및 향후 버전 계획은 `MIGRATIONS.md` 문서 참고.
-- 쓰기 전략: 트랜잭션 단위로 atomic (pages + pageVersions 동시 커밋)
-- 대규모 텍스트 필드는 그대로 저장(용량 제한 명시적 강제 없음; 브라우저 별 한도 내 자동 관리)
-- 압축 정책: 기본 비압축, 필요 시 threshold(>50KB) 이상 LZ-string 적용 → `compressed: true` 플래그 보관
-- Partial Flush: 스트리밍 중 2,000자 단위 임시 `rawContent` 증분 업데이트 (resume 가능성)
-- Summaries LRU: `referenceSummaries` 필요 시 최근 사용 순서 추적하여 재생성 플래그 설정 (삭제는 지연)
-- 마이그레이션: onupgradeneeded에서 store 추가/인덱스 확장, 데이터 변환
+## 13. 향후 로드맵 (요약)
+Phase 2: Wizard 전체, references.context + world.summary Tool, Prompt Compression UI.
+Phase 3: characters.lookup, style.guide, ethics.checklist, Embeddings(v3), 챕터 구조.
+Phase 4: Consistency & Style Drift Agents, Plot Suggestions, 고급 Orchestrator.
 
-보안 주의
-- 키 비공개 불가(완전 프론트)이므로 현재 단계에서는 공개/테스트용 모델 엔드포인트라는 가정
-- 민감 정보 저장 금지 (사용자 프롬프트 내 PII 필터 권고)
+## 14. 샘플 PromptLayer JSON
+```json
+{
+	"system": "Global safety + Korean novel guidelines",
+	"bookSystem": "장르: 다크 판타지. 1인칭 현재형 유지.",
+	"worldDerived": "<세계관 요약 1200자 이내>",
+	"pageSystem": "이번 페이지는 주인공의 첫 전투 장면 집중",
+	"dynamicContext": [
+		{"ref": "@1", "summary": "..."},
+		{"ref": "@2-3", "summary": "..."}
+	],
+	"userInstruction": "주인공의 숨겨둔 공포를 점층적으로 드러내며 12,000자 분량 작성"
+}
+```
 
-GPT 연동
-- `fetch('http://localhost:4141/v1/chat/completions')` (OpenAI 호환) + SSE Streaming
-- 토큰 예산 사전 추정: (문자길이 * 평균 토큰 비율) → usage 반환값으로 사후 보정 저장
-
-오프라인/동기화
-- 기본 오프라인 가능 (IndexedDB) / 다중 기기 동기화 없음
-- 내보내기: 전체 JSON export (zip) / 가져오기 import 기능 로드맵 포함
-
-구성 흐름 (페이지 생성)
-1. @참조 파싱 → pageId/slug 해석
-2. `referenceSummaries` 로드 (없으면 요약 생성 후 캐시)
-3. WorldSetting 변경 여부 확인 → `worldDerived`(= world.summary 캐시) 검증/재생성
-4. PromptLayer 합성 + 토큰 길이 사전 계산 → 필요 시 단계별 축약
-5. GPT 스트리밍 생성 (중간 2,000자 단위 partial flush) → 목표 길이 or 종료
-6. Page + PageVersion 트랜잭션 저장, summary 생성/갱신
-7. 캐시(worldDerived/referenceSummaries) LRU 업데이트
+---
+문서 축약 버전: 중복/장황 서술 제거, 핵심 정책/파이프라인/백로그 식별 가능 상태 유지.
 
 ## 4. 프롬프트 전략 & 토큰 관리
 ### 계층 합성 순서
@@ -587,6 +571,44 @@ system + bookSystem + worldDerived(또는 world.summary 결과) + style.guide + 
 
 > 본 백로그는 구현 진행에 따라 재우선순위화(Reprioritization) 가능하며, 완료 항목은 CHANGELOG 혹은 별도 Release Notes로 이동 권장.
 
+## 16.a GPT 모듈 통합 (Refactor 기록)
+### 배경
+기존 GPT 연동 로직이 `services/gpt.ts`(generatePage), `services/gptClient.ts`(streamChat), 두 훅(`useGPTStream`, `usePageGeneration`)과 중복 토큰 추정 유틸(여러 곳의 단순 char*0.9)로 분산되어 유지보수 비용이 증가.
+
+### 변경 요약 (2025-09-07)
+1. 단일 진입점: `services/gptClient.ts`
+	- `streamChat` (SSE 파서)
+	- `generateFromPromptLayer` (예전 `generatePage` 대체 high-level 래퍼)
+	- `classifyGPTError` 에러 분류 기능
+2. `services/gpt.ts` 는 Deprecated shim (`generatePage` -> `generateFromPromptLayer` 위임)
+3. JS 이중 소스 제거: `.js` 파일은 TS 재-export 스텁으로 단순화 (향후 제거 가능)
+4. 토큰 단순 추정 로직 중앙화: `promptAssembler.estimateCompletionTokens` (= `simpleCharTokenEstimate`) 사용
+5. 훅 정리:
+	- `useGPTStream` 중복 추정 함수 제거 → 공용 estimator 사용
+	- `usePageGeneration` 는 wrapper 교체 (`generatePage` → `generateFromPromptLayer`)
+6. 신규 테스트: `src/services/gptClient.test.ts` 스트리밍/에러/추정 검증
+
+### 마이그레이션 가이드
+| 이전 | 이후 | 비고 |
+|------|------|------|
+| `import { generatePage } from 'services/gpt'` | (그대로 동작) | 내부 위임, 점진 제거 예정 |
+| `streamChat` 직접 사용 | 유지 | 권장: 필요 시 wrapper 없이 바로 사용 |
+| 직접 char*0.9 계산 | `estimateCompletionTokens(chars)` | `promptAssembler` 재사용 |
+
+### 제거 예정 (추후 PR)
+- JS 스텁 (`gpt.js`, `gptClient.js`) 완전 삭제
+- `generatePage` shim 제거 및 검색/교체 자동화 스크립트
+
+### 추가 고려 (Backlog)
+- 실제 모델 usage 토큰 등장 시: wrapper 내부에서 calibration 자동 업데이트 (현재는 completion length *0.95 근사 사용)
+- 스트림 중 중간 메타(usage.partial) 지원 시 확장 포인트 마련
+
+### 테스트 포커스
+- SSE 조각 경계 분할(line buffering) 안정성
+- 에러 상태 코드(401/429/500) 분류 회귀 테스트 필요 시 추가
+
+---
+
 ## 17. Generic GPT Client Reuse (추가 메모)
 `src/services/gptClient.ts`에 범용 스트리밍 클라이언트를 도입하여 기존 `generatePage` 로직을 내부적으로 재사용하도록 리팩터링하였다. 이제 다음과 같이 어디서든 간단히 사용 가능:
 
@@ -598,5 +620,48 @@ gpt.start({ system: '컨텍스트', userInstruction: '질문 또는 작성 지�
 ```
 
 필드 단위(예: WorldBuilder 각 섹션)에서 즉석 AI 제안을 받고 적용할 수 있으며, PromptLayer 또는 직접 messages 배열( `directMessages: true` 옵션 )을 전달해도 된다.
+
+### 17.1 Reusable GPTComposer UI
+`src/components/GPTComposer.tsx`는 어떤 화면에서도 동일한 인터랙션 패턴(지시문 입력 → 스트리밍 표시 → 적용)을 빠르게 붙일 수 있는 범용 UI 래퍼이다.
+
+간단 사용 예:
+```tsx
+<GPTComposer
+	seed={currentText}
+	buildPrompt={(instr)=>({ system: '도움말', userInstruction: instr + '\n현재:' + currentText })}
+	onApply={(newText)=> setCurrentText(newText)}
+	initialInstruction="더 구체적으로 개선"
+	compact
+	showTokenApprox
+/> 
+```
+
+WorldBuilder는 각 필드별로 이 컴포넌트를 토글 렌더하여 재활용 구현.
+
+### 17.2 모델 & 온도 선택 (신규)
+`GPTComposer`는 이제 사용자에게 모델과 temperature(창의성) 값을 직접 선택할 수 있는 UI를 제공한다.
+
+추가 Props:
+```
+defaultModel?: string;                 // 기본 모델 (기본값 'gpt-4o-mini')
+modelOptions?: string[];               // 드롭다운에 표시할 모델 리스트
+defaultTemperature?: number;           // 초기 temperature (기본 0.8)
+showTemperature?: boolean;             // 슬라이더/입력 표시 여부 (기본 true)
+onConfigChange?: (cfg:{model:string;temperature:number})=>void; // 변경 콜백
+```
+
+예시:
+```tsx
+<GPTComposer
+	modelOptions={["gpt-4o-mini","gpt-4o","gpt-4.1"]}
+	defaultModel="gpt-4o-mini"
+	defaultTemperature={0.7}
+	onConfigChange={(c)=> console.log('cfg', c)}
+	buildPrompt={(instr)=>({ system:'테스트', userInstruction: instr })}
+	onApply={(text)=> console.log(text)}
+/>
+```
+
+선택된 `model` / `temperature`는 내부적으로 `useGPTStream({ model, temperature })`에 전달되어 `gptClient` 호출 시 `chat/completions` 요청 payload에 반영된다.
 
 

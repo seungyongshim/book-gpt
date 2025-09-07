@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { PromptLayer } from '../types/domain';
 import { ChatMessage, createChatStream, StreamEvent } from '../services/gptClient';
+import { estimateCompletionTokens } from '../utils/promptAssembler';
 
 export interface UseGPTStreamConfig {
   model?: string;
@@ -20,8 +21,8 @@ export interface UseGPTStreamResult {
   tokensApprox: number; // naive char -> token approximation for quick UI meter
 }
 
-// quick heuristic (will reuse calibration later if needed)
-function estimateTokensFromChars(chars: number) { return Math.round(chars * 0.9); }
+// Use shared estimation helper (legacy char->token heuristic)
+function estimateTokensFromChars(chars: number) { return estimateCompletionTokens(chars); }
 
 export function useGPTStream(cfg?: UseGPTStreamConfig): UseGPTStreamResult {
   const [text, setText] = useState('');

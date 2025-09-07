@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { createChatStream } from '../services/gptClient';
-// quick heuristic (will reuse calibration later if needed)
-function estimateTokensFromChars(chars) { return Math.round(chars * 0.9); }
+import { estimateCompletionTokens } from '../utils/promptAssembler';
+// Use shared estimation helper (legacy char->token heuristic)
+function estimateTokensFromChars(chars) { return estimateCompletionTokens(chars); }
 export function useGPTStream(cfg) {
     const [text, setText] = useState('');
     const [running, setRunning] = useState(false);

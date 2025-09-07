@@ -12,9 +12,15 @@ export const useWorldStore = create((set, get) => ({
             await put('worldSettings', ws);
         }
         set({ world: ws });
+        return ws;
     },
     save: async (bookId, patch) => {
-        const prev = get().world || { bookId, version: 0, updatedAt: 0 };
+        let prev = get().world;
+        if (!prev || prev.bookId !== bookId) {
+            // fetch from DB to ensure correct latest version
+            prev = (await dbGet('worldSettings', bookId));
+        }
+        prev = prev || { bookId, version: 0, updatedAt: 0 };
         const next = { ...prev, ...patch, bookId, version: prev.version + 1, updatedAt: Date.now() };
         await put('worldSettings', next);
         set({ world: next, worldDerivedInvalidated: true });

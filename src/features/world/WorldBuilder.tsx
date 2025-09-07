@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useWorldStore } from '../../stores/worldStore';
 import { summarizeWorld } from '../../utils/promptAssembler';
+import useGPTStream from '../../hooks/useGPTStream';
 
 const fields: { key: keyof any; label: string; placeholder: string; rows?: number }[] = [
   { key: 'premise', label: 'Premise (핵심 전제)', placeholder: '세계관 핵심 전제 / 갈등의 씨앗 요약' },
@@ -22,6 +23,28 @@ const WorldBuilder: React.FC = () => {
   const [editing, setEditing] = useState<Record<string,string>>({});
   const [autoSummary, setAutoSummary] = useState<string>('');
   const [autoMode, setAutoMode] = useState(true);
+  const [aiTargetField, setAiTargetField] = useState<string | null>(null);
+  const ai = useGPTStream();
+
+  const buildFieldPrompt = (key: string, current: string) => {
+    const baseDesc = fields.find(f=>f.key===key)?.label || key;
+    const worldSnapshot = summarizeWorld({ ...world, ...editing });
+    return {
+      system: 'You are assisting in building a structured Korean novel world setting. Provide concise, rich, concrete details. Output only the field content without meta commentary.',
+      userInstruction: `필드: ${baseDesc}\n현재 초안:\n${current || '(비어있음)'}\n\n세계관 요약 컨텍스트:\n${worldSnapshot}\n\n개선/확장된 한국어 작성 (목표: 명확성, 구체성, 중복 제거). 12~18문장 또는 bullet 혼합.`
+    };
+  };
+
+  const triggerAI = (key: string) => {
+    const current = editing[key] ?? (world as any)?.[key] ?? '';
+    setAiTargetField(key);
+    ai.start(buildFieldPrompt(key, current) as any); // PromptLayer shape
+  };
+
+  const applyAISuggestion = () => {
+    if (!aiTargetField) return;
+    handleChange(aiTargetField, ai.text.trim());
+  };
   const debounceRef = useRef<number | null>(null);
 
   useEffect(()=>{ if(bookId) load(bookId); }, [bookId, load]);
@@ -68,7 +91,14 @@ const WorldBuilder: React.FC = () => {
           const liveVal = editing[f.key as string] ?? initialVal;
           return (
             <div key={String(f.key)} className="space-y-1">
-              <label className="text-xs font-medium text-text-dim block">{f.label}</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-text-dim block">{f.label}</label>
+                <div className="flex items-center gap-1">
+                  <button type="button" onClick={()=>triggerAI(f.key as string)} disabled={ai.running && aiTargetField===f.key}
+                    className="text-[10px] px-2 py-0.5 rounded border border-border bg-surfaceAlt hover:bg-surface disabled:opacity-50">AI 제안</button>
+                  {aiTargetField===f.key && ai.running && <span className="text-[10px] text-primary animate-pulse">생성중...</span>}
+                </div>
+              </div>
               <textarea
                 className="w-full text-sm p-2 rounded-md bg-surfaceAlt border border-border resize-y"
                 style={{ minHeight: '120px' }}
@@ -77,6 +107,17 @@ const WorldBuilder: React.FC = () => {
                 onChange={e=>handleChange(f.key as string, e.target.value)}
                 onBlur={e=>handleBlur(f.key as string, e.target.value)}
               />
+              {aiTargetField===f.key && (ai.text || ai.error) && (
+                <div className="mt-1 border border-border rounded bg-surface p-2 text-[11px] space-y-1">
+                  {ai.error && <div className="text-error">에러: {ai.error}</div>}
+                  {ai.text && !ai.error && <div className="whitespace-pre-wrap leading-relaxed max-h-48 overflow-auto">{ai.text}</div>}
+                  <div className="flex gap-2 justify-end">
+                    <button type="button" onClick={()=>setAiTargetField(null)} className="text-[10px] px-2 py-0.5 rounded bg-surfaceAlt border border-border hover:bg-surface">닫기</button>
+                    <button type="button" onClick={applyAISuggestion} disabled={!ai.text}
+                      className="text-[10px] px-2 py-0.5 rounded bg-primary text-white disabled:opacity-40">적용</button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

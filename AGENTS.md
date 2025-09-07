@@ -587,3 +587,16 @@ system + bookSystem + worldDerived(또는 world.summary 결과) + style.guide + 
 
 > 본 백로그는 구현 진행에 따라 재우선순위화(Reprioritization) 가능하며, 완료 항목은 CHANGELOG 혹은 별도 Release Notes로 이동 권장.
 
+## 17. Generic GPT Client Reuse (추가 메모)
+`src/services/gptClient.ts`에 범용 스트리밍 클라이언트를 도입하여 기존 `generatePage` 로직을 내부적으로 재사용하도록 리팩터링하였다. 이제 다음과 같이 어디서든 간단히 사용 가능:
+
+```ts
+import { useGPTStream } from '../hooks/useGPTStream';
+
+const gpt = useGPTStream();
+gpt.start({ system: '컨텍스트', userInstruction: '질문 또는 작성 지시' });
+```
+
+필드 단위(예: WorldBuilder 각 섹션)에서 즉석 AI 제안을 받고 적용할 수 있으며, PromptLayer 또는 직접 messages 배열( `directMessages: true` 옵션 )을 전달해도 된다.
+
+

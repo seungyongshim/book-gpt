@@ -39,7 +39,16 @@ export const usePagesStore = create((set, getStore) => ({
         const existing = getStore().pages.find((p) => p.id === id);
         if (!existing)
             return;
-        const updated = { ...existing, ...patch, updatedAt: Date.now() };
+        let merged = { ...existing, ...patch };
+        // tokensPrompt / tokensCompletion 가 들어오면 tokensUsed 재계산 (레거시 호환)
+        if (patch.tokensPrompt !== undefined || patch.tokensCompletion !== undefined) {
+            const tp = patch.tokensPrompt ?? existing.tokensPrompt;
+            const tc = patch.tokensCompletion ?? existing.tokensCompletion;
+            if (tp && tc) {
+                merged.tokensUsed = tp + tc;
+            }
+        }
+        const updated = { ...merged, updatedAt: Date.now() };
         await put('pages', updated);
         set({ pages: getStore().pages.map((p) => p.id === id ? updated : p) });
     },

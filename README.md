@@ -125,3 +125,40 @@ import { GPTComposer } from './src/components/GPTComposer';
 
 ## 라이선스
 MIT
+
+## Legacy JS 정리 스크립트
+
+TypeScript 이관 후 남아있는 동일 basename `.js` 파일(및 테스트)을 정리하기 위한 도구가 포함되어 있습니다.
+
+명령:
+```bash
+# 드라이런 (삭제 계획만 출력)
+npm run cleanup:js
+
+# 실제 삭제
+npm run cleanup:js:apply
+
+# 삭제 대신 파일을 빈 stub(export {})으로 비우기
+npm run cleanup:js:empty
+```
+
+옵션(직접 실행 시):
+```bash
+node scripts/cleanup-duplicate-js.mjs --help
+node scripts/cleanup-duplicate-js.mjs --yes               # --dry 비활성 & 즉시 삭제
+node scripts/cleanup-duplicate-js.mjs --empty --yes        # 비우기 모드
+node scripts/cleanup-duplicate-js.mjs --keep=src/services/gpt.js --yes
+node scripts/cleanup-duplicate-js.mjs --no-tests --yes     # *.test.js 는 유지
+```
+
+동작 원리:
+1. `src/` 재귀 탐색 → `.ts` / `.tsx` 존재하는 basename 의 `.js` / `.test.js` 후보 식별
+2. `--keep` glob 패턴 제외
+3. 기본은 `--dry` → 실제 삭제 없음
+4. `--yes` 지정 시 삭제(또는 `--empty` 모드에서는 내용 비움)
+
+안전 장치:
+- TS twin 이 없는 `.js` 는 건드리지 않음
+- 삭제 전 목록 출력
+- `--empty` 모드로 Git 히스토리 유지 선택 가능
+

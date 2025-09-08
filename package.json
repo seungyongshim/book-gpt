@@ -9,8 +9,11 @@
     "postbuild": "node scripts/postbuild.cjs",
     "preview": "vite preview",
     "lint": "eslint --ext .ts,.tsx src",
-    "test": "vitest run",
-    "test:watch": "vitest"
+  "test": "vitest run",
+  "test:watch": "vitest",
+  "cleanup:js": "node scripts/cleanup-duplicate-js.mjs --dry",
+  "cleanup:js:apply": "node scripts/cleanup-duplicate-js.mjs --yes",
+  "cleanup:js:empty": "node scripts/cleanup-duplicate-js.mjs --empty --yes"
   },
   "dependencies": {
     "clsx": "^2.1.1",

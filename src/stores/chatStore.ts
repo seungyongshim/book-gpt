@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid';
 export type ChatMode = 'assist' | 'extend' | 'ref';
 
 export interface ChatAction {
-  type: 'insert' | 'replace' | 'newPage';
+  type: 'insert' | 'replace' | 'newPage' | 'retry';
   label: string;
   payload?: any;
 }

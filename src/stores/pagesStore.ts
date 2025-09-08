@@ -12,6 +12,7 @@ interface PagesState {
   createPage: (bookId: string, index?: number) => Promise<PageMeta>;
   updatePage: (id: string, patch: Partial<PageMeta>) => Promise<void>;
   addVersion: (pageId: string, snapshot: string, author: 'system' | 'user') => Promise<void>;
+  preApplySnapshot: (pageId: string, author?: 'system' | 'user') => Promise<void>;
   getReferenceSummary: (pageId: string) => Promise<string | undefined>;
   listVersions: (pageId: string) => Promise<PageVersion[]>;
   getVersion: (versionId: string) => Promise<PageVersion | undefined>;
@@ -89,6 +90,19 @@ export const usePagesStore = create<PagesState>((set: (partial: any, replace?: b
       await put('pages', updated);
       set({ pages: getStore().pages.map((p: PageMeta)=>p.id===pageId?updated:p) });
     }
+  },
+  preApplySnapshot: async (pageId: string, author: 'system' | 'user' = 'user') => {
+    const page = getStore().pages.find(p=>p.id===pageId);
+    if (!page) return;
+    const snapshot = page.rawContent || '';
+    // 직전 버전과 동일하면 생략
+    const existingVersions = await getAll<PageVersion>('pageVersions', 'by-page', IDBKeyRange.only(pageId));
+    if (existingVersions.length) {
+      const last = existingVersions.sort((a,b)=>b.timestamp-a.timestamp)[0];
+      if (last.contentSnapshot === snapshot) return; // 내용 변화 없음
+    }
+    const version: PageVersion = { id: nanoid(), pageId, timestamp: Date.now(), contentSnapshot: snapshot, author, diff: JSON.stringify([{ t:'=', v:'pre-apply' }]) };
+    await put('pageVersions', version);
   },
   getReferenceSummary: async (pageId: string) => {
     // Summary TTL / 재생성 정책

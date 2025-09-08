@@ -20,6 +20,7 @@ const GPTChatPanel: React.FC = () => {
   const [input, setInput] = useState('');
   const stream = useGPTStream();
   const listRef = useRef<HTMLDivElement|null>(null);
+  const lastLayerRef = useRef<any | null>(null);
 
   // Debounced stream text for aria-live polite (250ms)
   const [debouncedStreamText, setDebouncedStreamText] = useState('');
@@ -90,7 +91,8 @@ const GPTChatPanel: React.FC = () => {
         }
       }
     }
-    const layer = buildChatPromptLayer({ mode, selectionText, pageTail, referenceSummaries, instruction });
+  const layer = buildChatPromptLayer({ mode, selectionText, pageTail, referenceSummaries, instruction });
+  lastLayerRef.current = layer;
     // placeholder assistant message (will be appended to as stream arrives)
   const assistantId = append({ role:'assistant', content:'', meta:{ mode, selectionHash } });
     setInput('');
@@ -133,14 +135,26 @@ const GPTChatPanel: React.FC = () => {
       case 'aborted': msg = '사용자 중단됨.'; break;
       default: msg = `알 수 없는 오류(${code})`; break;
     }
-    append({ role:'system', content: msg, meta:{ mode: session.mode, errorType: code } as any });
+    const actions = code === 'aborted' ? undefined : ([{ type:'retry', label:'재시도' }] as any);
+    append({ role:'system', content: msg, actions: actions as any, meta:{ mode: session.mode, errorType: code } as any });
   }, [stream.error, append, session.mode]);
 
   const handleAction = async (actionType: string, content: string) => {
     if (!pageId) { pushToast({ type:'warn', message:'페이지 컨텍스트 없음', ttl:3000 }); return; }
     const page = pagesStore.pages.find(p=>p.id===pageId);
     if (!page) return;
+    if (actionType === 'retry') {
+      if (stream.running) { pushToast({ type:'warn', message:'이미 실행중', ttl:2000 }); return; }
+      if (!lastLayerRef.current) { pushToast({ type:'warn', message:'재시도할 레이어 없음', ttl:2500 }); return; }
+      // append user 재시도 안내
+      append({ role:'system', content:'재시도 중…', meta:{ mode: session.mode } });
+      const assistantId = append({ role:'assistant', content:'', meta:{ mode: session.mode } });
+      setStreamRunning(true); setAbortHandler(()=>stream.abort);
+      stream.start(lastLayerRef.current);
+      return;
+    }
     if (actionType === 'insert') {
+      await pagesStore.preApplySnapshot(page.id, 'user');
       const next = (page.rawContent || '') + '\n' + content;
       await pagesStore.updatePage(page.id, { rawContent: next });
       pushToast({ type:'success', message:'본문에 삽입 완료', ttl:2500 });
@@ -158,6 +172,7 @@ const GPTChatPanel: React.FC = () => {
       let replaced = false;
       const exactIdx = raw.indexOf(selectionText);
       if (exactIdx >= 0) {
+        await pagesStore.preApplySnapshot(page.id, 'user');
         const next = raw.slice(0, exactIdx) + content + raw.slice(exactIdx + selectionText.length);
         await pagesStore.updatePage(page.id, { rawContent: next });
         replaced = true;
@@ -172,6 +187,7 @@ const GPTChatPanel: React.FC = () => {
           const snippet = selectionText.slice(0, 20);
           const sloppyIdx = raw.indexOf(snippet);
           if (sloppyIdx >= 0) {
+            await pagesStore.preApplySnapshot(page.id, 'user');
             const next = raw.slice(0, sloppyIdx) + content + raw.slice(sloppyIdx + selectionText.length);
             await pagesStore.updatePage(page.id, { rawContent: next });
             replaced = true;

@@ -19,6 +19,7 @@ const GPTChatPanel = () => {
     const [input, setInput] = useState('');
     const stream = useGPTStream();
     const listRef = useRef(null);
+    const lastLayerRef = useRef(null);
     // Debounced stream text for aria-live polite (250ms)
     const [debouncedStreamText, setDebouncedStreamText] = useState('');
     useEffect(() => {
@@ -99,6 +100,7 @@ const GPTChatPanel = () => {
             }
         }
         const layer = buildChatPromptLayer({ mode, selectionText, pageTail, referenceSummaries, instruction });
+        lastLayerRef.current = layer;
         // placeholder assistant message (will be appended to as stream arrives)
         const assistantId = append({ role: 'assistant', content: '', meta: { mode, selectionHash } });
         setInput('');
@@ -156,7 +158,8 @@ const GPTChatPanel = () => {
                 msg = `알 수 없는 오류(${code})`;
                 break;
         }
-        append({ role: 'system', content: msg, meta: { mode: session.mode, errorType: code } });
+        const actions = code === 'aborted' ? undefined : [{ type: 'retry', label: '재시도' }];
+        append({ role: 'system', content: msg, actions: actions, meta: { mode: session.mode, errorType: code } });
     }, [stream.error, append, session.mode]);
     const handleAction = async (actionType, content) => {
         if (!pageId) {
@@ -166,6 +169,23 @@ const GPTChatPanel = () => {
         const page = pagesStore.pages.find(p => p.id === pageId);
         if (!page)
             return;
+        if (actionType === 'retry') {
+            if (stream.running) {
+                pushToast({ type: 'warn', message: '이미 실행중', ttl: 2000 });
+                return;
+            }
+            if (!lastLayerRef.current) {
+                pushToast({ type: 'warn', message: '재시도할 레이어 없음', ttl: 2500 });
+                return;
+            }
+            // append user 재시도 안내
+            append({ role: 'system', content: '재시도 중…', meta: { mode: session.mode } });
+            const assistantId = append({ role: 'assistant', content: '', meta: { mode: session.mode } });
+            setStreamRunning(true);
+            setAbortHandler(() => stream.abort);
+            stream.start(lastLayerRef.current);
+            return;
+        }
         if (actionType === 'insert') {
             const next = (page.rawContent || '') + '\n' + content;
             await pagesStore.updatePage(page.id, { rawContent: next });

@@ -76,6 +76,20 @@ export const usePagesStore = create((set, getStore) => ({
             set({ pages: getStore().pages.map((p) => p.id === pageId ? updated : p) });
         }
     },
+    preApplySnapshot: async (pageId, author = 'user') => {
+        const page = getStore().pages.find(p => p.id === pageId);
+        if (!page)
+            return;
+        const snapshot = page.rawContent || '';
+        const existingVersions = await getAll('pageVersions', 'by-page', IDBKeyRange.only(pageId));
+        if (existingVersions.length) {
+            const last = existingVersions.sort((a, b) => b.timestamp - a.timestamp)[0];
+            if (last.contentSnapshot === snapshot)
+                return;
+        }
+        const version = { id: nanoid(), pageId, timestamp: Date.now(), contentSnapshot: snapshot, author, diff: JSON.stringify([{ t: '=', v: 'pre-apply' }]) };
+        await put('pageVersions', version);
+    },
     getReferenceSummary: async (pageId) => {
         // Summary TTL / 재생성 정책
         // - TTL: 24h (추후 환경 변수화 가능)

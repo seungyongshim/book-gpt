@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { PromptLayer } from '../types/domain';
 import { ChatMessage, createChatStream, StreamEvent } from '../services/gptClient';
 import { estimateCompletionTokens } from '../utils/promptAssembler';
+import { useChatStore } from '../stores/chatStore';
 
 export interface UseGPTStreamConfig {
   model?: string;
@@ -34,6 +35,8 @@ export function useGPTStream(cfg?: UseGPTStreamConfig): UseGPTStreamResult {
   const abort = useCallback(()=>{
     controllerRef.current?.abort();
     setRunning(false);
+      // global state 반영
+      try { useChatStore.getState().setStreamRunning(false); useChatStore.getState().setAbortHandler(undefined); } catch {}
   }, []);
 
   const reset = useCallback(()=>{
@@ -43,6 +46,7 @@ export function useGPTStream(cfg?: UseGPTStreamConfig): UseGPTStreamResult {
   const start = useCallback((input: PromptLayer | ChatMessage[]) => {
     if (running) return; // ignore parallel
     setText(''); setError(null); setTokensApprox(0); setRunning(true);
+      try { useChatStore.getState().setStreamRunning(true); useChatStore.getState().setAbortHandler(()=>abort); } catch {}
     controllerRef.current = createChatStream(input, (ev: StreamEvent) => {
       if (ev.delta) {
         setText(prev => { const next = prev + ev.delta; setTokensApprox(estimateTokensFromChars(next.length)); return next; });
@@ -52,6 +56,7 @@ export function useGPTStream(cfg?: UseGPTStreamConfig): UseGPTStreamResult {
       }
       if (ev.done) {
         setRunning(false);
+          try { useChatStore.getState().setStreamRunning(false); useChatStore.getState().setAbortHandler(undefined); } catch {}
       }
     }, { model: cfg?.model, temperature: cfg?.temperature, baseUrl: cfg?.baseUrl, apiKey: cfg?.apiKey, directMessages: cfg?.directMessages });
   }, [cfg, running]);

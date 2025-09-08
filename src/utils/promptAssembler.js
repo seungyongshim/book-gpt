@@ -160,6 +160,29 @@ export function summarizeWorld(setting) {
     const joined = parts.join('\n');
     return joined.length > 1200 ? simpleSummarize(joined, 1200) : joined;
 }
+export function buildChatPromptLayer(p) {
+    const system = 'You are a helpful Korean writing assistant. Return only content unless explicitly asked.';
+    let userInstruction = p.instruction.trim();
+    const dynamicContext = [];
+    let pageSystem;
+    if (p.mode === 'assist' && p.selectionText) {
+        dynamicContext.push({ ref: 'selection', summary: `선택된 텍스트:\n${p.selectionText}` });
+    }
+    else if (p.mode === 'extend' && p.pageTail) {
+        pageSystem = '다음은 최근 본문 끝 부분입니다. 자연스럽게 이어서 작성하세요.';
+        dynamicContext.push({ ref: 'tail', summary: p.pageTail });
+    }
+    else if (p.mode === 'ref' && p.referenceSummaries?.length) {
+        for (const r of p.referenceSummaries)
+            dynamicContext.push(r);
+    }
+    return {
+        system,
+        pageSystem,
+        dynamicContext: dynamicContext.length ? dynamicContext : undefined,
+        userInstruction: userInstruction
+    };
+}
 // ===== Dynamic target length heuristic =====
 // contextLimitTokens: 모델 전체 컨텍스트 한도 (예: 16000)
 // reserveTokens: 응답 후반/안전 버퍼 (기본 200~500)

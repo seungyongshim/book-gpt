@@ -6,10 +6,11 @@ import { usePagesStore } from '../../stores/pagesStore';
 import { useBooksStore } from '../../stores/booksStore';
 import { useWorldStore } from '../../stores/worldStore';
 import { assemblePrompt, totalPromptTokens, suggestTargetChars } from '../../utils/promptAssembler';
+import { compressReferences, compressWorldSummary } from '../../utils/compression';
 import { parseReferences } from '../../utils/referenceParser';
 import { usePageGeneration } from '../../hooks/usePageGeneration';
 import TokenMeter from '../../components/TokenMeter';
-const PromptDrawer = ({ open, onClose, layer }) => (_jsxs("div", { className: `fixed inset-0 z-40 ${open ? '' : 'pointer-events-none'}`, children: [_jsx("div", { className: `absolute inset-0 bg-black/30 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`, onClick: onClose }), _jsxs("div", { className: `absolute top-0 right-0 h-full w-[360px] bg-bg border-l border-border shadow-xl transform transition-transform duration-200 ${open ? 'translate-x-0' : 'translate-x-full'}`, children: [_jsxs("div", { className: "p-4 flex items-center justify-between border-b border-border", children: [_jsx("h3", { className: "text-sm font-semibold", children: "Prompt Preview" }), _jsx("button", { onClick: onClose, className: "text-xs text-text-dim hover:text-text", children: "\uB2EB\uAE30" })] }), _jsxs("div", { className: "p-3 overflow-y-auto h-[calc(100%-48px)] space-y-4 text-xs", children: [['system', 'bookSystem', 'worldDerived', 'pageSystem'].map((k) => layer[k] && (_jsxs("div", { children: [_jsx("div", { className: "font-medium mb-1 text-[11px] uppercase tracking-wide text-text-dim", children: k }), _jsx("pre", { className: "whitespace-pre-wrap bg-surfaceAlt p-2 rounded border border-border max-h-40 overflow-auto", children: layer[k] })] }, k))), layer.dynamicContext && layer.dynamicContext.length > 0 && (_jsxs("div", { children: [_jsx("div", { className: "font-medium mb-1 text-[11px] uppercase tracking-wide text-text-dim", children: "dynamicContext" }), _jsx("ul", { className: "space-y-1", children: layer.dynamicContext.map((d, i) => (_jsxs("li", { className: "border border-border rounded p-2 bg-surfaceAlt", children: [_jsx("div", { className: "text-[11px] font-medium mb-1", children: d.ref }), _jsx("div", { className: "whitespace-pre-wrap leading-relaxed", children: d.summary })] }, i))) })] })), layer.userInstruction && (_jsxs("div", { children: [_jsx("div", { className: "font-medium mb-1 text-[11px] uppercase tracking-wide text-text-dim", children: "userInstruction" }), _jsx("pre", { className: "whitespace-pre-wrap bg-surfaceAlt p-2 rounded border border-border max-h-40 overflow-auto", children: layer.userInstruction })] }))] })] })] }));
+import PromptDrawer from '../../components/PromptDrawer';
 const PageEditor = () => {
     const { bookId, pageIndex } = useParams();
     const { pages, load, getReferenceSummary, updatePage } = usePagesStore();
@@ -36,8 +37,10 @@ const PageEditor = () => {
     } }, [bookId, load, loadWorld]);
     const [worldSummary, setWorldSummary] = React.useState('');
     const [refSummaries, setRefSummaries] = React.useState({});
+    const [compressedRefs, setCompressedRefs] = React.useState({});
+    const [worldCompressed, setWorldCompressed] = React.useState(false);
     // 참조 파싱 (요약 로딩 useEffect보다 먼저 선언 필요)
-    const { references, warnings } = useMemo(() => parseReferences(instruction), [instruction]);
+    const { references, warnings } = useMemo(() => parseReferences(instruction, { selfPageIndex: page?.index }), [instruction, page?.index]);
     // worldDerived 로드
     useEffect(() => {
         if (!bookId)
@@ -56,30 +59,41 @@ const PageEditor = () => {
         }
         let cancelled = false;
         (async () => {
-            const acc = {};
+            const tasks = [];
             for (const r of references) {
                 if (r.pageIds.length === 0 && r.refRaw.startsWith('@p:')) {
-                    const slugToken = r.refRaw.slice(3); // @p:
+                    const slugToken = r.refRaw.slice(3);
                     const target = pages.find((p) => p.bookId === bookId && p.slug === slugToken);
                     if (target) {
-                        const sum = await getReferenceSummary(target.id);
-                        if (sum)
-                            acc[r.refRaw] = sum;
+                        tasks.push((async () => {
+                            const sum = await getReferenceSummary(target.id);
+                            return sum ? { key: r.refRaw, text: sum } : null;
+                        })());
                     }
                     continue;
                 }
-                for (const idxStr of r.pageIds) {
-                    const idx = parseInt(idxStr, 10);
-                    const target = pages.find((p) => p.bookId === bookId && p.index === idx);
-                    if (target) {
-                        const sum = await getReferenceSummary(target.id);
-                        if (sum)
-                            acc[r.refRaw] = (acc[r.refRaw] ? acc[r.refRaw] + '\n' : '') + sum;
+                tasks.push((async () => {
+                    let merged = '';
+                    for (const idxStr of r.pageIds) {
+                        const idx = parseInt(idxStr, 10);
+                        const target = pages.find((p) => p.bookId === bookId && p.index === idx);
+                        if (target) {
+                            const sum = await getReferenceSummary(target.id);
+                            if (sum)
+                                merged = merged ? merged + '\n' + sum : sum;
+                        }
                     }
-                }
+                    return merged ? { key: r.refRaw, text: merged } : null;
+                })());
             }
-            if (!cancelled)
-                setRefSummaries(acc);
+            const results = await Promise.all(tasks);
+            if (cancelled)
+                return;
+            const acc = {};
+            for (const r of results)
+                if (r)
+                    acc[r.key] = r.text;
+            setRefSummaries(acc);
         })();
         return () => { cancelled = true; };
     }, [references, pages, bookId, getReferenceSummary]);
@@ -90,10 +104,10 @@ const PageEditor = () => {
         pageSystem: '페이지 시스템',
         referencedSummaries: references.map(r => ({
             ref: r.refRaw,
-            summary: refSummaries[r.refRaw] || '로딩 중...'
+            summary: (compressedRefs[r.refRaw] ?? refSummaries[r.refRaw]) || '로딩 중...'
         })),
         userInstruction: instruction
-    }), [references, instruction, worldSummary, refSummaries]);
+    }), [references, instruction, worldSummary, refSummaries, compressedRefs]);
     const promptTokens = React.useMemo(() => totalPromptTokens(layer), [layer]);
     // Suggest target (assumes 16K context model for now; future: per-model config map)
     React.useEffect(() => {
@@ -109,7 +123,21 @@ const PageEditor = () => {
         run(page.id, layer, { model, temperature, targetChars: effectiveTarget }); };
     if (!page)
         return _jsx("div", { className: "p-4 text-sm", children: "\uD398\uC774\uC9C0 \uB85C\uB529 \uC911 \uB610\uB294 \uC5C6\uC74C" });
-    return (_jsxs("div", { className: "p-4 space-y-4", children: [_jsxs("header", { className: "flex flex-col gap-2", children: [_jsxs("div", { className: "flex items-center gap-2", children: [_jsx("button", { onClick: () => navigate(`/books/${bookId}`), className: "text-sm text-primary", children: "\u2190 \uBAA9\uB85D" }), _jsxs("h2", { className: "text-xl font-semibold", children: ["\uD398\uC774\uC9C0 #", page.index] })] }), _jsxs("div", { className: "flex flex-col gap-2 md:flex-row md:items-center", children: [_jsx("input", { value: title, onChange: e => setTitle(e.target.value), onBlur: () => page && updatePage(page.id, { title }), placeholder: "\uC81C\uBAA9", className: "px-2 py-1 rounded border border-border bg-surfaceAlt text-sm w-full md:w-64" }), _jsx("input", { value: slug, onChange: e => setSlug(e.target.value), onBlur: () => page && updatePage(page.id, { slug }), placeholder: "slug", className: "px-2 py-1 rounded border border-border bg-surfaceAlt text-sm w-full md:w-48" })] })] }), _jsx(TokenMeter, { layer: layer }), _jsxs("div", { className: "border border-border rounded p-3 space-y-3 bg-surfaceAlt", children: [_jsxs("div", { className: "flex flex-wrap gap-4 items-end", children: [_jsxs("div", { className: "flex flex-col", children: [_jsx("label", { className: "text-[10px] font-medium text-text-dim", children: "Model" }), _jsxs("select", { value: model, onChange: e => setModel(e.target.value), className: "text-sm px-2 py-1 rounded border border-border bg-surface", children: [_jsx("option", { value: "gpt-4o-mini", children: "gpt-4o-mini" }), _jsx("option", { value: "gpt-4o", children: "gpt-4o" }), _jsx("option", { value: "gpt-4.1-mini", children: "gpt-4.1-mini" })] })] }), _jsxs("div", { className: "flex flex-col", children: [_jsxs("label", { className: "text-[10px] font-medium text-text-dim", children: ["Temperature ", temperature.toFixed(2)] }), _jsx("input", { type: "range", min: 0, max: 1, step: 0.05, value: temperature, onChange: e => setTemperature(parseFloat(e.target.value)), className: "w-40" })] }), _jsxs("div", { className: "flex flex-col", children: [_jsx("label", { className: "text-[10px] font-medium text-text-dim", children: "Target Chars" }), _jsxs("div", { className: "flex items-center gap-2", children: [_jsx("input", { type: "number", value: manualTarget === '' ? '' : manualTarget, placeholder: suggestedTarget.toString(), onChange: e => {
+    return (_jsxs("div", { className: "p-4 space-y-4", children: [_jsxs("header", { className: "flex flex-col gap-2", children: [_jsxs("div", { className: "flex items-center gap-2", children: [_jsx("button", { onClick: () => navigate(`/books/${bookId}`), className: "text-sm text-primary", children: "\u2190 \uBAA9\uB85D" }), _jsxs("h2", { className: "text-xl font-semibold", children: ["\uD398\uC774\uC9C0 #", page.index] })] }), _jsxs("div", { className: "flex flex-col gap-2 md:flex-row md:items-center", children: [_jsx("input", { value: title, onChange: e => setTitle(e.target.value), onBlur: () => page && updatePage(page.id, { title }), placeholder: "\uC81C\uBAA9", className: "px-2 py-1 rounded border border-border bg-surfaceAlt text-sm w-full md:w-64" }), _jsx("input", { value: slug, onChange: e => setSlug(e.target.value), onBlur: () => page && updatePage(page.id, { slug }), placeholder: "slug", className: "px-2 py-1 rounded border border-border bg-surfaceAlt text-sm w-full md:w-48" })] })] }), _jsx(TokenMeter, { layer: layer, onSuggestCompress: (strategy) => {
+                    if (strategy === 'L1') {
+                        const list = references.map(r => ({ ref: r.refRaw, summary: refSummaries[r.refRaw] || '' }));
+                        const compressed = compressReferences({ summaries: list, level: 'L1' });
+                        const map = {};
+                        compressed.forEach((c) => { map[c.ref] = c.summary; });
+                        setCompressedRefs(map);
+                    }
+                    else if (strategy === 'world-compact') {
+                        if (!worldCompressed) {
+                            setWorldSummary(ws => compressWorldSummary(ws, 'world-compact'));
+                            setWorldCompressed(true);
+                        }
+                    }
+                } }), _jsxs("div", { className: "border border-border rounded p-3 space-y-3 bg-surfaceAlt", children: [_jsxs("div", { className: "flex flex-wrap gap-4 items-end", children: [_jsxs("div", { className: "flex flex-col", children: [_jsx("label", { className: "text-[10px] font-medium text-text-dim", children: "Model" }), _jsxs("select", { value: model, onChange: e => setModel(e.target.value), className: "text-sm px-2 py-1 rounded border border-border bg-surface", children: [_jsx("option", { value: "gpt-4o-mini", children: "gpt-4o-mini" }), _jsx("option", { value: "gpt-4o", children: "gpt-4o" }), _jsx("option", { value: "gpt-4.1-mini", children: "gpt-4.1-mini" })] })] }), _jsxs("div", { className: "flex flex-col", children: [_jsxs("label", { className: "text-[10px] font-medium text-text-dim", children: ["Temperature ", temperature.toFixed(2)] }), _jsx("input", { type: "range", min: 0, max: 1, step: 0.05, value: temperature, onChange: e => setTemperature(parseFloat(e.target.value)), className: "w-40" })] }), _jsxs("div", { className: "flex flex-col", children: [_jsx("label", { className: "text-[10px] font-medium text-text-dim", children: "Target Chars" }), _jsxs("div", { className: "flex items-center gap-2", children: [_jsx("input", { type: "number", value: manualTarget === '' ? '' : manualTarget, placeholder: suggestedTarget.toString(), onChange: e => {
                                                     const v = e.target.value;
                                                     if (v === '')
                                                         setManualTarget('');

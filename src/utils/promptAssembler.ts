@@ -176,6 +176,37 @@ export function summarizeWorld(setting: Partial<{ premise?: string; timeline?: s
   return joined.length > 1200 ? simpleSummarize(joined, 1200) : joined;
 }
 
+// ===== Chat Prompt (MVP simplified) =====
+// ChatMode 에 따라 간단한 PromptLayer 를 생성. 세계관/참조 등은 상위에서 문자열로 전달.
+export interface BuildChatPromptParams {
+  mode: 'assist' | 'extend' | 'ref';
+  selectionText?: string;
+  pageTail?: string;
+  referenceSummaries?: { ref: string; summary: string }[];
+  instruction: string; // user 입력 (명령 인자 제거 후)
+}
+
+export function buildChatPromptLayer(p: BuildChatPromptParams): PromptLayer {
+  const system = 'You are a helpful Korean writing assistant. Return only content unless explicitly asked.';
+  let userInstruction = p.instruction.trim();
+  const dynamicContext: { ref: string; summary: string }[] = [];
+  let pageSystem: string | undefined;
+  if (p.mode === 'assist' && p.selectionText) {
+    dynamicContext.push({ ref: 'selection', summary: `선택된 텍스트:\n${p.selectionText}` });
+  } else if (p.mode === 'extend' && p.pageTail) {
+    pageSystem = '다음은 최근 본문 끝 부분입니다. 자연스럽게 이어서 작성하세요.';
+    dynamicContext.push({ ref: 'tail', summary: p.pageTail });
+  } else if (p.mode === 'ref' && p.referenceSummaries?.length) {
+    for (const r of p.referenceSummaries) dynamicContext.push(r);
+  }
+  return {
+    system,
+    pageSystem,
+    dynamicContext: dynamicContext.length ? dynamicContext : undefined,
+    userInstruction: userInstruction
+  };
+}
+
 // ===== Dynamic target length heuristic =====
 // contextLimitTokens: 모델 전체 컨텍스트 한도 (예: 16000)
 // reserveTokens: 응답 후반/안전 버퍼 (기본 200~500)

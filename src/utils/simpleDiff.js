@@ -1,5 +1,6 @@
 export function diffWords(a, b) {
-    if (a === b) return [{ value: a }];
+    if (a === b)
+        return [{ value: a }];
     if (!a && b) {
         return b.split(/\s+/).filter(Boolean).map(w => ({ value: w, added: true }));
     }

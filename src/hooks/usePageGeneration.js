@@ -3,6 +3,8 @@ import { generateFromPromptLayer } from '../services/gptClient';
 import { usePagesStore } from '../stores/pagesStore';
 import { summarizeForReference, totalPromptTokens } from '../utils/promptAssembler';
 import { updateCalibrationWithSample, saveCalibration } from '../utils/calibration';
+import { EXTEND_CONTEXT_TAIL_CHARS } from '../utils/constants';
+import { toast } from '../stores/toastStore';
 export function usePageGeneration() {
     const [output, setOutput] = useState('');
     const [running, setRunning] = useState(false);
@@ -54,6 +56,7 @@ export function usePageGeneration() {
                     if (!finalized) {
                         await finalizeAndPersist(pageId, buffer, promptEstimated);
                         setFinalized(true);
+                        toast('생성 완료', 'success');
                     }
                     setRunning(false);
                 }
@@ -72,6 +75,7 @@ export function usePageGeneration() {
                         await finalizeAndPersist(pageId, buffer, promptEstimated);
                         setFinalized(true);
                         setRunning(false);
+                        toast('목표 길이 도달 (자동 중단)', 'info');
                     }
                 }
             }, { model: cfg?.model, temperature: cfg?.temperature }, controller.signal);
@@ -79,19 +83,21 @@ export function usePageGeneration() {
         catch (e) {
             if (!finalized)
                 setError(e.message || '생성 오류');
+            toast('생성 에러 발생', 'error');
             setRunning(false);
         }
     }, [pagesStore, lastSavedLen, finalizeAndPersist, finalized]);
     const abort = useCallback(() => {
         controllerRef.current?.abort();
         setRunning(false);
+        toast('사용자 중단', 'warn');
     }, []);
     // Extend: 추가 생성 (미완성 본문일 때만)
     const extend = useCallback(async (pageId, extraChars = 4000) => {
         if (running || !latestLayerRef.current)
             return;
         const baseText = output;
-        const tail = baseText.slice(-800); // 마지막 800자 맥락
+        const tail = baseText.slice(-EXTEND_CONTEXT_TAIL_CHARS); // configurable tail length
         const layer = { ...latestLayerRef.current, userInstruction: (latestLayerRef.current.userInstruction || '') + `\n\n이전 내용의 스타일과 연속성을 유지하여 이어서 작성: ${tail}` };
         await run(pageId, layer, { targetChars: output.length + extraChars });
     }, [run, output, running]);

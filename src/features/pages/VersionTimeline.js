@@ -2,11 +2,12 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { usePagesStore } from '../../stores/pagesStore';
+import { toast } from '../../stores/toastStore';
 const VersionTimeline = () => {
     const { bookId, pageIndex } = useParams();
     const navigate = useNavigate();
-    const { pages, load, listVersions } = usePagesStore();
-    const page = pages.find(p => p.bookId === bookId && p.index === Number(pageIndex));
+    const { pages, load, listVersions, rollbackVersion } = usePagesStore();
+    const page = pages.find((p) => p.bookId === bookId && p.index === Number(pageIndex));
     const [versions, setVersions] = useState([]);
     const [pick, setPick] = useState([]); // 선택된 2개 버전 ID
     useEffect(() => { if (bookId)
@@ -23,6 +24,18 @@ const VersionTimeline = () => {
                                                     return [prev[1], v.id];
                                                 return [...prev, v.id];
                                             });
-                                        }, children: pick.includes(v.id) ? '해제' : '비교' })] })] }, v.id))), versions.length === 0 && _jsx("li", { className: "text-xs text-text-dim", children: "\uBC84\uC804 \uC5C6\uC74C" })] }), pick.length === 2 && (_jsxs("div", { className: "pt-2 border-t border-border flex items-center gap-2", children: [_jsx("span", { className: "text-[11px] text-text-dim", children: "\uC120\uD0DD\uB428 2\uAC1C \uBE44\uAD50:" }), _jsx("button", { className: "text-[11px] px-2 py-1 rounded bg-primary text-white", onClick: () => navigate(`/books/${bookId}/pages/${pageIndex}/diff/${pick[0]}?compare=${pick[1]}`), children: "Diff \uC5F4\uAE30" }), _jsx("button", { className: "text-[10px] text-text-dim underline", onClick: () => setPick([]), children: "\uCD08\uAE30\uD654" })] }))] }));
+                                        }, children: pick.includes(v.id) ? '해제' : '비교' }), _jsx("button", { className: "text-[11px] px-2 py-0.5 border border-warn text-warn rounded hover:bg-warn/10", onClick: async () => {
+                                            const ok = await rollbackVersion(v.id);
+                                            if (ok) {
+                                                toast('롤백 완료', 'success');
+                                                if (page) {
+                                                    const vs = await listVersions(page.id);
+                                                    setVersions(vs);
+                                                }
+                                            }
+                                            else {
+                                                toast('롤백 실패', 'error');
+                                            }
+                                        }, children: "\uB864\uBC31" })] })] }, v.id))), versions.length === 0 && _jsx("li", { className: "text-xs text-text-dim", children: "\uBC84\uC804 \uC5C6\uC74C" })] }), pick.length === 2 && (_jsxs("div", { className: "pt-2 border-t border-border flex items-center gap-2", children: [_jsx("span", { className: "text-[11px] text-text-dim", children: "\uC120\uD0DD\uB428 2\uAC1C \uBE44\uAD50:" }), _jsx("button", { className: "text-[11px] px-2 py-1 rounded bg-primary text-white", onClick: () => navigate(`/books/${bookId}/pages/${pageIndex}/diff/${pick[0]}?compare=${pick[1]}`), children: "Diff \uC5F4\uAE30" }), _jsx("button", { className: "text-[10px] text-text-dim underline", onClick: () => setPick([]), children: "\uCD08\uAE30\uD654" })] }))] }));
 };
 export default VersionTimeline;

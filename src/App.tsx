@@ -7,6 +7,10 @@ import PageEditor from './features/pages/PageEditor';
 import VersionTimeline from './features/pages/VersionTimeline';
 import DiffView from './features/pages/DiffView';
 import ToastHost from './components/ToastHost';
+import FloatingGPTButton from './components/FloatingGPTButton';
+import GPTOverlay from './components/GPTOverlay';
+import GPTChatPanel from './components/GPTChatPanel';
+import ReactDOM from 'react-dom';
 
 const Placeholder: React.FC<{ title: string }> = ({ title }) => (
   <div className="p-4">
@@ -17,6 +21,7 @@ const Placeholder: React.FC<{ title: string }> = ({ title }) => (
 );
 
 const App: React.FC = () => {
+  const [open, setOpen] = React.useState(false);
   return (
     <div className="min-h-screen bg-bg text-text">
       <Routes>
@@ -29,6 +34,13 @@ const App: React.FC = () => {
         <Route path="*" element={<Placeholder title="Not Found" />} />
       </Routes>
       <ToastHost />
+      <FloatingGPTButton onOpen={()=>setOpen(true)} />
+      {ReactDOM.createPortal(
+        <GPTOverlay open={open} onClose={()=>setOpen(false)}>
+          <GPTChatPanel />
+        </GPTOverlay>,
+        document.body
+      )}
     </div>
   );
 };

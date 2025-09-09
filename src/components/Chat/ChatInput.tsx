@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import TemperatureDial from '../UI/TemperatureDial';
 import Icon from '../UI/Icon';
 import Alert from '../UI/Alert';
@@ -32,14 +32,14 @@ const ChatInput = () => {
   }, [userInput]);
 
   // 자동 높이 조절 기능 (최소 높이를 현재 설정된 높이로)
-  const autoResize = () => {
+  const autoResize = useCallback(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       const scrollHeight = textareaRef.current.scrollHeight;
       const newHeight = Math.min(300, Math.max(textareaHeight, scrollHeight));
       textareaRef.current.style.height = newHeight + 'px';
     }
-  };
+  }, [textareaHeight]);
 
   // 수동 리사이즈 기능
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -71,7 +71,7 @@ const ChatInput = () => {
 
   useEffect(() => {
     autoResize();
-  }, [localInput, textareaHeight]);
+  }, [localInput, textareaHeight, autoResize]);
 
   // 입력 컨테이너 높이를 CSS 변수로 반영하여 컨텐츠 하단 패딩과 동기화
   useEffect(() => {

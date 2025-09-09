@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useChatStore } from '../../stores/chatStore';
 import Icon from '../UI/Icon';
+import IconButton from '../UI/IconButton';
+import Button from '../UI/Button';
 import { useInert } from '../../hooks/useInert';
 
 const ChatSidebar = () => {
@@ -43,13 +45,14 @@ const ChatSidebar = () => {
   return (
     <>
       {/* 모바일 히스토리 토글 버튼 */}
-      <button
-        className="md:hidden fixed top-3 left-3 z-30 h-10 w-10 rounded-md bg-surface-alt dark:bg-neutral-800 border border-border/60 shadow text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition focus:outline-none focus:ring-2 focus:ring-primary/50"
+      <IconButton
+        variant="default"
+        size="md"
         onClick={toggleMobileHistory}
-        aria-label="대화 기록 열기"
-      >
-        <Icon name="list" size={18} />
-      </button>
+        icon="list"
+        title="대화 기록 열기"
+        className="md:hidden fixed top-3 left-3 z-30 bg-surface-alt dark:bg-neutral-800 border border-border/60 shadow hover:bg-neutral-100 dark:hover:bg-neutral-700"
+      />
 
       {/* 사이드바 */}
       <aside
@@ -59,22 +62,25 @@ const ChatSidebar = () => {
         tabIndex={inactive ? -1 : 0}
       >
         <div className="flex items-center gap-2 mb-2">
-          <button
-            className="flex-1 inline-flex items-center gap-2 h-10 rounded-md bg-primary/90 hover:bg-primary text-white text-sm font-medium px-3 shadow focus:outline-none focus:ring-2 focus:ring-primary/50"
+          <Button
+            variant="primary"
+            size="md"
             onClick={handleNewChat}
-            aria-label="새 대화 시작"
+            leftIcon="plus"
+            className="flex-1 shadow"
+            title="새 대화 시작"
           >
-            <Icon name="plus" size={18} />
-            <span>새 대화</span>
-          </button>
+            새 대화
+          </Button>
 
-          <button
-            className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-md border border-border/60 bg-surface text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          <IconButton
+            variant="default"
+            size="md"
             onClick={closeMobileHistory}
-            aria-label="사이드바 닫기"
-          >
-            <Icon name="x" size={16} />
-          </button>
+            icon="x"
+            title="사이드바 닫기"
+            className="md:hidden border border-border/60 bg-surface hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          />
         </div>
 
   <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin overscroll-contain">
@@ -91,13 +97,14 @@ const ChatSidebar = () => {
                 {new Date(session.lastUpdated).toLocaleDateString('ko-KR')}
               </div>
               {sessions.length > 1 && (
-                <button
-                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition icon-btn h-7 w-7 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                <IconButton
+                  variant="danger"
+                  size="sm"
                   onClick={(e) => handleDeleteSession(e, session.id)}
+                  icon="trash"
                   title="대화 삭제"
-                >
-                  <Icon name="trash" size={14} />
-                </button>
+                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition"
+                />
               )}
             </div>
           ))}

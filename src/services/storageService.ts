@@ -1,4 +1,6 @@
 import { Session, SessionDto } from './types';
+import { StorageHandler } from './storageUtils';
+import { sessionsToDto, dtosToSessions, validateSessionDto } from './dataTransformers';
 
 // IndexedDB를 사용한 채팅 데이터 저장소
 class ChatStorage {
@@ -233,73 +235,30 @@ export class StorageService {
 
   // 세션 저장 (IndexedDB 우선, localStorage 폴백)
   static async saveSessions(sessions: Session[]): Promise<void> {
-    const sessionDtos: SessionDto[] = sessions.map(s => ({
-      id: s.id,
-      title: s.title,
-      history: s.history.map(m => ({ role: m.role, text: m.text })),
-      lastUpdated: s.lastUpdated.toISOString(),
-      systemMessage: s.systemMessage
-    }));
+    const sessionDtos = sessionsToDto(sessions);
     
     console.log(`Attempting to save ${sessionDtos.length} sessions to IndexedDB...`);
     
-    try {
-      await chatStorage.saveSessions(sessionDtos);
-      console.log('Sessions saved to IndexedDB successfully');
-    } catch (error) {
-      console.log(`Error saving to IndexedDB: ${error}. Falling back to localStorage`);
-      // localStorage 폴백
-      const json = JSON.stringify(sessionDtos);
-      localStorage.setItem('CHAT_SESSIONS', json);
-      console.log('Sessions saved to localStorage as fallback');
-    }
+    return StorageHandler.saveWithFallback(
+      'CHAT_SESSIONS',
+      sessionDtos,
+      async (data) => await chatStorage.saveSessions(data)
+    );
   }
 
   // 세션 로드 (IndexedDB 우선, localStorage 폴백)
   static async loadSessions(): Promise<Session[]> {
-    try {
-      console.log('Attempting to load sessions from IndexedDB...');
-      const sessionDtos = await chatStorage.loadSessions();
-      console.log(`Loaded ${sessionDtos?.length ?? 0} sessions from IndexedDB`);
-      
-      if (sessionDtos && sessionDtos.length > 0) {
-        return sessionDtos.map(d => ({
-          id: d.id,
-          title: d.title,
-          history: d.history.map(x => ({ 
-            role: x.role as 'user' | 'assistant' | 'system', 
-            text: x.text 
-          })),
-          lastUpdated: new Date(d.lastUpdated),
-          systemMessage: d.systemMessage
-        }));
+    const sessionDtos = await StorageHandler.loadWithFallback<SessionDto[]>(
+      'CHAT_SESSIONS',
+      async () => await chatStorage.loadSessions(),
+      (data: SessionDto[]) => {
+        // Validate and filter valid sessions
+        return data.filter(validateSessionDto);
       }
-    } catch (error) {
-      console.error(`Error loading from IndexedDB: ${error}`);
-    }
+    );
 
-    // localStorage 폴백
-    console.log('Falling back to localStorage...');
-    const json = localStorage.getItem('CHAT_SESSIONS');
-    if (json) {
-      try {
-        const parsed: SessionDto[] = JSON.parse(json);
-        if (parsed) {
-          console.log(`Loaded ${parsed.length} sessions from localStorage fallback`);
-          return parsed.map(d => ({
-            id: d.id,
-            title: d.title,
-            history: d.history.map(x => ({ 
-              role: x.role as 'user' | 'assistant' | 'system', 
-              text: x.text 
-            })),
-            lastUpdated: new Date(d.lastUpdated),
-            systemMessage: d.systemMessage
-          }));
-        }
-      } catch (parseError) {
-        console.error('Error parsing localStorage sessions:', parseError);
-      }
+    if (sessionDtos && sessionDtos.length > 0) {
+      return dtosToSessions(sessionDtos);
     }
 
     return [];
@@ -307,23 +266,12 @@ export class StorageService {
 
   // 설정 저장
   static async saveSetting(key: string, value: any): Promise<void> {
-    try {
-      await chatStorage.saveSetting(key, value);
-    } catch (error) {
-      // localStorage 폴백
-      localStorage.setItem(key, JSON.stringify(value));
-    }
+    return StorageHandler.saveSetting(key, value);
   }
 
   // 설정 로드
   static async loadSetting(key: string): Promise<any> {
-    try {
-      return await chatStorage.loadSetting(key);
-    } catch (error) {
-      // localStorage 폴백
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : null;
-    }
+    return StorageHandler.loadSetting(key);
   }
 
   // 스토리지 테스트

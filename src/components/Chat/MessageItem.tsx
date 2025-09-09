@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { useChatStore } from '../../stores/chatStore';
 import { ChatMessage } from '../../services/types';
+import { copyToClipboard } from '../../services/clipboardUtils';
 import MessageActionButtons from './MessageActionButtons';
 
 interface MessageItemProps {
@@ -70,33 +71,10 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
   };
 
   const handleCopyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(message.text);
-      console.log('텍스트가 클립보드에 복사되었습니다.');
+    const result = await copyToClipboard(message.text);
+    if (result.success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('클립보드 복사 실패:', error);
-      // 폴백: 텍스트 선택을 통한 복사
-      const textArea = document.createElement('textarea');
-      textArea.value = message.text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-
-      try {
-        document.execCommand('copy');
-        console.log('폴백 방법으로 클립보드에 복사되었습니다.');
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch (fallbackError) {
-        console.error('폴백 복사도 실패:', fallbackError);
-      }
-
-      document.body.removeChild(textArea);
     }
   };
 

@@ -11,7 +11,11 @@ export type IconName =
   | 'sun'
   | 'moon'
   | 'loop'
-  | 'data-transfer-download';
+  | 'data-transfer-download'
+  | 'pencil'
+  | 'clipboard'
+  | 'reload'
+  | 'loop-circular';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName | string; // string 허용 (미등록 아이콘 대비 graceful fallback)
@@ -91,6 +95,31 @@ const ICON_PATHS: Record<string, JSX.Element> = {
       <path d="M12 3v12" />
       <path d="M8 11l4 4 4-4" />
       <path d="M4 19h16" />
+    </g>
+  ),
+  pencil: (
+    <g>
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z" />
+    </g>
+  ),
+  clipboard: (
+    <g>
+      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    </g>
+  ),
+  reload: (
+    <g>
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+      <path d="M8 16l-5 5v-5h5" />
+    </g>
+  ),
+  'loop-circular': (
+    <g>
+      <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5" />
+      <path d="M20 4v4h-4" />
     </g>
   ),
 };

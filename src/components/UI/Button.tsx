@@ -1,25 +1,14 @@
-import clsx from 'clsx';
 import React from 'react';
 import Icon, { IconName } from './Icon';
+import { getButtonClasses, getIconSize, type ButtonVariant, type ButtonSize } from './buttonUtils';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger';
-  size?: 'sm' | 'md';
+  variant?: Extract<ButtonVariant, 'primary' | 'secondary' | 'danger'>;
+  size?: Exclude<ButtonSize, 'lg'>; // Button doesn't support 'lg' size currently
   loading?: boolean;
   leftIcon?: IconName | string;
   rightIcon?: IconName | string;
 }
-
-const variantStyles: Record<string, string> = {
-  primary: 'bg-primary/90 hover:bg-primary text-white focus:ring-primary/40',
-  secondary: 'bg-neutral-700/90 hover:bg-neutral-700 text-white dark:bg-neutral-600 dark:hover:bg-neutral-500 focus:ring-neutral-400/40',
-  danger: 'bg-red-500 hover:bg-red-600 text-white focus:ring-red-500/40'
-};
-
-const sizeStyles: Record<string, string> = {
-  sm: 'h-8 px-3 text-sm',
-  md: 'h-9 px-4 text-sm'
-};
 
 export const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
@@ -33,20 +22,17 @@ export const Button: React.FC<ButtonProps> = ({
   ...rest
 }) => {
   const isDisabled = disabled || loading;
+  const iconSize = getIconSize(size);
+  
   return (
     <button
-      className={clsx(
-        'inline-flex items-center gap-2 font-medium rounded-md shadow transition-colors border border-transparent focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed',
-        variantStyles[variant],
-        sizeStyles[size],
-        className
-      )}
+      className={getButtonClasses(variant, size, className)}
       disabled={isDisabled}
       {...rest}
     >
-      {leftIcon && <Icon name={leftIcon} size={16} />}
+      {leftIcon && <Icon name={leftIcon} size={iconSize} />}
       {children}
-      {rightIcon && <Icon name={rightIcon} size={16} />}
+      {rightIcon && <Icon name={rightIcon} size={iconSize} />}
     </button>
   );
 };

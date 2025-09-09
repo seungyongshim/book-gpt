@@ -1,0 +1,1466 @@
+// ==========================================================================
+// Mixins - Reusable SCSS Mixins for ChatGPT-like React App
+// ==========================================================================
+@use "sass:map";
+@use "sass:color" as s-color;
+@use "sass:meta";
+@use "sass:string";
+@use "variables" as *;
+
+// Theme function - Get theme color value
+@function theme-color($key, $theme: 'light') {
+    @if $theme =='light' {
+        @return map.get($light-theme, $key);
+    }
+
+    @else {
+        @return map.get($dark-theme, $key);
+    }
+}
+
+// Get color from palette
+@function color($key) {
+    @return map.get($colors, $key);
+}
+
+// Get spacing value
+@function spacing($key) {
+    @return map.get($spacers, $key);
+}
+
+// Advanced color functions
+@function lighten-color($c, $amount: 10%) {
+    @return s-color.adjust($c, $lightness: $amount);
+}
+
+@function darken-color($c, $amount: 10%) {
+    @return s-color.adjust($c, $lightness: -$amount);
+}
+
+@function alpha-color($color, $alpha: 0.5) {
+    @return rgba($color, $alpha);
+}
+
+// Auto-generate color variations
+@function color-variant($base-color, $variant: 'normal') {
+    @if $variant =='light' {
+        @return s-color.adjust($base-color, $lightness: 20%);
+    }
+
+    @else if $variant =='dark' {
+        @return s-color.adjust($base-color, $lightness: -20%);
+    }
+
+    @else if $variant =='muted' {
+        @return alpha-color($base-color, 0.6);
+    }
+
+    @else {
+        @return $base-color;
+    }
+}
+
+// Mobile First Media Query Mixins
+// ==========================================================================
+
+// Mobile first approach - styles written for mobile, enhanced for larger screens
+@mixin mobile-up($name) {
+    $min: map.get($breakpoints, $name);
+
+    @if $min !=0 {
+        @media (min-width: $min) {
+            @content;
+        }
+    }
+
+    @else {
+        @content;
+    }
+}
+
+// Legacy support for existing code
+@mixin media-breakpoint-up($name) {
+    @include mobile-up($name) {
+        @content;
+    }
+}
+
+// For cases where we need max-width (rarely used in mobile-first)
+@mixin mobile-down($name) {
+    $max: map.get($breakpoints, $name) - 0.02px;
+
+    @media (max-width: $max) {
+        @content;
+    }
+}
+
+// Legacy support
+@mixin media-breakpoint-down($name) {
+    @include mobile-down($name) {
+        @content;
+    }
+}
+
+// Between breakpoints
+@mixin mobile-between($lower, $upper) {
+    $min: map.get($breakpoints, $lower);
+    $max: map.get($breakpoints, $upper) - 0.02px;
+
+    @if $min !=0 {
+        @media (min-width: $min) and (max-width: $max) {
+            @content;
+        }
+    }
+
+    @else {
+        @media (max-width: $max) {
+            @content;
+        }
+    }
+}
+
+// Legacy support
+@mixin media-breakpoint-between($lower, $upper) {
+    @include mobile-between($lower, $upper);
+}
+
+// Mobile-specific utilities
+@mixin mobile-only {
+    $max: map.get($breakpoints, sm) - 0.02px;
+
+    @media (max-width: $max) {
+        @content;
+    }
+}
+
+@mixin tablet-up {
+    @include mobile-up(md) {
+        @content;
+    }
+}
+
+@mixin desktop-up {
+    @include mobile-up(lg) {
+        @content;
+    }
+}
+
+// Touch device detection
+@mixin touch-device {
+    @media (hover: none) and (pointer: coarse) {
+        @content;
+    }
+}
+
+@mixin non-touch-device {
+    @media (hover: hover) and (pointer: fine) {
+        @content;
+    }
+}
+
+// Respect reduced motion preference - apply content only when motion is allowed
+@mixin no-reduced-motion {
+    @media (prefers-reduced-motion: no-preference) {
+        @content;
+    }
+}
+
+// Mobile-First Button Mixin
+@mixin mobile-button-style($bg-color, $text-color: white, $border-color: null) {
+    $border: if($border-color, $border-color, $bg-color);
+
+    // Mobile-first base styles (wrapped to opt into new Sass behavior)
+    & {
+        background-color: $bg-color;
+        color: $text-color;
+        border: 1px solid $border;
+        border-radius: $border-radius;
+        cursor: pointer;
+        transition: $transition-base;
+        min-height: $touch-target-min;
+        min-width: $touch-target-min;
+        padding: spacing(2) spacing(3);
+        font-size: 1rem; // 16px to prevent iOS zoom
+    }
+
+    // Touch-specific styles
+    @include touch-device {
+        // Increase touch targets on mobile
+        min-height: $mobile-button-height;
+        padding: spacing(3) spacing(4);
+
+        // Remove hover effects on touch devices
+        &:active {
+            transform: scale(0.98);
+            background-color: if(string.index(meta.inspect($bg-color), 'var('), $bg-color, s-color.adjust($bg-color, $lightness: -8%));
+        }
+    }
+
+    // Non-touch hover effects
+    @include non-touch-device {
+        &:hover:not(:disabled) {
+            @if string.index(meta.inspect($bg-color), 'var(') {
+                filter: brightness(0.9);
+            }
+
+            @else {
+                background-color: s-color.adjust($bg-color, $lightness: -5%);
+            }
+
+            @if string.index(meta.inspect($border), 'var(') {
+                // Don't modify CSS variable borders in hover
+            }
+
+            @else {
+                border-color: s-color.adjust($border, $lightness: -5%);
+            }
+
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+}
+
+// Legacy button mixin - updated to use mobile-first approach
+@mixin button-style($bg-color, $text-color: white, $border-color: null) {
+    @include mobile-button-style($bg-color, $text-color, $border-color);
+}
+
+// Mobile-First Form Control Mixin
+@mixin mobile-form-control-style() {
+
+    // Mobile-first base styles (wrapped to opt into new Sass behavior)
+    & {
+        padding: spacing(3) spacing(4);
+        border: 1px solid var(--border-color);
+        border-radius: $border-radius;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: $font-family-base;
+        font-size: 1rem; // 16px to prevent iOS zoom
+        line-height: 1.5;
+        transition: $transition-base;
+        min-height: $touch-target-min;
+    }
+
+    // Enhanced touch targets on mobile
+    @include mobile-only {
+        padding: spacing(3) spacing(4);
+        min-height: $mobile-button-height;
+        font-size: 1rem; // Ensure no zoom on iOS
+    }
+
+    // Larger comfortable sizing on tablets and up
+    @include tablet-up {
+        padding: spacing(3) spacing(4);
+        font-size: $font-size-base;
+    }
+
+    &:focus {
+        outline: none;
+        border-color: var(--btn-primary-bg);
+        box-shadow: 0 0 0 0.2rem rgba(27, 110, 194, 0.25);
+    }
+
+    &::placeholder {
+        color: var(--text-muted);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        background-color: var(--bg-secondary);
+    }
+}
+
+// Legacy form control mixin
+@mixin form-control-style() {
+    @include mobile-form-control-style();
+}
+
+// Card/Panel mixin
+@mixin card-style($padding: spacing(4)) {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: $border-radius-lg;
+    padding: $padding;
+    box-shadow: var(--shadow);
+    color: var(--text-primary);
+}
+
+// Flexbox utilities
+@mixin flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+@mixin flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+// Grid system mixin
+@mixin make-container($max-width: 100%) {
+    width: 100%;
+    max-width: $max-width;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: spacing(4);
+    padding-right: spacing(4);
+}
+
+// Scrollbar styling
+@mixin custom-scrollbar($width: 8px, $track-color: transparent, $thumb-color: var(--border-color)) {
+    &::-webkit-scrollbar {
+        width: $width;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: $track-color;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: $thumb-color;
+        border-radius: $border-radius-pill;
+
+        &:hover {
+
+            // For CSS variables, use filter instead of color adjustments
+            @if string.index(meta.inspect($thumb-color), 'var(') {
+                filter: brightness(0.8);
+            }
+
+            @else {
+                background: s-color.adjust($thumb-color, $lightness: -10%);
+            }
+        }
+    }
+}
+
+// Hover effect mixin
+@mixin hover-lift($translate-y: -2px, $shadow: 0 4px 8px rgba(0, 0, 0, 0.15)) {
+    transition: $transition-base;
+
+    &:hover {
+        transform: translateY($translate-y);
+        box-shadow: $shadow;
+    }
+}
+
+// Elevation utility using standard shadow tokens
+@mixin elevation($level: md) {
+    @if $level ==sm {
+        box-shadow: $shadow-sm;
+    }
+
+    @else if $level ==md {
+        box-shadow: $shadow-md;
+    }
+
+    @else if $level ==lg {
+        box-shadow: $shadow-lg;
+    }
+
+    @else if $level ==xl {
+        box-shadow: $shadow-xl;
+    }
+
+    @else {
+        box-shadow: $level; // allow custom shadow value
+    }
+}
+
+// Text truncation
+@mixin text-truncate($lines: 1) {
+    @if $lines ==1 {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @else {
+        display: -webkit-box;
+        -webkit-line-clamp: $lines;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
+
+// Loading animation
+@mixin loading-pulse {
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    animation: pulse 2s infinite;
+}
+
+// Theme variable mixin
+@mixin theme-variables($theme-map) {
+    @each $key, $value in $theme-map {
+        --#{$key}: #{$value};
+    }
+}
+
+// Message bubble mixins - Mobile First Approach
+@mixin message-bubble-base() {
+
+    // Mobile-first base styles (allow injection of additional declarations)
+    & {
+        padding: $message-padding-mobile;
+        border-radius: $message-border-radius;
+        margin: $message-margin-mobile;
+        max-width: $message-max-width-mobile;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        word-break: break-word; // Better long text handling
+        hyphens: auto;
+        line-height: $message-line-height-mobile;
+        transition: all $message-animation-duration ease;
+        position: relative;
+        font-size: $message-font-size-mobile; // 16px to prevent iOS zoom
+        animation: fadeInMessage $message-fade-in-duration ease-out;
+        @content; // inject user/assistant/system specific base declarations here
+    }
+
+    // Enhanced mobile text handling
+    @include mobile-only {
+        // Ensure readability on small screens
+        line-height: 1.6;
+        letter-spacing: 0.01em;
+
+        // Better handling of long words and URLs
+        word-break: break-word;
+        overflow-wrap: anywhere;
+
+        // Optimize for touch scrolling
+        -webkit-overflow-scrolling: touch;
+    }
+
+    // Tablet and up: Standard desktop sizing
+    @include tablet-up {
+        padding: $message-padding;
+        margin: $message-margin;
+        max-width: $message-max-width;
+        font-size: $font-size-base;
+        line-height: $line-height-base;
+    }
+
+    // Subtle hover effect removed for mobile-first consistency (no scale on hover)
+    // Intentionally no transform scale on hover to avoid motion and layout shift
+
+    // Enhanced focus for accessibility
+    &:focus-within {
+        outline: 2px solid var(--btn-primary-bg);
+        outline-offset: 2px;
+    }
+}
+
+@mixin message-bubble-user {
+    @include message-bubble-base() {
+        background: var(--msg-user-bg);
+        color: var(--msg-user-text, white);
+        align-self: flex-end;
+        margin-left: auto;
+        border-bottom-right-radius: $message-border-radius-sm;
+    }
+
+    // Mobile: Better text contrast and readability
+    @include mobile-only {
+        // Ensure sufficient contrast on mobile
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+        // Better spacing for touch interactions
+        margin-right: spacing(2);
+
+        // Enhanced touch target for selection
+        &::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            bottom: -8px;
+            left: -8px;
+            pointer-events: none;
+        }
+    }
+}
+
+@mixin message-bubble-assistant {
+    @include message-bubble-base() {
+        background: var(--msg-assistant-bg);
+        color: var(--msg-assistant-text, var(--text-primary));
+        align-self: flex-start;
+        margin-right: auto;
+        border-bottom-left-radius: $message-border-radius-sm;
+        border: 1px solid var(--border-color);
+        // Allow callers to inject/override declarations within the base block
+        @content;
+    }
+
+    // Mobile: Enhanced readability and interaction
+    @include mobile-only {
+        // Better visual separation
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+        // Enhanced touch target
+        margin-left: spacing(2);
+
+        // Better text formatting for code and links
+        code {
+            background: var(--bg-tertiary);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        a {
+            color: var(--link-color);
+            text-decoration: underline;
+            word-break: break-all; // Ensure long URLs break properly
+        }
+    }
+}
+
+@mixin message-bubble-system {
+    @include message-bubble-base() {
+        background: var(--msg-system-bg);
+        border: 2px solid var(--msg-system-border);
+        color: var(--text-primary);
+        align-self: center;
+        margin-left: auto;
+        margin-right: auto;
+        border-radius: $border-radius-lg;
+        padding-top: 28px;
+        position: relative;
+    }
+
+    // Mobile: Use even more width for system messages
+    @include mobile-only {
+        max-width: $message-max-width-mobile-lg;
+        padding: 32px spacing(3) spacing(3);
+
+        // Enhanced visibility
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    // Tablet and up: Standard width
+    @include tablet-up {
+        max-width: 90%;
+    }
+
+    // System badge
+    &::before {
+        content: 'SYSTEM';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        background: var(--system-badge-bg);
+        color: white;
+        padding: 4px 10px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        border-radius: $border-radius-sm $border-radius-sm 0 $border-radius-lg;
+        letter-spacing: 0.8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+        // Mobile: Slightly larger badge for visibility
+        @include mobile-only {
+            font-size: 0.75rem;
+            padding: 6px 12px;
+        }
+    }
+}
+
+@mixin message-actions {
+    display: flex;
+    gap: spacing(1);
+    opacity: 1; // Always visible for mobile/touch and desktop
+    transition: opacity 0.2s ease;
+
+    // Mobile: Always visible for touch accessibility with better spacing
+    @include mobile-only {
+        opacity: 1;
+        gap: spacing(1);
+        flex-wrap: wrap; // Allow wrapping on very small screens
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .message-action-btn {
+        // Mobile-first: Touch-friendly sizing (slightly tighter visuals)
+        padding: spacing(1);
+        font-size: 0.8rem;
+        border: none;
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        border-radius: $border-radius-sm;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: $message-action-min-size;
+        height: $message-action-min-size;
+        @include enhanced-focus;
+
+        // Enhanced mobile touch targets
+        @include mobile-only {
+            // Compact on narrow mobile layouts
+            min-width: 28px;
+            height: 28px;
+            padding: 0;
+            background: transparent;
+            border: none;
+            border-radius: $border-radius-sm;
+            font-weight: 400;
+        }
+
+        // Tablet and up: Smaller compact buttons
+        @include tablet-up {
+            // Icon-only compact style on tablet and larger
+            padding: 0;
+            background: transparent;
+            border: none;
+            min-width: auto;
+            height: auto;
+            font-size: 1rem; // match body text size visually
+            color: var(--text-secondary);
+        }
+
+        // Touch device interactions
+        @include touch-device {
+            &:active {
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+                transform: scale(0.95);
+
+                // Enhanced mobile feedback
+                @include mobile-only {
+                    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+                }
+            }
+        }
+
+        // Non-touch hover effects (no scale)
+        @include non-touch-device {
+            &:hover {
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+                // No transform scale on hover
+            }
+        }
+
+        // Enhanced button variants with better mobile styling
+        &.delete-btn {
+            @include touch-device {
+                &:active {
+                    background: var(--error-color);
+                    color: white;
+
+                    @include mobile-only {
+                        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+                    }
+                }
+            }
+
+            @include non-touch-device {
+                &:hover {
+                    background: var(--error-color);
+                    color: white;
+                }
+            }
+        }
+
+        &.save-btn {
+            @include touch-device {
+                &:active {
+                    background: var(--btn-primary-bg);
+                    color: white;
+
+                    @include mobile-only {
+                        box-shadow: 0 2px 8px rgba(27, 110, 194, 0.3);
+                    }
+                }
+            }
+
+            @include non-touch-device {
+                &:hover {
+                    background: var(--btn-primary-bg);
+                    color: white;
+                }
+            }
+        }
+
+        &.copy-btn {
+
+            // Mobile: Special styling for copy feedback
+            @include mobile-only {
+                &:active {
+                    background: var(--btn-primary-bg);
+                    color: white;
+
+                    &::after {
+                        content: 'Copied!';
+                        position: absolute;
+                        top: -30px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: rgba(0, 0, 0, 0.8);
+                        color: white;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-size: 0.7rem;
+                        white-space: nowrap;
+                        z-index: 1000;
+                        animation: fadeOut 2s ease-out forwards;
+                    }
+                }
+            }
+        }
+
+        &.cancel-btn {
+            @include touch-device {
+                &:active {
+                    background: var(--error-color);
+                    color: white;
+                }
+            }
+
+            @include non-touch-device {
+                &:hover {
+                    background: var(--error-color);
+                    color: white;
+                }
+            }
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+
+            // Mobile: Clear disabled state
+            @include mobile-only {
+                background: var(--bg-secondary);
+                border-color: var(--border-color);
+            }
+        }
+
+        // Icon sizing
+        i {
+            font-size: 0.8rem;
+
+            @include tablet-up {
+                font-size: 1rem; // match text size
+                line-height: 1;
+            }
+
+            // Mobile: Slightly larger for visibility
+            @include mobile-only {
+                font-size: 0.85rem;
+            }
+        }
+
+        // Remove mobile title captions to keep icons-only UI
+    }
+}
+
+// Mobile Gesture Support Mixins
+// ==========================================================================
+
+// Swipe gesture mixin for sidebar toggle
+@mixin swipe-gesture-sidebar {
+    // Enable touch-action for horizontal pan
+    touch-action: pan-y pinch-zoom;
+
+    // CSS-based swipe hint (visual feedback)
+    position: relative;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 4px;
+        height: 60px;
+        // Use color-mix with currentColor fallback for CSS variables
+        background: linear-gradient(90deg,
+                color-mix(in srgb, var(--btn-primary-bg) 60%, transparent) 0%,
+                transparent 100%);
+        border-radius: 0 4px 4px 0;
+        transform: translateY(-50%) translateX(-100%);
+        transition: transform 0.2s ease;
+        z-index: 1;
+        opacity: 0;
+    }
+
+    // Show swipe hint on touch start
+    &.swipe-hint-active::before {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
+}
+
+// Swipe gesture for message actions
+@mixin swipe-gesture-message {
+    // Enable horizontal pan only
+    touch-action: pan-y;
+
+    // Container for swipe actions
+    position: relative;
+    overflow: hidden;
+
+    // Hidden action panel that slides in
+    .swipe-actions {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        background: var(--bg-secondary);
+        display: flex;
+        align-items: center;
+        padding: 0 spacing(3);
+        gap: spacing(2);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        border-radius: 0 $border-radius $border-radius 0;
+        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+
+        // Action buttons
+        .swipe-action-btn {
+            min-width: $touch-target-min;
+            height: $touch-target-min;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: $border-radius;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            &.delete-btn {
+                background: var(--error-color);
+                color: white;
+            }
+
+            &.copy-btn {
+                background: var(--btn-primary-bg);
+                color: white;
+            }
+
+            &.edit-btn {
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+            }
+        }
+    }
+
+    // Active swipe state
+    &.swipe-active {
+        .swipe-actions {
+            transform: translateX(0);
+        }
+
+        .message-content {
+            transform: translateX(-120px);
+        }
+    }
+}
+
+// Pull-to-refresh gesture
+@mixin pull-to-refresh {
+    // Container setup
+    overflow: hidden;
+    position: relative;
+
+    // Pull indicator
+    .pull-refresh-indicator {
+        position: absolute;
+        top: -60px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-primary);
+        border: 2px solid var(--btn-primary-bg);
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        z-index: 10;
+
+        .refresh-icon {
+            font-size: 1.2rem;
+            color: var(--btn-primary-bg);
+            transition: transform 0.3s ease;
+        }
+    }
+
+    // Pull states
+    &.pull-hint {
+        .pull-refresh-indicator {
+            top: -40px;
+            opacity: 0.7;
+        }
+    }
+
+    &.pull-ready {
+        .pull-refresh-indicator {
+            top: 10px;
+            opacity: 1;
+            background: var(--btn-primary-bg);
+
+            .refresh-icon {
+                color: white;
+                transform: rotate(180deg);
+            }
+        }
+    }
+
+    &.pull-refreshing {
+        .pull-refresh-indicator {
+            top: 10px;
+            opacity: 1;
+            background: var(--btn-primary-bg);
+
+            .refresh-icon {
+                color: white;
+                animation: spin 1s linear infinite;
+            }
+        }
+    }
+}
+
+// Touch gesture indicators
+@mixin touch-gesture-indicator($direction: 'right', $color: 'var(--btn-primary-bg)') {
+    position: relative;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        opacity: 0;
+        transition: all 0.3s ease;
+        pointer-events: none;
+
+        @if $direction =='right' {
+            right: spacing(3);
+            border-width: 8px 0 8px 12px;
+            border-color: transparent transparent transparent #{$color};
+            transform: translateY(-50%);
+        }
+
+        @else if $direction =='left' {
+            left: spacing(3);
+            border-width: 8px 12px 8px 0;
+            border-color: transparent #{$color} transparent transparent;
+            transform: translateY(-50%);
+        }
+
+        @else if $direction =='up' {
+            left: 50%;
+            top: spacing(3);
+            border-width: 0 8px 12px 8px;
+            border-color: transparent transparent #{$color} transparent;
+            transform: translateX(-50%);
+        }
+
+        @else if $direction =='down' {
+            left: 50%;
+            bottom: spacing(3);
+            border-width: 12px 8px 0 8px;
+            border-color: #{$color} transparent transparent transparent;
+            transform: translateX(-50%);
+        }
+    }
+
+    &.gesture-hint::after {
+        opacity: 1;
+        animation: gestureHint 2s ease-in-out infinite;
+    }
+}
+
+// Gesture haptic feedback simulation
+@mixin gesture-haptic-feedback {
+    &.haptic-light {
+        animation: hapticLight 0.1s ease-out;
+    }
+
+    &.haptic-medium {
+        animation: hapticMedium 0.2s ease-out;
+    }
+
+    &.haptic-heavy {
+        animation: hapticHeavy 0.3s ease-out;
+    }
+}
+
+// Animation keyframes for gestures
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes gestureHint {
+
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: translateY(-50%) scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateY(-50%) scale(1.2);
+    }
+}
+
+@keyframes hapticLight {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.02);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes hapticMedium {
+    0% {
+        transform: scale(1);
+    }
+
+    25% {
+        transform: scale(1.03);
+    }
+
+    75% {
+        transform: scale(0.98);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes hapticHeavy {
+    0% {
+        transform: scale(1);
+    }
+
+    20% {
+        transform: scale(1.05);
+    }
+
+    40% {
+        transform: scale(0.95);
+    }
+
+    60% {
+        transform: scale(1.02);
+    }
+
+    80% {
+        transform: scale(0.98);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+// Original animation keyframes
+@keyframes fadeInMessage {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes fadeOut {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes typingIndicator {
+
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+    }
+
+    30% {
+        transform: translateY(-10px);
+    }
+}
+
+// Typing indicator mixin
+@mixin typing-indicator-dots {
+    .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--text-secondary);
+        animation: typingIndicator 1.4s infinite ease-in-out;
+
+        &:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        &:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        &:nth-child(3) {
+            animation-delay: 0s;
+        }
+    }
+}
+
+// ==========================================================================
+// Accessibility Mixins - WCAG 2.1 AA Compliance
+// ==========================================================================
+
+// Focus visible styles for keyboard navigation
+@mixin focus-visible-style($color: var(--focus-color, var(--btn-primary-bg)), $offset: 2px) {
+    &:focus-visible {
+        outline: 2px solid $color;
+        outline-offset: $offset;
+        border-radius: $border-radius-sm;
+        background-color: var(--focus-bg, rgba(0, 123, 255, 0.1));
+    }
+}
+
+// Enhanced focus for interactive elements
+@mixin enhanced-focus($color: var(--btn-primary-bg)) {
+    &:focus {
+        outline: 2px solid $color;
+        outline-offset: 2px;
+        border-radius: $border-radius-sm;
+        box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.15);
+    }
+
+    &:focus:not(:focus-visible) {
+        outline: none;
+        box-shadow: none;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $color;
+        outline-offset: 2px;
+        border-radius: $border-radius-sm;
+        box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.15);
+    }
+}
+
+// Screen reader only content
+@mixin sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+// Accessible button base styles
+@mixin accessible-button {
+    @include enhanced-focus;
+
+    // Touch target minimum
+    min-height: $touch-target-min;
+    min-width: $touch-target-min;
+
+    // Keyboard navigation
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+
+        // Maintain focus visibility for disabled elements
+        &:focus-visible {
+            outline: 2px solid var(--text-muted);
+            outline-offset: 2px;
+        }
+    }
+
+    // High contrast mode support
+    @media (prefers-contrast: high) {
+        border: 2px solid currentColor;
+
+        &:focus-visible {
+            outline: 3px solid var(--focus-color, var(--btn-primary-bg));
+        }
+    }
+}
+
+// Color contrast utility
+@mixin ensure-contrast($bg-color, $text-color: null) {
+    background-color: $bg-color;
+
+    @if $text-color {
+        color: $text-color;
+    }
+
+    // High contrast mode adjustments
+    @media (prefers-contrast: high) {
+        border: 1px solid currentColor;
+
+        @if $text-color {
+            color: $text-color;
+        }
+
+        @else {
+            color: var(--text-primary);
+        }
+    }
+}
+
+// Skip to content link
+@mixin skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: spacing(2) spacing(3);
+    border-radius: $border-radius;
+    text-decoration: none;
+    font-weight: $font-weight-bold;
+    border: 2px solid var(--btn-primary-bg);
+    z-index: 9999;
+
+    &:focus {
+        top: 6px;
+    }
+}
+
+// Accessible form label
+@mixin accessible-label {
+    display: block;
+    margin-bottom: spacing(1);
+    font-weight: $font-weight-bold;
+    color: var(--text-primary);
+
+    // Required indicator
+    &.required::after {
+        content: " *";
+        color: var(--error-color);
+        font-weight: $font-weight-bold;
+    }
+
+    // Error state
+    &.error {
+        color: var(--error-color);
+    }
+}
+
+// Accessible form control
+@mixin accessible-form-control {
+    @include mobile-form-control-style;
+    @include enhanced-focus;
+
+    // Error state
+    &.error {
+        border-color: var(--error-color);
+        color: var(--error-color);
+
+        &:focus-visible {
+            outline-color: var(--error-color);
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
+        }
+    }
+
+    // Required field indication
+    &[aria-required="true"] {
+        border-left: 3px solid var(--warning-color);
+    }
+
+    // Invalid field
+    &[aria-invalid="true"] {
+        border-color: var(--error-color);
+        background-color: var(--error-ui-bg, rgba(220, 53, 69, 0.05));
+    }
+}
+
+// Accessible modal/dialog
+@mixin accessible-modal {
+
+    // Focus trap
+    &[aria-modal="true"] {
+        isolation: isolate;
+    }
+
+    // Focus management
+    &:focus {
+        outline: none;
+    }
+}
+
+// Touch-friendly interactive element
+@mixin touch-friendly {
+    min-height: $touch-target-min;
+    min-width: $touch-target-min;
+
+    @include mobile-only {
+        min-height: $mobile-button-height;
+
+        // Enhanced touch padding
+        padding: spacing(3);
+    }
+
+    // Remove tap highlight on mobile
+    -webkit-tap-highlight-color: transparent;
+
+    // Improve touch scroll
+    -webkit-overflow-scrolling: touch;
+}
+
+// Keyboard navigation helper
+@mixin keyboard-navigable {
+    &:focus-visible {
+        outline: 2px solid var(--focus-color, var(--btn-primary-bg));
+        outline-offset: 2px;
+        border-radius: $border-radius-sm;
+    }
+
+    // Enhanced keyboard interaction
+    &[tabindex="0"],
+    &[tabindex="-1"] {
+        outline: none;
+
+        &:focus-visible {
+            outline: 2px solid var(--focus-color, var(--btn-primary-bg));
+            outline-offset: 2px;
+        }
+    }
+}
+
+// Reusable ghost button (bordered, transparent background)
+@mixin ghost-button($padding-y: null, $padding-x: null, $radius: $border-radius) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: $radius;
+    padding: if($padding-y, $padding-y, spacing(2)) if($padding-x, $padding-x, spacing(3));
+    cursor: pointer;
+    transition: $transition-base;
+
+    @include enhanced-focus;
+
+    &:hover:not(:disabled) {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
+
+// Reusable icon button (square circle-like)
+@mixin icon-button($size: 32px, $radius: $border-radius-pill, $bg: transparent) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid var(--border-color);
+    background: $bg;
+    color: var(--text-secondary);
+    border-radius: $radius;
+    width: $size;
+    height: $size;
+    padding: 0;
+    transition: $transition-base;
+
+    @include enhanced-focus;
+
+    &:hover:not(:disabled) {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+}
+
+// Progress structure generator (expects child .progress__bar)
+@mixin progress-structure($track-bg: var(--bg-secondary), $radius: 3px, $height: 6px) {
+    display: flex;
+    height: $height;
+    overflow: hidden;
+    font-size: 0.75rem;
+    background-color: $track-bg;
+    border-radius: $radius;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+
+    .progress__bar {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: hidden;
+        color: white;
+        text-align: center;
+        white-space: nowrap;
+        background-color: var(--btn-primary-bg);
+        border-radius: $radius;
+        transition: width 0.6s ease;
+    }
+}

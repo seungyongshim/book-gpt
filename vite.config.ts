@@ -1,17 +1,33 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference types="node" />
+// https://vitejs.dev/config/
+// Node 전역에 대한 타입 경고 억제
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare const process: any;
 
-// GitHub Pages 배포 시 리포지토리 이름을 base 경로로 사용.
-// 로컬 개발(dev 서버, preview)에서는 루트('/') 유지.
-// GITHUB_ACTIONS 환경에서만 base 적용 (Actions 빌드 시 자동 설정됨).
-// Node 환경에서만 존재하는 process 안전 접근 (tsconfig에 node 타입 미포함 상황 대응)
-const isCI = (globalThis as any).process?.env?.GITHUB_ACTIONS === 'true';
-const repoName = 'book-gpt';
+// Sass deprecation warnings silencing for build output cleanliness
+// Note: We already migrated code; these silence messages from upstream tooling (legacy-js-api, mixed-decls)
+process.env.SASS_SILENCE_DEPRECATIONS = [
+  'legacy-js-api',
+  'mixed-decls',
+].join(',');
+
+// GitHub Actions에서 빌드되는 경우 리포지토리 이름을 base로 사용
+// 예: seungyongshim/chatgpt-like -> /chatgpt-like/
+const ghBase = process.env.GITHUB_REPOSITORY
+  ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/`
+  : '/';
 
 export default defineConfig({
-  base: isCI ? `/${repoName}/` : '/',
+  base: ghBase,
   plugins: [react()],
-});
+  server: {
+    port: 5173,
+    host: true
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true
+  }
+})

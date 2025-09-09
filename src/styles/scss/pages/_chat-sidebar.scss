@@ -1,0 +1,153 @@
+// ==========================================================================
+// ChatSidebar Component - Sidebar Navigation Styles
+// 주의: 현재 컴포넌트는 layout/_layout.scss의 실제 클래스(.chat-sidebar, .session-list 등)를 사용합니다.
+// 이 파일의 BEM 셀렉터(chat-sidebar__*)는 과거 설계로, 필요 시 컴포넌트 클래스명을 통일하거나
+// 여기 스타일을 실제 클래스에 맞게 이관하세요.
+// ==========================================================================
+@use "../abstracts" as *;
+
+.chat-sidebar {
+
+    // Mobile header (shown only on mobile)
+    &__mobile-header {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: $zindex-modal;
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border-color);
+        padding: spacing(2) spacing(4);
+        @include flex-between;
+
+        @include media-breakpoint-down(lg) {
+            display: flex !important;
+        }
+    }
+
+    &__mobile-menu-btn {
+        @include ghost-button(spacing(2), spacing(3));
+    }
+
+    &__mobile-title {
+        font-weight: $font-weight-bold;
+        font-size: 1.1rem;
+        color: var(--text-primary);
+    }
+
+    // History section
+    &__history {
+        border-right: 1px solid var(--border-light);
+        padding: spacing(3);
+        overflow: auto;
+        transition: transform 0.3s ease;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        @include custom-scrollbar();
+
+        // History header
+        &-header {
+            @include flex-between;
+            margin-bottom: spacing(2);
+        }
+
+        // Session list
+        &-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: spacing(1);
+        }
+    }
+
+    // Session items
+    &__session {
+        &-item {
+            border-radius: $border-radius;
+            position: relative;
+            cursor: pointer;
+            transition: $transition-base;
+
+            &:hover {
+                background: var(--bg-secondary);
+            }
+
+            &--active {
+                background: var(--msg-user-bg);
+            }
+        }
+
+        &-link {
+            padding: spacing(2);
+            @include flex-center;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        &-title {
+            flex-grow: 1;
+            color: var(--text-primary);
+            @include text-truncate(1);
+        }
+
+        &-date {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: spacing(1);
+        }
+
+        &-delete-btn {
+            position: absolute;
+            right: spacing(2);
+            top: 50%;
+            transform: translateY(-50%);
+            @include ghost-button(spacing(1), spacing(1), $border-radius-sm);
+            color: color(danger);
+            opacity: 0.85;
+
+            &:hover {
+                background: rgba(color(danger), 0.15);
+                opacity: 1;
+            }
+        }
+    }
+
+    // Mobile overlay
+    &__mobile-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--overlay-bg);
+        z-index: $zindex-modal-backdrop;
+
+        &--show {
+            display: block !important;
+        }
+    }
+}
+
+// Mobile responsive styles
+@include media-breakpoint-down(lg) {
+    .chat-sidebar {
+        &__history {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100%;
+            z-index: $zindex-modal;
+            transform: translateX(-100%);
+            border-right: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+
+            &--mobile-open {
+                transform: translateX(0);
+            }
+        }
+    }
+}

@@ -1,0 +1,595 @@
+// ==========================================================================
+// Typography - Mobile-First Font Styles with Accessibility Features
+// ==========================================================================
+@use "../abstracts" as *;
+@use "sass:string";
+
+// Base typography - Mobile First with Accessibility
+body {
+    // Declarations first (to avoid mixed-decls warning)
+    font-family: $font-family-base;
+    font-weight: $font-weight-normal;
+    line-height: $line-height-base;
+    color: var(--text-primary);
+    font-size: 1rem; // 16px, Mobile minimum to prevent iOS zoom
+    text-rendering: optimizeLegibility; // Accessibility: Enhanced text rendering
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-touch-callout: default; // Better text selection on touch devices
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+
+    // Tablet and up: Standard size
+    @include tablet-up {
+        font-size: $font-size-base;
+    }
+}
+
+// Headings - Mobile First with Accessibility
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin-bottom: spacing(2);
+    font-weight: $font-weight-bold;
+    line-height: 1.2;
+    color: var(--text-primary);
+
+    // Accessibility: Focus styles for keyboard navigation
+    &:focus {
+        outline: 2px solid var(--focus-color, var(--btn-primary-bg));
+        outline-offset: 2px;
+        border-radius: $border-radius-sm;
+        background-color: var(--focus-bg, rgba(0, 123, 255, 0.1));
+    }
+
+    // Accessibility: Screen reader friendly
+    &[id] {
+        scroll-margin-top: spacing(6);
+    }
+}
+
+h1 {
+    // Mobile: Moderate size for small screens
+    font-size: 1.8rem;
+
+    @include tablet-up {
+        font-size: 2.5rem;
+    }
+}
+
+h2 {
+    font-size: 1.5rem;
+
+    @include tablet-up {
+        font-size: 2rem;
+    }
+}
+
+h3 {
+    font-size: 1.3rem;
+
+    @include tablet-up {
+        font-size: 1.75rem;
+    }
+}
+
+h4 {
+    font-size: 1.2rem;
+
+    @include tablet-up {
+        font-size: 1.5rem;
+    }
+}
+
+h5 {
+    font-size: 1.1rem;
+
+    @include tablet-up {
+        font-size: 1.25rem;
+    }
+}
+
+h6 {
+    font-size: 1rem;
+}
+
+// Paragraphs
+p {
+    margin-bottom: spacing(4);
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+// Text utilities
+.text-primary {
+    color: var(--text-primary);
+}
+
+.text-secondary {
+    color: var(--text-secondary);
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+.text-success {
+    color: color(success);
+}
+
+.text-danger {
+    color: var(--error-color);
+}
+
+.text-warning {
+    color: color(warning);
+}
+
+.text-info {
+    color: color(info);
+}
+
+// Font weights
+.fw-normal {
+    font-weight: $font-weight-normal;
+}
+
+.fw-bold {
+    font-weight: $font-weight-bold;
+}
+
+// Text alignment
+.text-left {
+    text-align: left;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+// Text transform
+.text-uppercase {
+    text-transform: uppercase;
+}
+
+.text-lowercase {
+    text-transform: lowercase;
+}
+
+.text-capitalize {
+    text-transform: capitalize;
+}
+
+// Text decoration
+.text-decoration-none {
+    text-decoration: none;
+}
+
+.text-decoration-underline {
+    text-decoration: underline;
+}
+
+// Font sizes - Mobile First with Fluid Typography
+.fs-sm {
+    // Fluid typography for mobile readability
+    font-size: clamp(0.85rem, 2.5vw, 0.9rem);
+
+    @include tablet-up {
+        font-size: 0.875rem;
+    }
+}
+
+.fs-base {
+    // Always 16px minimum for mobile compatibility
+    font-size: clamp(1rem, 3vw, 1rem); // Fluid but capped at 16px
+}
+
+.fs-lg {
+    font-size: clamp(1.1rem, 3.5vw, 1.2rem);
+
+    @include tablet-up {
+        font-size: 1.125rem;
+    }
+}
+
+.fs-xl {
+    font-size: clamp(1.2rem, 4vw, 1.4rem);
+
+    @include tablet-up {
+        font-size: 1.25rem;
+    }
+}
+
+// Mobile-specific fluid font sizes
+.fs-mobile-sm {
+    font-size: clamp(0.8rem, 2.25vw, 0.85rem);
+}
+
+.fs-mobile-xs {
+    font-size: clamp(0.75rem, 2vw, 0.8rem);
+}
+
+// Responsive typography helper
+.fs-responsive {
+    font-size: clamp(0.9rem, 2.5vw + 0.5rem, 1.2rem);
+    line-height: 1.6;
+}
+
+// Line height - Enhanced readability for mobile
+.lh-1 {
+    line-height: 1;
+}
+
+.lh-sm {
+    line-height: 1.25;
+
+    // Better readability on mobile
+    @include mobile-only {
+        line-height: 1.3;
+    }
+}
+
+.lh-base {
+    line-height: $line-height-base;
+
+    // Enhanced mobile readability
+    @include mobile-only {
+        line-height: 1.6;
+    }
+}
+
+.lh-lg {
+    line-height: 1.8;
+
+    // Optimized for mobile reading
+    @include mobile-only {
+        line-height: 1.7;
+    }
+}
+
+// Mobile reading optimization
+.lh-mobile-optimized {
+    line-height: 1.6;
+
+    @include tablet-up {
+        line-height: 1.5;
+    }
+}
+
+// Text truncation utilities
+.text-truncate {
+    @include text-truncate(1);
+}
+
+.text-truncate-2 {
+    @include text-truncate(2);
+}
+
+.text-truncate-3 {
+    @include text-truncate(3);
+}
+
+// Code and pre - Mobile First
+code {
+    padding: 0.125rem 0.25rem;
+    background-color: var(--bg-secondary);
+    border-radius: $border-radius-sm;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    color: var(--text-primary);
+
+    // Mobile: Readable size
+    font-size: 0.9rem;
+
+    @include tablet-up {
+        font-size: 0.875em;
+    }
+}
+
+pre {
+    padding: spacing(3);
+    background-color: var(--bg-secondary);
+    border-radius: $border-radius;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    line-height: 1.4;
+    color: var(--text-primary);
+    overflow-x: auto;
+
+    // Mobile: Enhanced touch scrolling
+    -webkit-overflow-scrolling: touch;
+
+    // Mobile: Readable size
+    font-size: 0.85rem;
+
+    @include tablet-up {
+        padding: spacing(4);
+        font-size: 0.875rem;
+    }
+
+    code {
+        padding: 0;
+        background: none;
+        border-radius: 0;
+        font-size: inherit;
+    }
+}
+
+// Mobile-optimized message text styles with enhanced readability
+.message-text {
+    // Mobile: Optimized readability with fluid typography
+    font-size: clamp(1rem, 2.5vw + 0.5rem, 1.1rem); // Fluid 16-17.6px
+    line-height: clamp(1.5, string.unquote("calc(1.4 + 0.5vw)"), 1.7);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+
+    // Better text selection on mobile
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+
+    // Enhanced touch text selection
+    -webkit-touch-callout: default;
+
+    // Tablet and up: Standard size
+    @include tablet-up {
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    // Improved readability for longer text blocks
+    &.long-text {
+        line-height: 1.7;
+        letter-spacing: 0.01em;
+
+        @include mobile-only {
+            font-size: clamp(1rem, 2.25vw + 0.5rem, 1.05rem);
+            line-height: 1.8;
+        }
+    }
+}
+
+// Enhanced text readability for mobile with accessibility
+.mobile-optimized-text {
+    font-size: 1rem;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
+
+    @include tablet-up {
+        font-size: inherit;
+        line-height: inherit;
+        letter-spacing: inherit;
+    }
+}
+
+
+// Accessibility: Skip links for screen readers
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: spacing(2) spacing(3);
+    border-radius: $border-radius;
+    text-decoration: none;
+    font-weight: $font-weight-bold;
+    border: 2px solid var(--btn-primary-bg);
+    z-index: 9999;
+
+    &:focus {
+        top: 6px;
+    }
+}
+
+// Accessibility: Screen reader only text
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+// Accessibility: High contrast mode support
+@media (prefers-contrast: high) {
+    body {
+        font-weight: $font-weight-bold;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-weight: 900;
+    }
+
+    .text-muted {
+        color: var(--text-secondary);
+    }
+}
+
+// Accessibility: Reduced motion for text animations
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+// Accessibility: Color contrast improvements
+.high-contrast {
+    --text-primary: #000000;
+    --text-secondary: #333333;
+    --text-muted: #666666;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --border-color: #000000;
+    --btn-primary-bg: #0066cc;
+    --focus-color: #ff6600;
+}
+
+[data-theme="dark"] .high-contrast {
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --text-muted: #999999;
+    --bg-primary: #000000;
+    --bg-secondary: #1a1a1a;
+    --border-color: #ffffff;
+    --btn-primary-bg: #3399ff;
+    --focus-color: #ffaa00;
+}
+
+// Accessibility: Text selection improvements
+::selection {
+    background-color: var(--selection-bg, rgba(0, 123, 255, 0.3));
+    color: var(--selection-text, inherit);
+}
+
+::-moz-selection {
+    background-color: var(--selection-bg, rgba(0, 123, 255, 0.3));
+    color: var(--selection-text, inherit);
+}
+
+// Mobile device orientation adjustments
+@media (orientation: landscape) and (max-height: 500px) {
+    body {
+        font-size: 0.95rem;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        line-height: 1.1;
+        margin-bottom: spacing(1);
+    }
+
+    .message-text {
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+}
+
+// Touch device text optimization
+@media (pointer: coarse) {
+    .message-text {
+        // Slightly larger text for touch devices
+        font-size: clamp(1rem, 2.75vw + 0.5rem, 1.15rem);
+        line-height: 1.6;
+    }
+
+    // Ensure minimum touch target for text links
+    a {
+        padding: spacing(1);
+        margin: -#{spacing(1)};
+        border-radius: $border-radius-sm;
+
+        @include enhanced-focus;
+    }
+}
+
+// High-resolution display optimizations
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+}
+
+// Print typography optimizations
+@media print {
+    body {
+        font-size: 12pt;
+        line-height: 1.4;
+        color: black;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        page-break-after: avoid;
+        color: black;
+    }
+
+    .message-text {
+        font-size: 11pt;
+        line-height: 1.3;
+    }
+}
+
+// Typography utilities for dynamic content
+.text-dynamic {
+
+    // Auto-adjusting based on content length
+    &[data-length="short"] {
+        font-size: 1.1rem;
+        line-height: 1.5;
+    }
+
+    &[data-length="medium"] {
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    &[data-length="long"] {
+        font-size: 0.95rem;
+        line-height: 1.7;
+        letter-spacing: 0.01em;
+    }
+}
+
+// Blockquote
+blockquote {
+    padding: spacing(4);
+    margin: spacing(4) 0;
+    border-left: 4px solid var(--border-color);
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-style: italic;
+
+    p:last-child {
+        margin-bottom: 0;
+    }
+}
+
+// Mobile-specific paragraph styles
+.paragraph-mobile {
+    margin-bottom: spacing(3);
+    line-height: 1.7;
+
+    @include mobile-only {
+        font-size: clamp(1rem, 2.5vw + 0.25rem, 1.05rem);
+        margin-bottom: spacing(4);
+    }
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}

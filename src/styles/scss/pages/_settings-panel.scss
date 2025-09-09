@@ -1,0 +1,864 @@
+// ==========================================================================
+// SettingsPanel Component - Mobile First Settings Modal
+// ==========================================================================
+@use "../abstracts" as *;
+
+.settings {
+
+    // Settings overlay (modal backdrop) - Mobile First
+    &__overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--overlay-bg);
+        z-index: $zindex-modal;
+
+        // Mobile: Simple overlay without centering flex
+        @include mobile-only {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        // Tablet and up: Centered modal overlay
+        @include tablet-up {
+            @include flex-center;
+            background-color: var(--overlay-bg);
+        }
+    }
+
+    // Settings panel (modal content) - Mobile First Approach
+    &__panel {
+        // Mobile: Full-screen modal
+        width: 100%;
+        height: 100%;
+        background: var(--bg-primary);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+
+        // Mobile-specific styling
+        @include mobile-only {
+            border-radius: 0;
+            box-shadow: none;
+
+            // Safe area support
+            padding-top: env(safe-area-inset-top, 0);
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            padding-left: env(safe-area-inset-left, 0);
+            padding-right: env(safe-area-inset-right, 0);
+        }
+
+        // Tablet and up: Centered modal dialog
+        @include tablet-up {
+            // Use mixin instead of @extend to avoid cross-media extend issues
+            @include card-style();
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            border-radius: $border-radius-lg;
+            @include elevation(xl);
+        }
+
+        // Custom scrollbar
+        @include custom-scrollbar();
+    }
+
+    // Panel header - Mobile First
+    &__header {
+        // Mobile: App-like header with safe area
+        @include flex-between;
+        padding: spacing(3) spacing(4);
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border-color);
+        flex-shrink: 0;
+
+        @include mobile-only {
+            // Mobile header styling
+            min-height: $mobile-header-height;
+            padding: spacing(3) spacing(4);
+
+            // Sticky header on mobile
+            position: sticky;
+            top: 0;
+            z-index: 10;
+
+            // Enhanced border for mobile
+            border-bottom: 2px solid var(--border-color);
+            @include elevation(sm);
+        }
+
+        @include tablet-up {
+            padding: spacing(4) spacing(6);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h5 {
+            margin: 0;
+            font-weight: $font-weight-bold;
+            color: var(--text-primary);
+
+            @include mobile-only {
+                font-size: 1.1rem;
+            }
+
+            @include tablet-up {
+                font-size: 1.25rem;
+            }
+        }
+    }
+
+    // Close button - Mobile Optimized
+    &__close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-secondary);
+        transition: all 0.2s ease;
+
+        // Mobile: Large touch target
+        @include mobile-only {
+            min-width: $touch-target-min;
+            min-height: $touch-target-min;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            border-radius: $border-radius;
+
+            @include touch-device {
+                &:active {
+                    background: var(--bg-secondary);
+                    color: var(--text-primary);
+                    transform: scale(0.95);
+                }
+            }
+        }
+
+        // Tablet and up: Smaller button
+        @include tablet-up {
+            width: 28px;
+            height: 28px;
+            font-size: 1.2rem;
+            border-radius: $border-radius-sm;
+
+            @include non-touch-device {
+                &:hover {
+                    background: var(--bg-secondary);
+                    color: var(--text-primary);
+                }
+            }
+        }
+    }
+
+    // Panel body - Mobile First Scrollable Content
+    &__body {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+
+        // Mobile: Optimized padding and scrolling
+        @include mobile-only {
+            padding: spacing(4) spacing(4) spacing(6); // Extra bottom for keyboard
+
+            // Keyboard handling
+            @media (max-height: $mobile-keyboard-threshold) {
+                padding-bottom: spacing(12); // More space when keyboard is open
+                scroll-padding-bottom: $mobile-scroll-padding-bottom;
+            }
+        }
+
+        // Tablet and up: Standard padding
+        @include tablet-up {
+            padding: spacing(6);
+        }
+
+        // Enhanced form styling for mobile
+        .form-label {
+            color: var(--text-primary);
+            font-weight: $font-weight-bold;
+            margin-bottom: spacing(2);
+
+            @include mobile-only {
+                font-size: 1rem;
+                display: block;
+            }
+        }
+
+        .form-text {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: spacing(1);
+            line-height: 1.4;
+
+            @include mobile-only {
+                font-size: 0.9rem;
+                line-height: 1.5;
+            }
+        }
+
+        // Form groups with mobile spacing
+        .form-group {
+            margin-bottom: spacing(5);
+
+            @include mobile-only {
+                margin-bottom: spacing(6); // More breathing room on mobile
+            }
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+
+        // Enhanced form controls for mobile
+        .form-control,
+        .form-select {
+            @include mobile-form-control-style;
+            // Base colors are defined in the mixin; override only in variants if needed
+
+            @include mobile-only {
+                // Enhanced mobile styling
+                border-width: 2px;
+                border-radius: $border-radius;
+
+                // Better visual feedback
+                &:focus {
+                    border-color: var(--btn-primary-bg);
+                    box-shadow: 0 0 0 3px rgba(27, 110, 194, 0.15);
+                    background-color: var(--bg-primary);
+                }
+            }
+
+            @include tablet-up {
+                &:focus {
+                    border-color: var(--btn-primary-bg);
+                    box-shadow: 0 0 0 0.2rem rgba(66, 139, 202, 0.25);
+                }
+            }
+
+            &::placeholder {
+                color: var(--text-muted);
+            }
+        }
+
+        // Mobile-optimized textarea
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+
+            @include mobile-only {
+                min-height: 120px;
+                resize: none; // Disable resize on mobile
+
+                // Better mobile keyboard handling
+                &:focus {
+                    scroll-margin-top: 60px; // Account for header
+                }
+            }
+        }
+
+        // Number input styling with mobile optimization
+        input[type="number"].form-control {
+            appearance: textfield;
+            -moz-appearance: textfield;
+
+            &::-webkit-outer-spin-button,
+            &::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                appearance: none;
+                margin: 0;
+            }
+        }
+
+        // Enhanced range input for mobile
+        .form-range {
+            margin: spacing(3) 0;
+
+            @include mobile-only {
+                margin: spacing(4) 0;
+                height: 8px; // Thicker track for easier touch
+
+                &::-webkit-slider-thumb {
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    background: var(--btn-primary-bg);
+                    border: 2px solid white;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                }
+
+                &::-moz-range-thumb {
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    background: var(--btn-primary-bg);
+                    border: 2px solid white;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                }
+            }
+        }
+
+        // Enhanced checkbox/switch for mobile
+        .form-check {
+            padding-left: 1.5em;
+
+            @include mobile-only {
+                padding-left: 2em;
+                margin-bottom: spacing(3);
+            }
+
+            .form-check-input {
+                float: left;
+                margin-left: -1.5em;
+                margin-top: 0.25em;
+
+                @include mobile-only {
+                    margin-left: -2em;
+                    width: 1.25em;
+                    height: 1.25em;
+                    margin-top: 0.1em;
+                }
+
+                &:checked {
+                    background-color: var(--btn-primary-bg);
+                    border-color: var(--btn-primary-bg);
+                }
+
+                &:focus {
+                    border-color: var(--btn-primary-bg);
+                    box-shadow: 0 0 0 0.2rem rgba(27, 110, 194, 0.25);
+
+                    @include mobile-only {
+                        box-shadow: 0 0 0 3px rgba(27, 110, 194, 0.25);
+                    }
+                }
+            }
+
+            .form-check-label {
+                color: var(--text-primary);
+
+                @include mobile-only {
+                    font-size: 1rem;
+                    line-height: 1.5;
+                    cursor: pointer;
+                    padding: spacing(1) 0;
+                }
+            }
+        }
+
+        // Button group optimization for mobile
+        .btn-group {
+            display: flex;
+            gap: spacing(2);
+            margin-top: spacing(4);
+
+            @include mobile-only {
+                flex-direction: column;
+                gap: spacing(3);
+                margin-top: spacing(6);
+            }
+
+            .btn {
+                @include mobile-only {
+                    width: 100%;
+                    min-height: $mobile-button-height;
+                }
+
+                @include tablet-up {
+                    flex: 1;
+                }
+            }
+        }
+    }
+
+    // Settings sections - Mobile First Accordion Structure
+    &__section {
+        margin-bottom: spacing(4);
+        border-radius: $border-radius;
+
+        @include mobile-only {
+            // Mobile: Card-like sections with touch-friendly design
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: $border-radius;
+            margin-bottom: spacing(3);
+            overflow: hidden;
+
+            // Enhanced touch interaction
+            &:last-child {
+                margin-bottom: spacing(6); // Extra space for keyboard
+            }
+        }
+
+        @include tablet-up {
+            // Desktop: Traditional section styling
+            margin-bottom: spacing(6);
+            padding-bottom: spacing(4);
+            border-bottom: 1px solid var(--border-light);
+            background: transparent;
+            border: none;
+            border-radius: 0;
+
+            &:last-child {
+                margin-bottom: 0;
+                padding-bottom: 0;
+                border-bottom: none;
+            }
+        }
+
+        // Mobile Accordion Header
+        &-header {
+            @include mobile-only {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: spacing(4);
+                cursor: pointer;
+                user-select: none;
+                transition: background-color 0.2s ease;
+                min-height: $touch-target-comfortable;
+
+                @include touch-device {
+                    &:active {
+                        background: var(--bg-tertiary);
+                    }
+                }
+
+                // Accordion toggle icon
+                &::after {
+                    content: '▼';
+                    font-size: 0.8rem;
+                    color: var(--text-secondary);
+                    transition: transform 0.3s ease;
+                    transform: rotate(-90deg);
+                }
+
+                // Expanded state
+                &--expanded::after {
+                    transform: rotate(0deg);
+                }
+            }
+
+            // Desktop: Hide accordion header
+            @include tablet-up {
+                display: none;
+            }
+        }
+
+        &-title {
+            font-weight: $font-weight-bold;
+            color: var(--text-primary);
+            margin: 0;
+
+            @include mobile-only {
+                font-size: 1rem;
+                flex: 1;
+            }
+
+            @include tablet-up {
+                font-size: 1.125rem;
+                margin-bottom: spacing(3);
+                padding-bottom: spacing(2);
+                border-bottom: 2px solid var(--btn-primary-bg);
+            }
+        }
+
+        &-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.5;
+
+            @include mobile-only {
+                margin: spacing(2) 0 0;
+                font-size: 0.85rem;
+            }
+
+            @include tablet-up {
+                margin-bottom: spacing(4);
+            }
+        }
+
+        // Mobile Accordion Content
+        &-content {
+            @include mobile-only {
+                padding: 0 spacing(4) spacing(4);
+                display: none;
+                border-top: 1px solid var(--border-color);
+                background: var(--bg-primary);
+
+                // Smooth expansion animation
+                &--expanded {
+                    display: block;
+                    animation: expandContent 0.3s ease-out;
+                }
+            }
+
+            // Desktop: Always visible
+            @include tablet-up {
+                display: block;
+                padding: 0;
+                background: transparent;
+                border-top: none;
+            }
+        }
+    }
+
+    // Mobile Accordion Animation
+    @include mobile-only {
+        @keyframes expandContent {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    }
+
+    // Advanced settings toggle - Mobile Optimized
+    &__advanced-toggle {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-secondary);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+
+        @include mobile-only {
+            // Mobile: Full-width touch-friendly button
+            width: 100%;
+            min-height: $touch-target-min;
+            padding: spacing(3) spacing(4);
+            margin-top: spacing(3);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: $border-radius;
+            justify-content: space-between;
+            font-weight: 500;
+
+            @include touch-device {
+                &:active {
+                    background: var(--bg-tertiary);
+                    transform: scale(0.98);
+                }
+            }
+        }
+
+        @include tablet-up {
+            margin-top: spacing(3);
+            padding: spacing(2) spacing(3);
+            border-radius: $border-radius-sm;
+
+            @include non-touch-device {
+                &:hover {
+                    background: var(--bg-secondary);
+                    color: var(--text-primary);
+                }
+            }
+        }
+
+        &::before {
+            content: "▶";
+            margin-right: spacing(2);
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+
+            @include mobile-only {
+                order: 2;
+                margin-right: 0;
+                margin-left: spacing(2);
+            }
+        }
+
+        &--expanded {
+            color: var(--text-primary);
+
+            &::before {
+                transform: rotate(90deg);
+            }
+
+            @include mobile-only {
+                background: var(--bg-tertiary);
+                border-color: var(--btn-primary-bg);
+            }
+        }
+
+        .toggle-text {
+            @include mobile-only {
+                order: 1;
+                flex: 1;
+                text-align: left;
+            }
+        }
+    }
+
+    &__advanced-content {
+        margin-top: spacing(3);
+        transition: all 0.3s ease;
+
+        @include mobile-only {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: $border-radius;
+            padding: spacing(4);
+            margin-top: spacing(2);
+        }
+
+        @include tablet-up {
+            padding-top: spacing(3);
+            border-top: 1px solid var(--border-light);
+        }
+
+        // Hidden state
+        &:not(&--visible) {
+            display: none;
+        }
+
+        &--visible {
+            display: block;
+
+            @include mobile-only {
+                animation: slideInContent 0.3s ease-out;
+            }
+        }
+    }
+
+    // Mobile keyboard handling enhancements
+    @include mobile-only {
+        &__body {
+
+            // Dynamic keyboard detection
+            @media (max-height: 60vh) {
+
+                // Keyboard is likely open
+                .form-group {
+                    margin-bottom: spacing(4); // Reduce spacing to fit more content
+                }
+
+                .btn-group {
+                    position: sticky;
+                    bottom: 0;
+                    background: var(--bg-primary);
+                    padding: spacing(3) 0;
+                    margin-top: spacing(4);
+                    border-top: 1px solid var(--border-color);
+                }
+
+                // Ensure focused input is visible
+                .form-control:focus,
+                .form-select:focus,
+                textarea:focus {
+                    scroll-margin-top: 80px;
+                    scroll-margin-bottom: 120px;
+                }
+            }
+
+            // Very small height (landscape mobile)
+            @media (max-height: 40vh) {
+                padding: spacing(2) spacing(4) spacing(4);
+
+                .form-group {
+                    margin-bottom: spacing(3);
+                }
+
+                .settings__section {
+                    margin-bottom: spacing(2);
+                }
+            }
+        }
+
+        // Prevent body scroll when settings are open
+        &__overlay {
+            overscroll-behavior: contain;
+
+            // iOS scroll fix
+            position: fixed;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+
+    // Mobile slide-in animation
+    @include mobile-only {
+        @keyframes slideInContent {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    }
+}
+
+// Enhanced Mobile Performance & Accessibility
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+    .settings {
+        &__panel {
+            @include mobile-only {
+                border: 3px solid var(--text-primary);
+            }
+        }
+
+        &__section {
+            @include mobile-only {
+                border-width: 2px;
+            }
+        }
+
+        .form-control,
+        .form-select {
+            border-width: 2px;
+
+            &:focus {
+                border-width: 3px;
+            }
+        }
+    }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+    .settings {
+        &__section-content--expanded {
+            animation: none;
+        }
+
+        &__advanced-content--visible {
+            animation: none;
+        }
+
+        &__advanced-toggle::before {
+            transition: none;
+        }
+
+        .form-control,
+        .form-select,
+        .form-check-input {
+            transition: none;
+        }
+    }
+
+    @include mobile-only {
+        @keyframes expandContent {
+
+            from,
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes slideInContent {
+
+            from,
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+    }
+}
+
+// Large text support
+@media (prefers-text-size: large) {
+    .settings {
+        &__body {
+            .form-label {
+                font-size: 1.1rem;
+            }
+
+            .form-control,
+            .form-select {
+                font-size: 1.1rem;
+                padding: spacing(4);
+            }
+        }
+    }
+}
+
+// Mobile performance optimizations
+@include mobile-only {
+    .settings {
+
+        // GPU acceleration for smooth scrolling
+        &__body {
+            will-change: scroll-position;
+            transform: translateZ(0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+
+        // Optimize accordion animations
+        &__section-content {
+            contain: layout style paint;
+        }
+
+        // Optimize form controls
+        .form-control,
+        .form-select {
+            will-change: border-color, box-shadow;
+        }
+    }
+}
+
+// Focus management for mobile accessibility
+@include mobile-only {
+    .settings {
+
+        // Ensure focus is visible and accessible
+        &__close-btn:focus,
+        .form-control:focus,
+        .form-select:focus,
+        .form-check-input:focus,
+        &__advanced-toggle:focus {
+            outline: 3px solid var(--btn-primary-bg);
+            outline-offset: 2px;
+        }
+
+        // Screen reader support
+        &__section-header[aria-expanded="true"] {
+            .sr-only {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                padding: 0;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0, 0, 0, 0);
+                white-space: nowrap;
+                border: 0;
+            }
+        }
+    }
+}
+
+// iOS Safari specific fixes
+@supports (-webkit-touch-callout: none) {
+    .settings {
+        &__panel {
+            @include mobile-only {
+                // Fix iOS viewport units
+                height: 100vh;
+                height: calc(var(--vh, 1vh) * 100);
+            }
+        }
+
+        &__body {
+            @include mobile-only {
+                // Fix iOS scrolling momentum
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior: contain;
+            }
+        }
+    }
+}

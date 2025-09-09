@@ -1,6 +1,0 @@
-/* 간단한 타이포그래피 유틸 */
-.h1 { @apply text-2xl font-semibold; }
-.h2 { @apply text-xl font-semibold; }
-.h3 { @apply text-lg font-semibold; }
-.subtitle { @apply text-sm text-text-dim; }
-.body-dim { @apply text-sm text-text-dim; }

@@ -1,13 +1,41 @@
 <!doctype html>
-<html lang="ko" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-    <title>Book GPT</title>
-    <meta name="theme-color" content="#090c12" />
-  </head>
-  <body class="bg-bg text-text min-h-screen">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<html lang="ko" data-theme="light">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="./icon-192.png" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>ChatGPT-like</title>
+  <meta name="description" content="ChatGPT-like interface built with React" />
+  <meta name="theme-color" content="#ffffff" />
+
+  <!-- Apple Web App Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ChatGPT-like" />
+
+  <!-- Open Iconic CSS -->
+  <link href="./open-iconic/font/css/open-iconic-bootstrap.min.css" rel="stylesheet">
+
+  <!-- Manifest -->
+  <link rel="manifest" href="./manifest.json" />
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+
+  <!-- Mobile viewport height script -->
+  <script>
+    // 모바일 브라우저 UI에 의해 vh가 달라지는 문제 보정
+    function setAppVh() {
+      document.documentElement.style.setProperty('--app-vh', window.innerHeight + 'px');
+    }
+    setAppVh();
+    window.addEventListener('resize', setAppVh);
+    window.addEventListener('orientationchange', setAppVh);
+  </script>
+</body>
+
 </html>

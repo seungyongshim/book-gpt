@@ -23,6 +23,12 @@ body {
   @apply bg-surface text-neutral-800 dark:text-neutral-200 transition-colors duration-300;
 }
 
+/* 스크린리더 전용 */
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+
+/* 아이콘 전용 버튼 포커스 가시성 향상 */
+.icon-btn:focus-visible, button:focus-visible { @apply ring-2 ring-primary/60 outline-none; }
+
 /* 스크롤 영역 기본 스타일 */
 .scrollbar-thin {
   scrollbar-width: thin;

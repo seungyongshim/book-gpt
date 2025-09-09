@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { useChatStore } from '../../stores/chatStore';
 import Icon from '../UI/Icon';
+import { useInert } from '../../hooks/useInert';
 
 const ChatSidebar = () => {
   const sessions = useChatStore(state => state.sessions);
@@ -27,28 +29,49 @@ const ChatSidebar = () => {
     await deleteSession(id);
   };
 
+  const asideRef = useRef<HTMLElement>(null);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  useEffect(() => {
+    const update = () => setIsMobile(typeof window !== 'undefined' && window.innerWidth < 768);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+  const inactive = isMobile && !showMobileHistory;
+  useInert(asideRef as any, inactive);
+
   return (
     <>
       {/* 모바일 히스토리 토글 버튼 */}
       <button
-        className="md:hidden fixed top-3 left-3 z-30 h-10 w-10 rounded-md bg-surface-alt dark:bg-neutral-800 border border-border/60 shadow text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition"
+        className="md:hidden fixed top-3 left-3 z-30 h-10 w-10 rounded-md bg-surface-alt dark:bg-neutral-800 border border-border/60 shadow text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition focus:outline-none focus:ring-2 focus:ring-primary/50"
         onClick={toggleMobileHistory}
-        title="대화 기록"
+        aria-label="대화 기록 열기"
       >
-  <Icon name="list" size={18} />
+        <Icon name="list" size={18} />
       </button>
 
       {/* 사이드바 */}
-  <aside className={`flex flex-col w-60 max-w-[70vw] shrink-0 border-r border-border/60 bg-surface-alt dark:bg-neutral-900/60 backdrop-blur pt-4 pb-4 px-3 gap-3 transform md:transform-none transition-transform fixed md:static inset-y-0 left-0 z-40 ${showMobileHistory ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <aside
+        ref={asideRef as any}
+        className={`flex flex-col w-60 max-w-[70vw] shrink-0 border-r border-border/60 bg-surface-alt dark:bg-neutral-900/60 backdrop-blur pt-4 pb-4 px-3 gap-3 transform md:transform-none transition-transform fixed md:static inset-y-0 left-0 z-40 ${showMobileHistory ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+        aria-hidden={inactive}
+        tabIndex={inactive ? -1 : 0}
+      >
         <div className="flex items-center gap-2 mb-2">
-          <button className="flex-1 inline-flex items-center gap-2 h-10 rounded-md bg-primary/90 hover:bg-primary text-white text-sm font-medium px-3 shadow" onClick={handleNewChat}>
+          <button
+            className="flex-1 inline-flex items-center gap-2 h-10 rounded-md bg-primary/90 hover:bg-primary text-white text-sm font-medium px-3 shadow focus:outline-none focus:ring-2 focus:ring-primary/50"
+            onClick={handleNewChat}
+            aria-label="새 대화 시작"
+          >
             <Icon name="plus" size={18} />
-            새 대화
+            <span>새 대화</span>
           </button>
 
           <button
-            className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-md border border-border/60 bg-surface text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-md border border-border/60 bg-surface text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
             onClick={closeMobileHistory}
+            aria-label="사이드바 닫기"
           >
             <Icon name="x" size={16} />
           </button>
@@ -59,6 +82,8 @@ const ChatSidebar = () => {
             <div
               key={session.id}
               onClick={() => handleSwitchSession(session.id)}
+              role="button"
+              aria-pressed={session.id === currentSessionId}
               className={`group relative rounded-md border border-border/50 px-3 py-2 cursor-pointer text-sm transition shadow-sm hover:shadow-md hover:border-primary/40 hover:bg-primary/5 dark:hover:bg-primary/10 flex flex-col ${session.id === currentSessionId ? 'border-primary/60 bg-primary/10 dark:bg-primary/20' : 'bg-surface dark:bg-neutral-800/60'}`}
             >
               <div className="font-medium line-clamp-1 pr-7 min-w-0 break-words">{session.title}</div>

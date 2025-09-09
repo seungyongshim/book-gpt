@@ -160,27 +160,36 @@ const ChatInput = () => {
 
       <div className="flex gap-4 flex-wrap items-start">
         <div className="flex items-center gap-4 flex-wrap">
-          {/* 모델 선택 */}
-          {availableModels.length > 0 ? (
-            <select
-              id="model-select"
-              value={selectedModel}
-              onChange={handleModelChange}
-              className="h-10 rounded-md border border-border/60 bg-surface dark:bg-neutral-800 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-            >
-              {availableModels.map(model => (
-                <option key={model} value={model}>{model}</option>
-              ))}
-            </select>
-          ) : (
-            <input
-              type="text"
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              placeholder="모델명을 입력하세요"
-              className="h-10 rounded-md border border-border/60 bg-surface dark:bg-neutral-800 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
-          )}
+          {/* 모델 선택 + 라벨 */}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="model-select" className="text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">모델</label>
+            {availableModels.length > 0 ? (
+              <select
+                id="model-select"
+                aria-label="응답 생성에 사용할 모델 선택"
+                value={selectedModel}
+                onChange={handleModelChange}
+                className="h-10 min-w-[170px] max-w-[240px] rounded-md border border-border/60 bg-surface dark:bg-neutral-800 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+              >
+                {selectedModel === '' && <option value="" disabled>모델 선택...</option>}
+                {availableModels.map(model => (
+                  <option key={model} value={model}>{model}</option>
+                ))}
+              </select>
+            ) : (
+              <div className="relative">
+                <input
+                  type="text"
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  placeholder="모델명을 입력하세요"
+                  aria-label="모델명 수동 입력"
+                  className="h-10 min-w-[170px] max-w-[240px] rounded-md border border-border/60 bg-surface dark:bg-neutral-800 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <span className="absolute -bottom-4 left-0 text-[10px] text-neutral-400 dark:text-neutral-500">엔터 전에 모델명 확인</span>
+              </div>
+            )}
+          </div>
 
           {/* 온도 설정 (다이얼) */}
           <div className="flex items-center" aria-label="온도 설정">

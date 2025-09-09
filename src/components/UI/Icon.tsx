@@ -97,21 +97,25 @@ const ICON_PATHS: Record<string, JSX.Element> = {
 
 export const Icon: React.FC<IconProps> = ({ name, size = 16, className, title, ...rest }) => {
   const content = ICON_PATHS[name] || (
-    // fallback: 사선 들어간 원형
     <g>
       <circle cx="12" cy="12" r="10" />
       <path d="M5 5l14 14" />
     </g>
   );
+
+  // title 없고, 상위 버튼이 자체 aria-label을 제공한다면 단순 장식으로 간주 가능하므로 aria-hidden 허용
+  const ariaProps: Record<string, any> = title
+    ? { role: 'img', 'aria-label': title as string }
+    : { 'aria-hidden': true, focusable: false };
+
   return (
     <svg
-      role="img"
-      aria-label={title || (ICON_PATHS[name] ? name : 'icon')}
       width={size}
       height={size}
       viewBox="0 0 24 24"
       className={className}
       {...base}
+      {...ariaProps}
       {...rest}
     >
       {title && <title>{title}</title>}

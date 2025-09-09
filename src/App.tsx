@@ -15,7 +15,9 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-surface text-neutral-800 dark:text-neutral-200 transition-colors">
-      <ThemeToggle />
+      <header className="h-14 shrink-0 flex items-center justify-end px-4 border-b border-border/60 bg-surface-alt/60 backdrop-blur z-20">
+        <ThemeToggle />
+      </header>
       <div className="flex flex-1 overflow-hidden">
         <ChatSidebar />
         <ChatContainer />

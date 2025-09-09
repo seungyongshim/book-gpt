@@ -115,6 +115,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   // 앱 초기화
   initializeApp: async () => {
+    // React.StrictMode 환경에서는 mount -> unmount -> remount 로 useEffect가 두 번 호출될 수 있으므로
+    // 이미 초기화되었다면 재실행하지 않도록 가드
+    const alreadyInit = (window as any).__CHAT_APP_INITIALIZED__;
+    if (alreadyInit) {
+      return; // 중복 초기화 방지
+    }
+    (window as any).__CHAT_APP_INITIALIZED__ = true;
     console.log('Initializing app...');
 
     // 스토리지 초기화

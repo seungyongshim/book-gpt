@@ -1,12 +1,13 @@
 import clsx from 'clsx';
 import React from 'react';
+import Icon, { IconName } from './Icon';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger';
   size?: 'sm' | 'md';
   loading?: boolean;
-  leftIcon?: string; // open-iconic icon name
-  rightIcon?: string;
+  leftIcon?: IconName | string;
+  rightIcon?: IconName | string;
 }
 
 const variantStyles: Record<string, string> = {
@@ -43,9 +44,9 @@ export const Button: React.FC<ButtonProps> = ({
       disabled={isDisabled}
       {...rest}
     >
-      {leftIcon && <i className={`oi oi-${leftIcon}`}></i>}
+      {leftIcon && <Icon name={leftIcon} size={16} />}
       {children}
-      {rightIcon && <i className={`oi oi-${rightIcon}`}></i>}
+      {rightIcon && <Icon name={rightIcon} size={16} />}
     </button>
   );
 };

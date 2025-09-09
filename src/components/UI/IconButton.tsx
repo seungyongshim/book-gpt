@@ -1,8 +1,9 @@
 import clsx from 'clsx';
 import React from 'react';
+import Icon, { IconName } from './Icon';
 
 export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  icon: string; // open-iconic class suffix e.g. "pencil"
+  icon: IconName | string; // 기존 string 유지 (점진적 치환)
   variant?: 'default' | 'danger' | 'success' | 'primary';
   size?: 'sm' | 'md' | 'lg';
   ariaLabel?: string;
@@ -42,7 +43,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
       title={title}
       {...rest}
     >
-      <i className={`oi oi-${icon}`}></i>
+      <Icon name={icon} size={size === 'sm' ? 14 : size === 'md' ? 16 : 18} />
     </button>
   );
 };

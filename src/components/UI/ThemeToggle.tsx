@@ -1,4 +1,5 @@
 import { useChatStore } from '../../stores/chatStore';
+import Icon from './Icon';
 
 const ThemeToggle = () => {
   const isDarkMode = useChatStore(state => state.isDarkMode);
@@ -10,7 +11,7 @@ const ThemeToggle = () => {
       onClick={toggleTheme}
       title={isDarkMode ? "라이트 모드로 전환" : "다크 모드로 전환"}
     >
-      <i className={`oi ${isDarkMode ? "oi-sun" : "oi-moon"}`}></i>
+  <Icon name={isDarkMode ? 'sun' : 'moon'} size={18} />
     </button>
   );
 };

@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import TemperatureDial from '../UI/TemperatureDial';
+import Icon from '../UI/Icon';
+import Alert from '../UI/Alert';
 import { useChatStore } from '../../stores/chatStore';
 import UsageInfo from '../UI/UsageInfo';
 
@@ -151,10 +153,9 @@ const ChatInput = () => {
   return (
     <div ref={containerRef} className="border-t border-border/60 bg-surface-alt dark:bg-neutral-900/70 backdrop-blur pt-3 md:pt-4 px-3 md:px-6 pb-4 flex flex-col gap-3">
       {error && (
-        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-400/40 px-3 py-2 rounded-md">
-          <i className="oi oi-warning"></i>
+        <Alert variant="error" icon="warning">
           {error}
-        </div>
+        </Alert>
       )}
 
       <div className="flex gap-4 flex-wrap items-start">
@@ -227,9 +228,9 @@ const ChatInput = () => {
           >
             <div className="send-btn-layout">
               {isSending ? (
-                <i className="oi oi-x"></i>
+                <Icon name="x" size={16} />
               ) : (
-                <i className="oi oi-arrow-right"></i>
+                <Icon name="arrow-right" size={16} />
               )}
               <UsageInfo />
             </div>

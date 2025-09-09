@@ -61,9 +61,30 @@ dist/assets/markdown-*.js       ~335 kB (gzip ~102 kB)
 
 ### 향후 작업 권장 순서
 1. highlight.js 언어 subset 구성
-2. 아이콘 폰트 제거 & SVG 아이콘 전환
+2. (완료) 아이콘 폰트 제거 & SVG 아이콘 전환 (`<Icon />` 컴포넌트 도입)
 3. Service Worker (PWA) 도입
 4. 성능 프로파일링 (LCP/TTI) 측정 후 필요 시 prefetch 조정
+
+## 아이콘 시스템 전환 (2025-09)
+
+기존 Open Iconic 폰트 기반 (`.oi .oi-*`) 아이콘을 제거하고, 경량 커스텀 SVG 세트로 마이그레이션하였습니다.
+
+### 변경 요약
+- `public/open-iconic`, `src/styles/css/open-iconic` 자산 및 `index.html` 링크 제거
+- `Icon` 컴포넌트 추가 (`src/components/UI/Icon.tsx`)
+- 사용된 아이콘만 Path 정의 (warning, x, arrow-right, list, plus, trash, check, sun, moon, loop, data-transfer-download)
+- `Button`, `IconButton`, `ThemeToggle`, `ChatInput`, `ChatSidebar`, `SettingsPanel` 내 `<i class="oi ...">` → `<Icon name="..." />` 교체
+
+### 기대 효과
+- 초기 CSS + 폰트 리소스 다운로드 제거 (수십 kB 절감)
+- FOUT/FOIT 방지 (아이콘 폰트 로드 레이스 제거)
+- 트리쉐이킹 가능 (미사용 아이콘 path 미번들)
+- 스타일 일관성 (stroke 기반 아이콘에 Tailwind 색상 즉시 적용)
+
+### 추가 확장 가이드
+- 새로운 아이콘 추가 시 `IconName` union 타입 + `ICON_PATHS` 객체에 path 추가
+- 대체로 24x24 viewport 유지 → 디자인 일관성
+- 외부 라이브러리(Heroicons 등) 통합 시 wrapper 레벨에서 name 매핑 테이블 작성 권장
 
 ---
 이 최적화 섹션은 변경 추적을 위해 날짜와 함께 유지하세요. 새로운 전략을 적용하면 bullet을 업데이트하거나 Deprecated 표기를 추가하십시오.

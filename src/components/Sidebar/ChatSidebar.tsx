@@ -1,4 +1,5 @@
 import { useChatStore } from '../../stores/chatStore';
+import Icon from '../UI/Icon';
 
 const ChatSidebar = () => {
   const sessions = useChatStore(state => state.sessions);
@@ -34,14 +35,14 @@ const ChatSidebar = () => {
         onClick={toggleMobileHistory}
         title="대화 기록"
       >
-        <i className="oi oi-list"></i>
+  <Icon name="list" size={18} />
       </button>
 
       {/* 사이드바 */}
-      <aside className={`flex flex-col w-60 shrink-0 border-r border-border/60 bg-surface-alt dark:bg-neutral-900/60 backdrop-blur pt-4 pb-4 px-3 gap-3 transform md:transform-none transition-transform fixed md:static inset-y-0 left-0 z-40 ${showMobileHistory ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+  <aside className={`flex flex-col w-60 max-w-[70vw] shrink-0 border-r border-border/60 bg-surface-alt dark:bg-neutral-900/60 backdrop-blur pt-4 pb-4 px-3 gap-3 transform md:transform-none transition-transform fixed md:static inset-y-0 left-0 z-40 ${showMobileHistory ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="flex items-center gap-2 mb-2">
           <button className="flex-1 inline-flex items-center gap-2 h-10 rounded-md bg-primary/90 hover:bg-primary text-white text-sm font-medium px-3 shadow" onClick={handleNewChat}>
-            <i className="oi oi-plus text-base"></i>
+            <Icon name="plus" size={18} />
             새 대화
           </button>
 
@@ -49,19 +50,19 @@ const ChatSidebar = () => {
             className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-md border border-border/60 bg-surface text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             onClick={closeMobileHistory}
           >
-            <i className="oi oi-x"></i>
+            <Icon name="x" size={16} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+  <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin overscroll-contain">
           {sessions.map((session) => (
             <div
               key={session.id}
               onClick={() => handleSwitchSession(session.id)}
-              className={`group relative rounded-md border border-border/50 px-3 py-2 cursor-pointer text-sm transition shadow-sm hover:shadow-md hover:border-primary/40 hover:bg-primary/5 dark:hover:bg-primary/10 ${session.id === currentSessionId ? 'border-primary/60 bg-primary/10 dark:bg-primary/20' : 'bg-surface dark:bg-neutral-800/60'}`}
+              className={`group relative rounded-md border border-border/50 px-3 py-2 cursor-pointer text-sm transition shadow-sm hover:shadow-md hover:border-primary/40 hover:bg-primary/5 dark:hover:bg-primary/10 flex flex-col ${session.id === currentSessionId ? 'border-primary/60 bg-primary/10 dark:bg-primary/20' : 'bg-surface dark:bg-neutral-800/60'}`}
             >
-              <div className="font-medium line-clamp-1 pr-7">{session.title}</div>
-              <div className="text-[10px] mt-1 text-neutral-500 dark:text-neutral-400">
+              <div className="font-medium line-clamp-1 pr-7 min-w-0 break-words">{session.title}</div>
+              <div className="text-[10px] mt-1 text-neutral-500 dark:text-neutral-400 min-w-0">
                 {new Date(session.lastUpdated).toLocaleDateString('ko-KR')}
               </div>
               {sessions.length > 1 && (
@@ -70,7 +71,7 @@ const ChatSidebar = () => {
                   onClick={(e) => handleDeleteSession(e, session.id)}
                   title="대화 삭제"
                 >
-                  <i className="oi oi-trash text-xs"></i>
+                  <Icon name="trash" size={14} />
                 </button>
               )}
             </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Button from '../UI/Button';
 import Icon from '../UI/Icon';
+import IconButton from '../UI/IconButton';
 import SettingsSection from '../UI/SettingsSection';
 import StatusChip from '../UI/StatusChip';
 import { useChatStore } from '../../stores/chatStore';
@@ -89,14 +90,13 @@ const SettingsPanel = () => {
       <div className="settings-panel">
         <div className="flex items-center justify-between mb-4">
           <h5 className="text-lg font-semibold">설정</h5>
-          <button
-            className="icon-btn"
+          <IconButton
+            variant="default"
+            size="md"
             onClick={closeSettingsOverlay}
-            title="닫기"
-            aria-label="설정 닫기"
-          >
-            <Icon name="x" size={16} />
-          </button>
+            icon="x"
+            title="설정 닫기"
+          />
         </div>
 
         <div className="space-y-10">

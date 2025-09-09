@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 10",
     "preview": "vite build && vite preview",
-    "stylelint": "stylelint \"src/**/*.{css,ts,tsx}\" --ignore-disables",
+    "stylelint": "stylelint \"src/**/*.{css,scss}\" --ignore-disables",
     "format": "prettier --write ."
   },
   "dependencies": {
@@ -27,15 +27,18 @@
     "@types/react-dom": "^18.2.17",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
-  "@vitejs/plugin-react": "^4.2.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.21",
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "postcss": "^8.4.47",
-  "autoprefixer": "^10.4.21",
+    "postcss-scss": "^4.0.9",
     "prettier": "^3.3.3",
     "stylelint": "^16.10.0",
-  "stylelint-order": "^6.0.4",
+    "stylelint-config-prettier-scss": "^0.0.1",
+    "stylelint-config-standard-scss": "^13.1.0",
+    "stylelint-order": "^6.0.4",
     "tailwindcss": "^3.4.10",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"

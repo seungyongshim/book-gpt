@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 // Node 전역에 대한 타입 경고 억제
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const process: any;
 
 // Sass deprecation warnings silencing for build output cleanliness

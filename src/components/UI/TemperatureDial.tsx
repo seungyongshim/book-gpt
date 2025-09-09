@@ -45,7 +45,7 @@ const TemperatureDial: React.FC<TemperatureDialProps> = ({
     const valueToDeg = useCallback((v: number) => {
         const t = (v - min) / (max - min); // 0..1
         return startDeg + t * sweepDeg;
-    }, [min, max]);
+    }, [min, max, startDeg, sweepDeg]);
 
     const degToValue = useCallback((deg: number) => {
         // -135..135 로 정규화
@@ -59,7 +59,7 @@ const TemperatureDial: React.FC<TemperatureDialProps> = ({
         // 스텝 정렬
         const snapped = stepFixed(Math.round(val / step) * step);
         return Math.min(max, Math.max(min, snapped));
-    }, [min, max, step, stepFixed]);
+    }, [min, max, step, stepFixed, startDeg, sweepDeg]);
 
     // 포인터 좌표 -> 각도
     const posToDeg = useCallback((clientX: number, clientY: number) => {

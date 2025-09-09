@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS 변수를 통해 다크모드와 커스텀 색상 정의 */
+:root {
+  --color-surface: 0 0% 100%;
+  --color-surface-alt: 210 40% 98%;
+  --color-border: 214 32% 91%;
+  --color-primary: 221 83% 53%;
+  --color-danger: 0 72% 51%;
+}
+
+[data-theme="dark"] {
+  --color-surface: 222 47% 11%;
+  --color-surface-alt: 217 33% 17%;
+  --color-border: 215 27% 25%;
+  --color-primary: 217 91% 60%;
+  --color-danger: 0 72% 60%;
+}
+
+body {
+  @apply bg-surface text-neutral-800 dark:text-neutral-200 transition-colors duration-300;
+}
+
+/* 스크롤 영역 기본 스타일 */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+.scrollbar-thin::-webkit-scrollbar { width: 8px; }
+.scrollbar-thin::-webkit-scrollbar-track { @apply bg-transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { @apply bg-neutral-300/50 dark:bg-neutral-700/60 rounded; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { @apply bg-neutral-400/70 dark:bg-neutral-600/70; }
+
+/* 유틸: 말풍선 공통 */
+.chat-bubble-base { @apply rounded-lg px-4 py-3 shadow-sm border border-border/60 bg-surface-alt dark:bg-neutral-800/70 backdrop-blur; }
+.chat-bubble-user { @apply bg-primary/10 border-primary/30; }
+.chat-bubble-assistant { @apply bg-neutral-100 dark:bg-neutral-800 border-border/50; }
+.chat-bubble-system { @apply bg-amber-50 dark:bg-amber-900/30 border-amber-400/40; }
+
+/* 아이콘 버튼 기본 */
+.icon-btn { @apply h-8 w-8 inline-flex items-center justify-center rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed; }
+
+/* 전송 버튼 가로 레이아웃 */
+.send-btn-layout { @apply inline-flex items-center gap-2 font-medium; }
+
+/* 설정 패널 레이아웃 */
+.settings-overlay { @apply fixed inset-0 z-40 flex items-start justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto; }
+.settings-panel { @apply w-full max-w-xl bg-surface dark:bg-neutral-900 rounded-xl shadow-elevated border border-border/60 p-4 space-y-6; }
+.settings-section { @apply space-y-3; }
+.settings-section-title { @apply text-sm font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide; }
+.settings-input { @apply w-full rounded-md border border-border/70 bg-surface-alt dark:bg-neutral-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50; }
+.settings-textarea { @apply settings-input resize-y min-h-[120px]; }
+.status-chip { @apply inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md; }
+.status-chip-success { @apply bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300; }
+.status-chip-error { @apply bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300; }
+
+/* 가변 높이 입력 패딩 동기화 */
+main { padding-bottom: var(--chat-input-h); }

@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
+// Markdown 렌더러는 코드 스플리팅된 Lazy 컴포넌트 사용
+import { MarkdownRenderer } from './MarkdownRenderer';
 import { useChatStore } from '../../stores/chatStore';
 import { ChatMessage } from '../../services/types';
+import MessageActionButtons from './MessageActionButtons';
 
 interface MessageItemProps {
   message: ChatMessage;
@@ -128,7 +128,13 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
   };
 
   const getRoleClass = (role: string) => {
-    return `message-item message-${role}`;
+    const base = 'chat-bubble-base';
+    switch (role) {
+      case 'user': return base + ' chat-bubble-user self-end';
+      case 'assistant': return base + ' chat-bubble-assistant';
+      case 'system': return base + ' chat-bubble-system';
+      default: return base;
+    }
   };
 
   const isLastAssistantMessage =
@@ -139,97 +145,39 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
 
   return (
     <div className={getRoleClass(message.role)}>
-      <div className="message-header">
-        <div className="message-role">{getRoleDisplayName(message.role)}</div>
-        <div className="message-actions">
-          {!isEditing && (
-            <>
-              <button
-                className="message-action-btn"
-                onClick={handleStartEdit}
-                title="편집"
-              >
-                <i className="oi oi-pencil"></i>
-              </button>
-
-              <button
-                className="message-action-btn copy-btn"
-                onClick={handleCopyToClipboard}
-                title="복사"
-              >
-                <i className="oi oi-clipboard"></i>
-              </button>
-              {copied && (
-                <span className="copy-feedback" aria-live="polite">복사됨</span>
-              )}
-
-              {message.role === 'user' && (
-                <button
-                  className="message-action-btn"
-                  onClick={handleResend}
-                  disabled={isSending}
-                  title="재전송"
-                >
-                  <i className="oi oi-reload"></i>
-                </button>
-              )}
-
-              <button
-                className="message-action-btn delete-btn"
-                onClick={handleDelete}
-                title={message.role === 'system' ? "기본값으로 재설정" : "삭제"}
-              >
-                <i className={message.role === 'system' ? "oi oi-loop-circular" : "oi oi-trash"}></i>
-              </button>
-            </>
-          )}
-
-          {isEditing && (
-            <>
-              <button
-                className="message-action-btn save-btn"
-                onClick={handleSaveEdit}
-                title="저장 (Ctrl+Enter)"
-              >
-                <i className="oi oi-check"></i>
-              </button>
-
-              <button
-                className="message-action-btn cancel-btn"
-                onClick={handleCancelEdit}
-                title="취소 (Esc)"
-              >
-                <i className="oi oi-x"></i>
-              </button>
-            </>
-          )}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
+          {getRoleDisplayName(message.role)}
         </div>
+        <MessageActionButtons
+          isEditing={isEditing}
+          messageRole={message.role}
+          isSending={isSending}
+          copied={copied}
+          onStartEdit={handleStartEdit}
+          onCopy={handleCopyToClipboard}
+            onResend={handleResend}
+          onDelete={handleDelete}
+          onSave={handleSaveEdit}
+          onCancel={handleCancelEdit}
+          isSystemReset={message.role === 'system'}
+        />
       </div>
 
-      <div className="message-content">
+      <div className="space-y-2 text-sm leading-relaxed">
         {isEditing ? (
           <textarea
             ref={textareaRef}
             value={localEditText}
             onChange={handleTextChange}
             onKeyDown={handleKeyDown}
-            className="message-edit-textarea"
+            className="w-full rounded-md border border-border/60 bg-surface-alt dark:bg-neutral-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
             placeholder="메시지를 입력하세요..."
           />
         ) : (
-          <div className="message-text">
+          <div className="prose prose-neutral dark:prose-invert max-w-none text-sm">
             {message.role === 'assistant' ? (
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeHighlight]}
-                components={{
-                  a: (props) => (
-                    <a {...props} target="_blank" rel="noopener noreferrer" />
-                  )
-                }}
-              >
-                {message.text}
-              </ReactMarkdown>
+              <MarkdownRenderer text={message.text} />
             ) : (
               <>{message.text}</>
             )}
@@ -239,11 +187,8 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
         {/* 어시스턴트 메시지 하단에 문자수 카운트 상시 표시
             - 스트리밍 중 마지막 어시스턴트일 때만 aria-live로 부드럽게 업데이트 */}
         {message.role === 'assistant' && (
-          <div className="message-meta">
-            <span
-              className="char-counter"
-              aria-live={isLastAssistantMessage && isSending ? 'polite' : 'off'}
-            >
+          <div className="text-xs text-neutral-500 dark:text-neutral-400">
+            <span aria-live={isLastAssistantMessage && isSending ? 'polite' : 'off'}>
               {charCount.toLocaleString()}자
             </span>
           </div>
@@ -251,38 +196,21 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
 
         {/* 어시스턴트(응답) 메시지 버블 하단에도 동일한 액션 버튼 표시 */}
         {message.role === 'assistant' && !isEditing && (
-          <div className="message-footer">
-            <div className="message-actions">
-              <button
-                className="message-action-btn"
-                onClick={handleStartEdit}
-                title="편집"
-                aria-label="편집"
-              >
-                <i className="oi oi-pencil"></i>
-              </button>
-
-              <button
-                className="message-action-btn copy-btn"
-                onClick={handleCopyToClipboard}
-                title="복사"
-                aria-label="복사"
-              >
-                <i className="oi oi-clipboard"></i>
-              </button>
-              {copied && (
-                <span className="copy-feedback" aria-live="polite">복사됨</span>
-              )}
-
-              <button
-                className="message-action-btn delete-btn"
-                onClick={handleDelete}
-                title="삭제"
-                aria-label="삭제"
-              >
-                <i className="oi oi-trash"></i>
-              </button>
-            </div>
+          <div className="pt-1">
+            <MessageActionButtons
+              isEditing={false}
+              messageRole={message.role}
+              isSending={isSending}
+              copied={copied}
+              onStartEdit={handleStartEdit}
+              onCopy={handleCopyToClipboard}
+              onResend={handleResend}
+              onDelete={handleDelete}
+              onSave={handleSaveEdit}
+              onCancel={handleCancelEdit}
+              showFooterVariant
+              isSystemReset={false}
+            />
           </div>
         )}
       </div>

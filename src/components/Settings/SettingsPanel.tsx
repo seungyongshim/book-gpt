@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Button from '../UI/Button';
 import { useChatStore } from '../../stores/chatStore';
 import { StorageService } from '../../services/storageService';
 import { chatService } from '../../services/chatService';
@@ -84,12 +85,12 @@ const SettingsPanel = () => {
   };
 
   return (
-    <div className="settings__overlay" aria-modal="true" role="dialog">
-      <div className="settings__panel">
-        <div className="settings__header">
-          <h5>설정</h5>
+    <div className="settings-overlay" aria-modal="true" role="dialog">
+      <div className="settings-panel">
+        <div className="flex items-center justify-between mb-4">
+          <h5 className="text-lg font-semibold">설정</h5>
           <button
-            className="settings__close-btn"
+            className="icon-btn"
             onClick={closeSettingsOverlay}
             title="닫기"
             aria-label="설정 닫기"
@@ -98,42 +99,38 @@ const SettingsPanel = () => {
           </button>
         </div>
 
-        <div className="settings__body">
+        <div className="space-y-10">
           {/* 시스템 메시지 설정 */}
-          <section className="settings__section">
-            <div className="settings__section-header">
-              <h6 className="settings__section-title">시스템 메시지</h6>
+          <section className="settings-section">
+            <div>
+              <h6 className="settings-section-title">시스템 메시지</h6>
             </div>
-            <div className="settings__section-content">
-              <label className="form-label" htmlFor="system-message">시스템 메시지</label>
+            <div className="space-y-3">
+              <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400" htmlFor="system-message">시스템 메시지</label>
               <textarea
                 id="system-message"
-                className="form-control"
+                className="settings-textarea"
                 value={localSystemMessage}
                 onChange={(e) => setLocalSystemMessage(e.target.value)}
                 placeholder="시스템 메시지를 입력하세요..."
                 rows={4}
               />
-              <div className="btn-group">
-                <button onClick={handleSystemMessageChange} className="btn btn--primary">
-                  시스템 메시지 저장
-                </button>
-              </div>
+              <Button onClick={handleSystemMessageChange} variant="primary" leftIcon="check">시스템 메시지 저장</Button>
             </div>
           </section>
 
           {/* 모델 설정 */}
-          <section className="settings__section">
-            <div className="settings__section-header">
-              <h6 className="settings__section-title">현재 모델 설정 ({selectedModel})</h6>
+          <section className="settings-section">
+            <div>
+              <h6 className="settings-section-title">현재 모델 설정 ({selectedModel})</h6>
             </div>
-            <div className="settings__section-content">
-              <div className="form-group">
-                <label className="form-label" htmlFor="max-tokens">최대 토큰 수</label>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400" htmlFor="max-tokens">최대 토큰 수</label>
                 <input
                   id="max-tokens"
                   type="number"
-                  className="form-control"
+                  className="settings-input"
                   value={localMaxTokens}
                   onChange={(e) => setLocalMaxTokens(e.target.value)}
                   placeholder="비워두면 제한 없음"
@@ -141,58 +138,44 @@ const SettingsPanel = () => {
                   max={100000}
                 />
               </div>
-              <div className="btn-group">
-                <button onClick={handleModelSettingsChange} className="btn btn--primary">
-                  모델 설정 저장
-                </button>
-              </div>
+              <Button onClick={handleModelSettingsChange} variant="primary" leftIcon="check">모델 설정 저장</Button>
             </div>
           </section>
 
           {/* 기본 설정 */}
-          <section className="settings__section">
-            <div className="settings__section-header">
-              <h6 className="settings__section-title">기본 설정</h6>
+          <section className="settings-section">
+            <div>
+              <h6 className="settings-section-title">기본 설정</h6>
             </div>
-            <div className="settings__section-content">
-              <div className="form-group">
-                <label className="form-label" htmlFor="default-model">기본 모델</label>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400" htmlFor="default-model">기본 모델</label>
                 <input
                   id="default-model"
                   type="text"
-                  className="form-control"
+                  className="settings-input"
                   value={defaultModel}
                   onChange={(e) => setDefaultModel(e.target.value)}
                   placeholder="기본 모델명을 입력하세요"
                 />
               </div>
-              <div className="btn-group">
-                <button onClick={handleSaveDefaults} className="btn btn--secondary">
-                  기본 설정 저장
-                </button>
-              </div>
+              <Button onClick={handleSaveDefaults} variant="secondary" leftIcon="check">기본 설정 저장</Button>
             </div>
           </section>
 
           {/* 연결 테스트 */}
-          <section className="settings__section">
-            <div className="settings__section-header">
-              <h6 className="settings__section-title">연결 테스트</h6>
+          <section className="settings-section">
+            <div>
+              <h6 className="settings-section-title">연결 테스트</h6>
             </div>
-            <div className="settings__section-content">
-              <div className="btn-group">
-                <button onClick={handleTestConnection} className="btn btn--secondary">
-                  API 연결 테스트
-                </button>
-                <button onClick={handleTestIndexedDB} className="btn btn--secondary">
-                  IndexedDB 테스트
-                </button>
-                <button onClick={handleClearIndexedDB} className="btn btn--danger">
-                  데이터 초기화
-                </button>
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={handleTestConnection} variant="secondary" leftIcon="loop" >API 연결 테스트</Button>
+                <Button onClick={handleTestIndexedDB} variant="secondary" leftIcon="data-transfer-download">IndexedDB 테스트</Button>
+                <Button onClick={handleClearIndexedDB} variant="danger" leftIcon="trash">데이터 초기화</Button>
               </div>
               {connectionStatus && (
-                <div className={`connection-status ${connectionOk ? 'success' : 'error'}`}>
+                <div className={`status-chip ${connectionOk ? 'status-chip-success' : 'status-chip-error'}`}>
                   <i className={`oi ${connectionOk ? 'oi-check' : 'oi-warning'}`}></i>
                   {connectionStatus}
                 </div>
@@ -202,7 +185,7 @@ const SettingsPanel = () => {
 
           {/* 저장 상태 */}
           {saveStatus && (
-            <div className="save-status success">
+            <div className="status-chip status-chip-success">
               <i className="oi oi-check"></i>
               {saveStatus}
             </div>

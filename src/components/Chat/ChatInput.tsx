@@ -149,23 +149,23 @@ const ChatInput = () => {
   };
 
   return (
-    <div className="chat-input-container" ref={containerRef}>
+    <div ref={containerRef} className="border-t border-border/60 bg-surface-alt dark:bg-neutral-900/70 backdrop-blur pt-3 md:pt-4 px-3 md:px-6 pb-4 flex flex-col gap-3">
       {error && (
-        <div className="error-message">
+        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-400/40 px-3 py-2 rounded-md">
           <i className="oi oi-warning"></i>
           {error}
         </div>
       )}
 
-      <div className="chat-input-wrapper">
-        <div className="input-controls">
+      <div className="flex gap-4 flex-wrap items-start">
+        <div className="flex items-center gap-4 flex-wrap">
           {/* 모델 선택 */}
           {availableModels.length > 0 ? (
             <select
               id="model-select"
               value={selectedModel}
               onChange={handleModelChange}
-              className="model-select"
+              className="h-10 rounded-md border border-border/60 bg-surface dark:bg-neutral-800 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
               {availableModels.map(model => (
                 <option key={model} value={model}>{model}</option>
@@ -177,12 +177,12 @@ const ChatInput = () => {
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
               placeholder="모델명을 입력하세요"
-              className="model-input"
+              className="h-10 rounded-md border border-border/60 bg-surface dark:bg-neutral-800 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           )}
 
           {/* 온도 설정 (다이얼) */}
-          <div className="temperature-group" aria-label="온도 설정">
+          <div className="flex items-center" aria-label="온도 설정">
             <TemperatureDial
               value={temperature}
               onChange={handleTemperatureDirectChange}
@@ -195,39 +195,37 @@ const ChatInput = () => {
           </div>
         </div>
 
-        <div className="input-area">
-          <div className="textarea-container">
+        <div className="flex-1 min-w-[260px] flex items-end gap-3">
+          <div className="relative flex-1">
             <textarea
               ref={textareaRef}
               value={localInput}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder="메시지를 입력하세요... (Enter: 전송, Shift+Enter: 줄바꿈)"
-              className="message-input"
+              className="w-full rounded-md border border-border/60 bg-surface dark:bg-neutral-800 px-3 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSending}
               style={{ height: `${textareaHeight}px` }}
             />
             <div
               ref={resizeRef}
-              className={`resize-handle ${isResizing ? 'resizing' : ''}`}
               onMouseDown={handleMouseDown}
               title="드래그하여 크기 조절"
+              className={`absolute right-2 bottom-2 cursor-row-resize select-none flex flex-col items-center justify-center gap-[2px] opacity-60 hover:opacity-100 transition ${isResizing ? 'text-primary' : 'text-neutral-400 dark:text-neutral-500'}`}
             >
-              <div className="resize-indicator">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
+              <span className="block h-[2px] w-5 rounded bg-current" />
+              <span className="block h-[2px] w-5 rounded bg-current" />
+              <span className="block h-[2px] w-5 rounded bg-current" />
             </div>
           </div>
 
           <button
             onClick={handleSendOrCancel}
             disabled={!localInput.trim() && !isSending}
-            className={`send-btn ${isSending ? 'sending' : ''}`}
+            className={`h-12 shrink-0 rounded-md px-4 inline-flex items-center gap-2 font-medium shadow transition-colors border text-sm ${isSending ? 'bg-red-500 hover:bg-red-600 text-white border-red-600' : 'bg-primary/90 hover:bg-primary text-white border-primary/70'} disabled:opacity-60 disabled:cursor-not-allowed`}
             title={isSending ? "전송 취소" : "메시지 전송"}
           >
-            <div className="send-btn-content">
+            <div className="send-btn-layout">
               {isSending ? (
                 <i className="oi oi-x"></i>
               ) : (

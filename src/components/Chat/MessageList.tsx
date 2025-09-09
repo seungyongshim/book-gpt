@@ -36,7 +36,7 @@ const MessageList = () => {
   const otherMessages = messages.filter(m => m.role !== 'system');
 
   return (
-    <div className="message-list" ref={listRef}>
+    <div ref={listRef} className="flex flex-col gap-4">
       {systemMessage && (
         <MessageItem
           message={systemMessage}

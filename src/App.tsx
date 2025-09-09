@@ -14,14 +14,12 @@ function App() {
   }, [initializeApp]);
 
   return (
-    <div className="app">
+    <div className="min-h-screen flex flex-col bg-surface text-neutral-800 dark:text-neutral-200 transition-colors">
       <ThemeToggle />
-
-      <div className="chat-layout">
+      <div className="flex flex-1 overflow-hidden">
         <ChatSidebar />
         <ChatContainer />
       </div>
-
       {showSettingsOverlay && <SettingsPanel />}
     </div>
   );

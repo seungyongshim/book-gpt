@@ -6,9 +6,7 @@ const UsageInfo = () => {
 
   if (loadingUsage) {
     return (
-      <div className="usage-info">
-        <span className="usage-text">조회중...</span>
-      </div>
+      <div className="text-[10px] font-medium px-2 py-1 rounded bg-neutral-200/70 dark:bg-neutral-700/70 text-neutral-700 dark:text-neutral-200">조회중...</div>
     );
   }
 
@@ -24,18 +22,14 @@ const UsageInfo = () => {
 
   if (premiumRequestsUsed !== undefined && totalPremiumRequests !== undefined) {
     return (
-      <div className="usage-info">
-        <span className="usage-text">
-          {premiumRequestsUsed}/{totalPremiumRequests}
-        </span>
+      <div className="text-[10px] font-medium px-2 py-1 rounded bg-neutral-200/70 dark:bg-neutral-700/70 text-neutral-700 dark:text-neutral-200">
+        {premiumRequestsUsed}/{totalPremiumRequests}
       </div>
     );
   }
 
   return (
-    <div className="usage-info">
-      <span className="usage-text">-/-</span>
-    </div>
+    <div className="text-[10px] font-medium px-2 py-1 rounded bg-neutral-200/70 dark:bg-neutral-700/70 text-neutral-700 dark:text-neutral-200">-/-</div>
   );
 };
 

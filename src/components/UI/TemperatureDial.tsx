@@ -178,7 +178,7 @@ const TemperatureDial: React.FC<TemperatureDialProps> = ({
     return (
         <div
             ref={containerRef}
-            className={`temperature-dial ${className}`}
+            className={`relative select-none ${className}`}
             role="slider"
             aria-label={ariaLabel}
             aria-valuemin={min}

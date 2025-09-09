@@ -28,6 +28,23 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: [
+            'react',
+            'react-dom',
+            'zustand'
+          ],
+          markdown: [
+            'react-markdown',
+            'remark-gfm',
+            'rehype-highlight',
+            'highlight.js'
+          ]
+        }
+      }
+    }
   }
 })

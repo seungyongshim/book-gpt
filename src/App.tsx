@@ -6,14 +6,21 @@ import SettingsPanel from './components/Settings/SettingsPanel';
 import ThemeToggle from './components/UI/ThemeToggle';
 import ErrorBoundary from './components/UI/ErrorBoundary';
 import KeyboardShortcuts from './components/UI/KeyboardShortcuts';
+import { ToastProvider, setGlobalToastManager, useToast } from './components/UI/Toast';
+import './utils/pwa'; // PWA 기능 초기화
 
-function App() {
+function AppContent() {
   const initializeApp = useChatStore(state => state.initializeApp);
   const showSettingsOverlay = useChatStore(state => state.showSettingsOverlay);
+  const toastManager = useToast();
 
   useEffect(() => {
+    // 토스트 매니저를 전역으로 설정
+    setGlobalToastManager(toastManager);
+    
+    // 앱 초기화
     initializeApp();
-  }, [initializeApp]);
+  }, [initializeApp, toastManager]);
 
   return (
     <ErrorBoundary>
@@ -37,6 +44,14 @@ function App() {
         )}
       </div>
     </ErrorBoundary>
+  );
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 }
 

@@ -4,6 +4,7 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 import { useChatStore } from '../../stores/chatStore';
 import { ChatMessage } from '../../services/types';
 import { copyToClipboard } from '../../services/clipboardUtils';
+import { useMessageActionButtons } from '../../hooks/useMessageActionButtons';
 import MessageActionButtons from './MessageActionButtons';
 
 interface MessageItemProps {
@@ -121,25 +122,42 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
     messages[messages.length - 1] === message;
   const charCount = isEditing ? localEditText.length : message.text.length;
 
+  // Prepare action handlers for the hook
+  const actionHandlers = {
+    onStartEdit: handleStartEdit,
+    onCopy: handleCopyToClipboard,
+    onResend: handleResend,
+    onDelete: handleDelete,
+    onSave: handleSaveEdit,
+    onCancel: handleCancelEdit
+  };
+
+  // Prepare action state for the hook
+  const actionState = {
+    isEditing,
+    messageRole: message.role,
+    isSending,
+    copied
+  };
+
+  // Get props for header action buttons
+  const headerActionProps = useMessageActionButtons(actionState, actionHandlers, {
+    isSystemReset: message.role === 'system'
+  });
+
+  // Get props for footer action buttons (assistant messages only)
+  const footerActionProps = useMessageActionButtons(actionState, actionHandlers, {
+    showFooterVariant: true,
+    isSystemReset: false
+  });
+
   return (
     <div className={getRoleClass(message.role)}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
           {getRoleDisplayName(message.role)}
         </div>
-        <MessageActionButtons
-          isEditing={isEditing}
-          messageRole={message.role}
-          isSending={isSending}
-          copied={copied}
-          onStartEdit={handleStartEdit}
-          onCopy={handleCopyToClipboard}
-            onResend={handleResend}
-          onDelete={handleDelete}
-          onSave={handleSaveEdit}
-          onCancel={handleCancelEdit}
-          isSystemReset={message.role === 'system'}
-        />
+        <MessageActionButtons {...headerActionProps} />
       </div>
 
       <div className="space-y-2 text-sm leading-relaxed">
@@ -175,20 +193,7 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
         {/* 어시스턴트(응답) 메시지 버블 하단에도 동일한 액션 버튼 표시 */}
         {message.role === 'assistant' && !isEditing && (
           <div className="pt-1">
-            <MessageActionButtons
-              isEditing={false}
-              messageRole={message.role}
-              isSending={isSending}
-              copied={copied}
-              onStartEdit={handleStartEdit}
-              onCopy={handleCopyToClipboard}
-              onResend={handleResend}
-              onDelete={handleDelete}
-              onSave={handleSaveEdit}
-              onCancel={handleCancelEdit}
-              showFooterVariant
-              isSystemReset={false}
-            />
+            <MessageActionButtons {...footerActionProps} />
           </div>
         )}
       </div>

@@ -4,6 +4,7 @@ import Icon from '../UI/Icon';
 import Alert from '../UI/Alert';
 import { useChatStore } from '../../stores/chatStore';
 import UsageInfo from '../UI/UsageInfo';
+import { isEnterKey, isEnterWithShift, debounce } from '../../utils';
 
 const ChatInput = () => {
   const userInput = useChatStore(state => state.userInput);
@@ -94,21 +95,7 @@ const ChatInput = () => {
     };
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setLocalInput(value);
-    setUserInput(value);
-    autoResize();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendOrCancel();
-    }
-  };
-
-  const handleSendOrCancel = async () => {
+  const handleSendOrCancel = useCallback(async () => {
     if (isSending) {
       // 취소
       if (cancellationController) {
@@ -139,7 +126,34 @@ const ChatInput = () => {
       setCancellationController(null);
       console.error('Send message error:', error);
     }
-  };
+  }, [isSending, localInput, cancellationController, sendMessage]);
+
+  // 디바운스된 입력 처리로 성능 최적화  
+  const debouncedSetUserInput = useRef(
+    debounce((value: string) => setUserInput(value), 150)
+  );
+
+  // setUserInput이 변경되면 디바운스 함수도 업데이트
+  useEffect(() => {
+    debouncedSetUserInput.current = debounce((value: string) => setUserInput(value), 150);
+  }, [setUserInput]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setLocalInput(value);
+    debouncedSetUserInput.current(value);
+    autoResize();
+  }, [autoResize]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (isEnterKey(e)) {
+      e.preventDefault();
+      handleSendOrCancel();
+    } else if (isEnterWithShift(e)) {
+      // Shift+Enter는 기본 동작(줄바꿈) 허용
+      autoResize();
+    }
+  }, [handleSendOrCancel, autoResize]);
 
   const handleModelChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const model = e.target.value;
@@ -213,10 +227,15 @@ const ChatInput = () => {
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder="메시지를 입력하세요... (Enter: 전송, Shift+Enter: 줄바꿈)"
+              aria-label="메시지 입력"
+              aria-describedby="chat-input-help"
               className="w-full rounded-md border border-border/60 bg-surface dark:bg-neutral-800 px-3 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSending}
               style={{ height: `${textareaHeight}px` }}
             />
+            <div id="chat-input-help" className="sr-only">
+              Enter 키로 메시지를 전송하고, Shift+Enter로 줄바꿈을 입력할 수 있습니다.
+            </div>
             <div
               ref={resizeRef}
               onMouseDown={handleMouseDown}
@@ -232,6 +251,7 @@ const ChatInput = () => {
           <button
             onClick={handleSendOrCancel}
             disabled={!localInput.trim() && !isSending}
+            aria-label={isSending ? "메시지 전송 취소" : "메시지 전송"}
             className={`h-12 shrink-0 rounded-md px-4 inline-flex items-center gap-2 font-medium shadow transition-colors border text-sm ${isSending ? 'bg-red-500 hover:bg-red-600 text-white border-red-600' : 'bg-primary/90 hover:bg-primary text-white border-primary/70'} disabled:opacity-60 disabled:cursor-not-allowed`}
             title={isSending ? "전송 취소" : "메시지 전송"}
           >

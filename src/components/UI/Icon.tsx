@@ -11,7 +11,17 @@ export type IconName =
   | 'sun'
   | 'moon'
   | 'loop'
-  | 'data-transfer-download';
+  | 'data-transfer-download'
+  | 'document-text'
+  | 'document'
+  | 'code'
+  | 'check-circle'
+  | 'x-circle'
+  | 'exclamation-triangle'
+  | 'information-circle'
+  | 'download'
+  | 'upload'
+  | 'share';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName | string; // string 허용 (미등록 아이콘 대비 graceful fallback)
@@ -91,6 +101,77 @@ const ICON_PATHS: Record<string, JSX.Element> = {
       <path d="M12 3v12" />
       <path d="M8 11l4 4 4-4" />
       <path d="M4 19h16" />
+    </g>
+  ),
+  'document-text': (
+    <g>
+      <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+      <path d="M7 3h7l6 6v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+      <path d="M9 9h6" />
+      <path d="M9 13h6" />
+      <path d="M9 17h3" />
+    </g>
+  ),
+  document: (
+    <g>
+      <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+      <path d="M7 3h7l6 6v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+    </g>
+  ),
+  code: (
+    <g>
+      <path d="M16 18l6-6-6-6" />
+      <path d="M8 6l-6 6 6 6" />
+    </g>
+  ),
+  'check-circle': (
+    <g>
+      <path d="M9 12l2 2 4-4" />
+      <circle cx="12" cy="12" r="10" />
+    </g>
+  ),
+  'x-circle': (
+    <g>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M15 9l-6 6" />
+      <path d="M9 9l6 6" />
+    </g>
+  ),
+  'exclamation-triangle': (
+    <g>
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+      <path d="M10.29 3.86 2.82 17.01A2 2 0 0 0 4.54 20h14.92a2 2 0 0 0 1.72-2.99L12.71 3.86a2 2 0 0 0-3.42 0Z" />
+    </g>
+  ),
+  'information-circle': (
+    <g>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4" />
+      <path d="M12 8h.01" />
+    </g>
+  ),
+  download: (
+    <g>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M7 10l5 5 5-5" />
+      <path d="M12 15V3" />
+    </g>
+  ),
+  upload: (
+    <g>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M17 8l-5-5-5 5" />
+      <path d="M12 3v12" />
+    </g>
+  ),
+  share: (
+    <g>
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="M8.59 13.51l6.83 3.98" />
+      <path d="M15.41 6.51l-6.82 3.98" />
     </g>
   ),
 };

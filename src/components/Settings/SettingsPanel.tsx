@@ -3,6 +3,8 @@ import Button from '../UI/Button';
 import Icon from '../UI/Icon';
 import SettingsSection from '../UI/SettingsSection';
 import StatusChip from '../UI/StatusChip';
+import { ShortcutHelp } from '../UI/KeyboardShortcuts';
+import { ExportMenu } from '../UI/ExportMenu';
 import { useChatStore } from '../../stores/chatStore';
 import { StorageService } from '../../services/storageService';
 import { chatService } from '../../services/chatService';
@@ -24,6 +26,7 @@ const SettingsPanel = () => {
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
   const [connectionOk, setConnectionOk] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   if (!showSettingsOverlay) return null;
 
@@ -158,6 +161,25 @@ const SettingsPanel = () => {
             )}
           </SettingsSection>
 
+          <SettingsSection title="대화 내보내기">
+            <div className="space-y-3">
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                현재 대화를 다양한 형식으로 내보낼 수 있습니다.
+              </p>
+              <Button 
+                onClick={() => setShowExportMenu(true)} 
+                variant="secondary" 
+                leftIcon="download"
+              >
+                대화 내보내기
+              </Button>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection title="키보드 단축키">
+            <ShortcutHelp />
+          </SettingsSection>
+
           {saveStatus && (
             <StatusChip state="success" icon="check">
               {saveStatus}
@@ -165,6 +187,11 @@ const SettingsPanel = () => {
           )}
         </div>
       </div>
+      
+      <ExportMenu 
+        isOpen={showExportMenu} 
+        onClose={() => setShowExportMenu(false)} 
+      />
     </div>
   );
 };

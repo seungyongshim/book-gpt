@@ -1,4 +1,12 @@
 import { ChatMessage, UsageInfo } from './types';
+import { 
+  ModelResponse, 
+  ModelsListResponse, 
+  ChatCompletionResponse, 
+  UsageResponse, 
+  ChatRequestBody,
+  ServiceError 
+} from './apiTypes';
 
 export interface ChatServiceConfig {
   baseUrl?: string;
@@ -28,15 +36,17 @@ export class ChatService {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const error: ServiceError = new Error(`HTTP error! status: ${response.status}`);
+        error.status = response.status;
+        throw error;
       }
 
-      const data = await response.json();
+      const data: ModelResponse | ModelsListResponse = await response.json();
 
       // OpenAI-compatible shape: { data: [{ id: "model" }, ...] }
-      if (data.data && Array.isArray(data.data)) {
+      if ('data' in data && Array.isArray(data.data)) {
         const models = data.data
-          .map((item: any) => item.id)
+          .map(item => item.id)
           .filter((id: string) => id && typeof id === 'string');
 
         if (models.length > 0) {
@@ -45,7 +55,7 @@ export class ChatService {
       }
 
       // Fallback: { models: ["model1", "model2"] }
-      if (data.models && Array.isArray(data.models)) {
+      if ('models' in data && Array.isArray(data.models)) {
         const models = data.models.filter((model: string) => model && typeof model === 'string');
         if (models.length > 0) {
           return models;
@@ -57,7 +67,9 @@ export class ChatService {
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timed out');
+        const timeoutError: ServiceError = new Error('Request timed out');
+        timeoutError.code = 'TIMEOUT';
+        throw timeoutError;
       }
       throw error;
     }
@@ -80,7 +92,7 @@ export class ChatService {
       content: m.text || ''
     }));
 
-    const body: any = {
+    const body: ChatRequestBody = {
       model,
       messages,
       temperature,
@@ -150,7 +162,7 @@ export class ChatService {
               }
 
               try {
-                const data = JSON.parse(jsonPart);
+                const data: ChatCompletionResponse = JSON.parse(jsonPart);
 
                 // 스트림 종료 조건 체크
                 if (data.choices && Array.isArray(data.choices) && data.choices.length > 0) {
@@ -212,7 +224,7 @@ export class ChatService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: UsageResponse = await response.json();
       const usageInfo: UsageInfo = {};
 
       // quota_snapshots.premium_interactions 구조에서 정보 추출

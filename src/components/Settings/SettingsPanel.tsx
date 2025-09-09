@@ -3,6 +3,7 @@ import Button from '../UI/Button';
 import Icon from '../UI/Icon';
 import SettingsSection from '../UI/SettingsSection';
 import StatusChip from '../UI/StatusChip';
+import { ShortcutHelp } from '../UI/KeyboardShortcuts';
 import { useChatStore } from '../../stores/chatStore';
 import { StorageService } from '../../services/storageService';
 import { chatService } from '../../services/chatService';
@@ -156,6 +157,10 @@ const SettingsPanel = () => {
                 {connectionStatus}
               </StatusChip>
             )}
+          </SettingsSection>
+
+          <SettingsSection title="키보드 단축키">
+            <ShortcutHelp />
           </SettingsSection>
 
           {saveStatus && (

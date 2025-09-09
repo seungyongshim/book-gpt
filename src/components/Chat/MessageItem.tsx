@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 // Markdown 렌더러는 코드 스플리팅된 Lazy 컴포넌트 사용
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { useChatStore } from '../../stores/chatStore';
 import { ChatMessage } from '../../services/types';
 import MessageActionButtons from './MessageActionButtons';
+import { copyToClipboard, isEscapeKey } from '../../utils';
 
 interface MessageItemProps {
   message: ChatMessage;
@@ -27,6 +28,13 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
 
   const isEditing = editingMessageIndex === messageIndex;
 
+  const autoResize = useCallback(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.max(120, textareaRef.current.scrollHeight) + 'px';
+    }
+  }, []);
+
   useEffect(() => {
     if (isEditing) {
       setLocalEditText(editingText);
@@ -38,85 +46,58 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
         }
       }, 50);
     }
-  }, [isEditing, editingText]);
+  }, [isEditing, editingText, autoResize]);
 
-  const autoResize = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.max(120, textareaRef.current.scrollHeight) + 'px';
-    }
-  };
-
-  const handleStartEdit = () => {
+  const handleStartEdit = useCallback(() => {
     startEditMessage(messageIndex);
-  };
+  }, [startEditMessage, messageIndex]);
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = useCallback(async () => {
     await saveEditMessage(messageIndex);
-  };
+  }, [saveEditMessage, messageIndex]);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     cancelEditMessage();
     setLocalEditText('');
-  };
+  }, [cancelEditMessage]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     await deleteMessage(messageIndex);
-  };
+  }, [deleteMessage, messageIndex]);
 
-  const handleResend = async () => {
+  const handleResend = useCallback(async () => {
     if (isSending) return;
     await resendMessage(messageIndex);
-  };
+  }, [resendMessage, messageIndex, isSending]);
 
-  const handleCopyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(message.text);
+  const handleCopyToClipboard = useCallback(async () => {
+    const success = await copyToClipboard(message.text);
+    if (success) {
       console.log('텍스트가 클립보드에 복사되었습니다.');
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('클립보드 복사 실패:', error);
-      // 폴백: 텍스트 선택을 통한 복사
-      const textArea = document.createElement('textarea');
-      textArea.value = message.text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-
-      try {
-        document.execCommand('copy');
-        console.log('폴백 방법으로 클립보드에 복사되었습니다.');
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch (fallbackError) {
-        console.error('폴백 복사도 실패:', fallbackError);
-      }
-
-      document.body.removeChild(textArea);
+    } else {
+      console.error('클립보드 복사 실패');
     }
-  };
+  }, [message.text]);
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
     setLocalEditText(newText);
     // Store에도 업데이트 (실시간 동기화)
     useChatStore.setState({ editingText: newText });
     autoResize();
-  };
+  }, [autoResize]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && e.ctrlKey) {
       e.preventDefault();
       handleSaveEdit();
-    } else if (e.key === 'Escape') {
+    } else if (isEscapeKey(e)) {
       e.preventDefault();
       handleCancelEdit();
     }
-  };
+  }, [handleSaveEdit, handleCancelEdit]);
 
   const getRoleDisplayName = (role: string) => {
     switch (role) {
@@ -218,4 +199,4 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
   );
 };
 
-export default MessageItem;
+export default memo(MessageItem);

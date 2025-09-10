@@ -74,7 +74,10 @@ const ChatInput = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // IME 조합 중이면 무시
+  const anyEvt: any = e; // IME 조합 상태 확인용 (브라우저 KeyboardEvent 확장)
+  if (anyEvt.isComposing) return;
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleSendOrCancel();
     }
@@ -138,7 +141,7 @@ const ChatInput = () => {
             value={localInput}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder="메시지를 입력하세요. Shift+Enter 줄바꿈"
+            placeholder="메시지를 입력하세요. Ctrl+Enter 전송"
             className="w-full rounded-md bg-neutral-100/70 dark:bg-neutral-800/70 border border-border/60 px-3 py-3 pr-14 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none scrollbar-thin"
             style={{ height: `${textareaHeight}px` }}
             disabled={isSending}
@@ -193,9 +196,6 @@ const ChatInput = () => {
               className="h-2 w-32 accent-primary cursor-pointer"
             />
             <span className="text-xs tabular-nums w-8 text-right text-neutral-600 dark:text-neutral-300">{temperature.toFixed(1)}</span>
-          </div>
-          <div className="ml-auto flex items-center gap-2 text-[11px] text-neutral-500 dark:text-neutral-400">
-            <span>Enter 전송 · Shift+Enter 줄바꿈</span>
           </div>
         </div>
       </div>

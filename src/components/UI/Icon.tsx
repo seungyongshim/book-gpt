@@ -20,11 +20,7 @@ import {
   X,
   CircleSlash
 } from 'lucide-react';
-
-export const ICON_NAMES = [
-  'warning', 'x', 'arrow-right', 'list', 'plus', 'trash', 'check', 'sun', 'moon', 'loop', 'loop-circular', 'data-transfer-download', 'mic', 'wave', 'stop', 'pencil', 'clipboard', 'reload'
-] as const;
-export type IconName = typeof ICON_NAMES[number];
+import { IconName } from './Icon.types';
 
 const ICON_MAP: Record<IconName, React.ComponentType<any>> = {
   warning: AlertTriangle,
@@ -58,7 +54,6 @@ export const Icon: React.FC<IconProps> = ({ name, size = 16, title, className, .
   const LucideComp = ICON_MAP[name];
   if (!LucideComp) {
     if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
       console.warn(`[Icon] Unknown icon name: ${name}`);
     }
     return <CircleSlash size={size} className={className} strokeWidth={2} aria-hidden focusable={false} />;

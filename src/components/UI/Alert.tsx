@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from './Icon';
 
-import { IconName } from './Icon';
+import { IconName } from './Icon.types';
 
 export interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'info' | 'success' | 'warning' | 'error';

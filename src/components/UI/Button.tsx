@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import React from 'react';
-import Icon, { IconName } from './Icon';
+import Icon from './Icon';
+import { IconName } from './Icon.types';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger';

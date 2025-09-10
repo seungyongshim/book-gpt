@@ -1,9 +1,9 @@
 import React from 'react';
-import Icon from './Icon';
+import Icon, { IconName } from './Icon';
 
 export interface StatusChipProps extends React.HTMLAttributes<HTMLDivElement> {
   state?: 'neutral' | 'success' | 'error' | 'warning';
-  icon?: string;
+  icon?: IconName;
   small?: boolean;
 }
 

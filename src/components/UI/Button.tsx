@@ -6,8 +6,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: 'primary' | 'secondary' | 'danger';
   size?: 'sm' | 'md';
   loading?: boolean;
-  leftIcon?: IconName | string;
-  rightIcon?: IconName | string;
+  leftIcon?: IconName;
+  rightIcon?: IconName;
 }
 
 const variantStyles: Record<string, string> = {

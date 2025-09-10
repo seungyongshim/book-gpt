@@ -3,7 +3,7 @@ import React from 'react';
 import Icon, { IconName } from './Icon';
 
 export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  icon: IconName | string; // 기존 string 유지 (점진적 치환)
+  icon: IconName;
   variant?: 'default' | 'danger' | 'success' | 'primary';
   size?: 'sm' | 'md' | 'lg';
   ariaLabel?: string;

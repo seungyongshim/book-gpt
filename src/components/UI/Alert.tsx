@@ -1,14 +1,16 @@
 import React from 'react';
 import Icon from './Icon';
 
+import { IconName } from './Icon';
+
 export interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'info' | 'success' | 'warning' | 'error';
-  icon?: string;
+  icon?: IconName; // 제한된 아이콘만 허용
   title?: string;
   compact?: boolean; // smaller padding
 }
 
-const variantMap: Record<NonNullable<AlertProps['variant']>, { container: string; icon: string; defaultIcon: string; }>= {
+const variantMap: Record<NonNullable<AlertProps['variant']>, { container: string; icon: string; defaultIcon: IconName; }>= {
   info: { container: 'text-neutral-700 dark:text-neutral-200 bg-neutral-100/80 dark:bg-neutral-800/60 border-neutral-300/60 dark:border-neutral-600/40', icon: 'text-neutral-500 dark:text-neutral-400', defaultIcon: 'loop' },
   success: { container: 'text-green-700 dark:text-green-200 bg-green-50 dark:bg-green-900/30 border-green-400/50', icon: 'text-green-600 dark:text-green-400', defaultIcon: 'check' },
   warning: { container: 'text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/30 border-amber-400/50', icon: 'text-amber-600 dark:text-amber-400', defaultIcon: 'warning' },

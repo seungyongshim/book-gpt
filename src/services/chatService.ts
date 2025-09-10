@@ -80,6 +80,8 @@ export class ChatService {
       content: m.text || ''
     }));
 
+    messages.push({ role: 'assistant', content: '응답하겠습니다.' });
+
     const body: any = {
       model,
       messages,

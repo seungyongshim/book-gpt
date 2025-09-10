@@ -11,7 +11,9 @@ export type IconName =
   | 'sun'
   | 'moon'
   | 'loop'
-  | 'data-transfer-download';
+  | 'data-transfer-download'
+  | 'mic'
+  | 'wave';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName | string; // string 허용 (미등록 아이콘 대비 graceful fallback)
@@ -91,6 +93,18 @@ const ICON_PATHS: Record<string, JSX.Element> = {
       <path d="M12 3v12" />
       <path d="M8 11l4 4 4-4" />
       <path d="M4 19h16" />
+    </g>
+  ),
+  mic: (
+    <g>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 10v1a7 7 0 0 0 14 0v-1" />
+      <path d="M12 21v-3" />
+    </g>
+  ),
+  wave: (
+    <g>
+      <path d="M3 12c2-4 4 4 6 0s4-4 6 0 4-4 6 0" />
     </g>
   ),
 };

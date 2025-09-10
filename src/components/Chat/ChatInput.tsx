@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import TemperatureDial from '../UI/TemperatureDial';
 import Icon from '../UI/Icon';
 import Alert from '../UI/Alert';
 import { useChatStore } from '../../stores/chatStore';
@@ -20,10 +19,8 @@ const ChatInput = () => {
 
   const [localInput, setLocalInput] = useState('');
   const [cancellationController, setCancellationController] = useState<AbortController | null>(null);
-  const [textareaHeight, setTextareaHeight] = useState(60);
-  const [isResizing, setIsResizing] = useState(false);
+  const [textareaHeight] = useState(52); // 기본 높이 (고정 시작 높이)
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const resizeRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // userInput 변경 시 로컬 상태도 업데이트
@@ -42,32 +39,7 @@ const ChatInput = () => {
   }, [textareaHeight]);
 
   // 수동 리사이즈 기능
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-
-    const startY = e.clientY;
-    const startHeight = textareaHeight;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const deltaY = e.clientY - startY;
-      const newHeight = Math.min(400, Math.max(60, startHeight + deltaY));
-      setTextareaHeight(newHeight);
-
-      if (textareaRef.current) {
-        textareaRef.current.style.height = newHeight + 'px';
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
+  // (이전 수동 리사이즈 제거 – 자동 높이만)
 
   useEffect(() => {
     autoResize();
@@ -146,108 +118,88 @@ const ChatInput = () => {
     await setSelectedModel(model);
   };
 
-  const handleTemperatureDirectChange = async (temp: number) => {
-    await setTemperature(temp);
+  const handleTemperatureSlide = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = parseFloat(e.target.value);
+    await setTemperature(v);
   };
 
   return (
-  <div ref={containerRef} className="absolute inset-x-0 bottom-0 w-full border-t border-border/60 bg-surface-alt dark:bg-neutral-900/70 backdrop-blur pt-3 md:pt-4 px-3 md:px-6 pb-4 flex flex-col gap-3 z-10">
-      {error && (
-        <Alert variant="error" icon="warning">
-          {error}
-        </Alert>
-      )}
-
-      <div className="flex gap-4 flex-wrap items-start">
-        <div className="flex items-center gap-4 flex-wrap">
-          {/* 모델 선택 + 라벨 */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="model-select" className="text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">모델</label>
+  <div ref={containerRef} className="absolute inset-x-0 bottom-0 w-full z-10 border-t border-border/40 bg-gradient-to-b from-neutral-50/60 via-neutral-50/80 to-neutral-100/90 dark:from-neutral-900/40 dark:via-neutral-900/60 dark:to-neutral-900/80 backdrop-blur-md">
+      <div className="px-3 md:px-6 pt-3 md:pt-4 flex flex-col gap-2">
+        {error && (
+          <Alert variant="error" icon="warning">
+            {error}
+          </Alert>
+        )}
+        {/* 입력 영역 */}
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={localInput}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="메시지를 입력하세요. Shift+Enter 줄바꿈"
+            className="w-full rounded-md bg-neutral-100/70 dark:bg-neutral-800/70 border border-border/60 px-3 py-3 pr-14 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none scrollbar-thin"
+            style={{ height: `${textareaHeight}px` }}
+            disabled={isSending}
+            aria-label="채팅 메시지 입력"
+          />
+          <div className="absolute right-2 bottom-2 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleSendOrCancel}
+              disabled={!localInput.trim() && !isSending}
+              className={`w-9 h-9 rounded-md flex items-center justify-center text-white text-sm font-medium shadow transition-colors ${isSending ? 'bg-red-500 hover:bg-red-600' : 'bg-primary/90 hover:bg-primary disabled:opacity-60 disabled:cursor-not-allowed'}`}
+              aria-label={isSending ? '전송 취소' : '메시지 전송'}
+            >
+              {isSending ? <Icon name="x" size={18} /> : <Icon name="arrow-right" size={18} />}
+            </button>
+          </div>
+          <div className="absolute -bottom-5 right-1 text-[10px] text-neutral-500 dark:text-neutral-400"><UsageInfo /></div>
+        </div>
+        {/* 하단 컨트롤 바 */}
+        <div className="flex flex-wrap items-center gap-3 py-2 px-2 rounded-md bg-neutral-100/60 dark:bg-neutral-800/60 border border-border/50">
+          <div className="flex items-center gap-2">
             {availableModels.length > 0 ? (
               <select
-                id="model-select"
-                aria-label="응답 생성에 사용할 모델 선택"
+                aria-label="모델 선택"
                 value={selectedModel}
                 onChange={handleModelChange}
-                className="h-10 min-w-[170px] max-w-[240px] rounded-md border border-border/60 bg-surface dark:bg-neutral-800 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 truncate"
+                className="h-8 rounded-md bg-white/70 dark:bg-neutral-900/60 border border-border/60 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
               >
-                {selectedModel === '' && <option value="" disabled>모델 선택...</option>}
-                {availableModels.map(model => (
-                  <option key={model} value={model}>{model}</option>
-                ))}
+                {selectedModel === '' && <option value="" disabled>모델…</option>}
+                {availableModels.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             ) : (
-              <div className="relative">
-                <input
-                  type="text"
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  placeholder="모델명을 입력하세요"
-                  aria-label="모델명 수동 입력"
-                  className="h-10 min-w-[170px] max-w-[240px] rounded-md border border-border/60 bg-surface dark:bg-neutral-800 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                <span className="absolute -bottom-4 left-0 text-[10px] text-neutral-400 dark:text-neutral-500">엔터 전에 모델명 확인</span>
-              </div>
+              <input
+                aria-label="모델명 입력"
+                placeholder="모델명"
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="h-8 w-[140px] rounded-md bg-white/70 dark:bg-neutral-900/60 border border-border/60 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
             )}
           </div>
-
-          {/* 온도 설정 (다이얼) */}
-          <div className="flex items-center" aria-label="온도 설정">
-            <TemperatureDial
-              value={temperature}
-              onChange={handleTemperatureDirectChange}
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Temp</label>
+            <input
+              type="range"
               min={0}
               max={2}
               step={0.1}
-              size={88}
-              ariaLabel="온도"
+              value={temperature}
+              onChange={handleTemperatureSlide}
+              aria-label="온도"
+              className="h-2 w-32 accent-primary cursor-pointer"
             />
+            <span className="text-xs tabular-nums w-8 text-right text-neutral-600 dark:text-neutral-300">{temperature.toFixed(1)}</span>
           </div>
-        </div>
-
-        <div className="flex-1 min-w-[260px] flex items-end gap-3">
-          <div className="relative flex-1">
-            <textarea
-              ref={textareaRef}
-              value={localInput}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder="메시지를 입력하세요... (Enter: 전송, Shift+Enter: 줄바꿈)"
-              className="w-full rounded-md border border-border/60 bg-surface dark:bg-neutral-800 px-3 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isSending}
-              style={{ height: `${textareaHeight}px` }}
-            />
-            <div
-              ref={resizeRef}
-              onMouseDown={handleMouseDown}
-              title="드래그하여 크기 조절"
-              className={`absolute right-2 bottom-2 cursor-row-resize select-none flex flex-col items-center justify-center gap-[2px] opacity-60 hover:opacity-100 transition ${isResizing ? 'text-primary' : 'text-neutral-400 dark:text-neutral-500'}`}
-            >
-              <span className="block h-[2px] w-5 rounded bg-current" />
-              <span className="block h-[2px] w-5 rounded bg-current" />
-              <span className="block h-[2px] w-5 rounded bg-current" />
-            </div>
+          <div className="ml-auto flex items-center gap-2 text-[11px] text-neutral-500 dark:text-neutral-400">
+            <span>Enter 전송 · Shift+Enter 줄바꿈</span>
           </div>
-
-          <button
-            onClick={handleSendOrCancel}
-            disabled={!localInput.trim() && !isSending}
-            className={`h-12 shrink-0 rounded-md px-4 inline-flex items-center gap-2 font-medium shadow transition-colors border text-sm ${isSending ? 'bg-red-500 hover:bg-red-600 text-white border-red-600' : 'bg-primary/90 hover:bg-primary text-white border-primary/70'} disabled:opacity-60 disabled:cursor-not-allowed`}
-            title={isSending ? "전송 취소" : "메시지 전송"}
-          >
-            <div className="send-btn-layout">
-              {isSending ? (
-                <Icon name="x" size={16} />
-              ) : (
-                <Icon name="arrow-right" size={16} />
-              )}
-              <UsageInfo />
-            </div>
-          </button>
         </div>
       </div>
     </div>
   );
 };
-
 export default ChatInput;

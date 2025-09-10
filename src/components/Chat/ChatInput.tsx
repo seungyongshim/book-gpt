@@ -14,11 +14,11 @@ const ChatInput = () => {
 
   const setUserInput = useChatStore(state => state.setUserInput);
   const sendMessage = useChatStore(state => state.sendMessage);
+  const cancelStreaming = useChatStore(state => state.cancelStreaming);
   const setSelectedModel = useChatStore(state => state.setSelectedModel);
   const setTemperature = useChatStore(state => state.setTemperature);
 
   const [localInput, setLocalInput] = useState('');
-  const [cancellationController, setCancellationController] = useState<AbortController | null>(null);
   const [textareaHeight] = useState(52); // 기본 높이 (고정 시작 높이)
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -85,23 +85,16 @@ const ChatInput = () => {
 
   const handleSendOrCancel = async () => {
     if (isSending) {
-      // 취소
-      if (cancellationController) {
-        cancellationController.abort();
-        setCancellationController(null);
-      }
+      cancelStreaming();
       return;
     }
 
     if (!localInput.trim()) return;
 
     try {
-      const controller = new AbortController();
-      setCancellationController(controller);
-
-      await sendMessage(controller.signal);
-
-      setCancellationController(null);
+    const controller = new AbortController();
+    // sendMessage는 AbortController도 허용 (스토어 내부에서 처리)
+    await sendMessage(controller);
 
       // 포커스를 다시 텍스트 영역으로
       setTimeout(() => {
@@ -111,7 +104,6 @@ const ChatInput = () => {
       }, 100);
 
     } catch (error) {
-      setCancellationController(null);
       console.error('Send message error:', error);
     }
   };

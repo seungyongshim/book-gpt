@@ -20,6 +20,8 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
   const resendMessage = useChatStore(state => state.resendMessage);
   const isSending = useChatStore(state => state.isSending);
   const messages = useChatStore(state => state.messages);
+  const cancelStreaming = useChatStore(state => state.cancelStreaming);
+  const streamingController = useChatStore(state => state.streamingController);
 
   const [localEditText, setLocalEditText] = useState('');
   const [copied, setCopied] = useState(false);
@@ -141,6 +143,7 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
     message.role === 'assistant' &&
     messages.length > 0 &&
     messages[messages.length - 1] === message;
+  const isStreamingThis = isLastAssistantMessage && isSending && streamingController !== null;
   const charCount = isEditing ? localEditText.length : message.text.length;
 
   return (
@@ -161,6 +164,8 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
           onSave={handleSaveEdit}
           onCancel={handleCancelEdit}
           isSystemReset={message.role === 'system'}
+          showStop={isStreamingThis}
+          onStop={cancelStreaming}
         />
       </div>
 
@@ -210,6 +215,8 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
               onCancel={handleCancelEdit}
               showFooterVariant
               isSystemReset={false}
+              showStop={isStreamingThis}
+              onStop={cancelStreaming}
             />
           </div>
         )}

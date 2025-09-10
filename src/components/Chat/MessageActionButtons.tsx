@@ -14,6 +14,8 @@ interface MessageActionButtonsProps {
   onCancel: () => void;
   showFooterVariant?: boolean; // footer 위치 (assistant)
   isSystemReset?: boolean;
+  showStop?: boolean;
+  onStop?: () => void;
 }
 
 const MessageActionButtons: React.FC<MessageActionButtonsProps> = ({
@@ -28,7 +30,9 @@ const MessageActionButtons: React.FC<MessageActionButtonsProps> = ({
   onSave,
   onCancel,
   showFooterVariant,
-  isSystemReset
+  isSystemReset,
+  showStop,
+  onStop
 }) => {
   if (isEditing) {
     return (
@@ -41,6 +45,15 @@ const MessageActionButtons: React.FC<MessageActionButtonsProps> = ({
 
   return (
     <div className="flex items-center gap-1">
+      {showStop && (
+        <IconButton
+          icon="stop"
+          variant="danger"
+          title="중단"
+          ariaLabel="중단"
+          onClick={onStop}
+        />
+      )}
       <IconButton icon="pencil" title="편집" ariaLabel="편집" onClick={onStartEdit} />
       <IconButton icon="clipboard" title="복사" ariaLabel="복사" onClick={onCopy} />
       {copied && (

@@ -23,6 +23,8 @@ export interface ChatState {
   userInput: string;
   isSending: boolean;
   error: string | null;
+  // 스트리밍 제어
+  streamingController: AbortController | null;
 
   // 모델 설정
   availableModels: string[];
@@ -58,7 +60,8 @@ export interface ChatState {
 
   // 채팅
   setUserInput: (input: string) => void;
-  sendMessage: (signal?: AbortSignal) => Promise<void>;
+  sendMessage: (signal?: AbortSignal | AbortController) => Promise<void>;
+  cancelStreaming: () => void;
 
   // 메시지 관리
   startEditMessage: (index: number) => void;
@@ -100,6 +103,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   userInput: '',
   isSending: false,
   error: null,
+  streamingController: null,
   availableModels: [],
   selectedModel: '',
   temperature: 1.0,
@@ -323,7 +327,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // 메시지 전송
-  sendMessage: async (signal?: AbortSignal) => {
+  sendMessage: async (signalOrController?: AbortSignal | AbortController) => {
     const state = get();
 
     if (state.isSending) return;
@@ -336,6 +340,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     set({ isSending: true, error: null });
+
+    // 컨트롤러 정규화
+    let controller: AbortController | null = null;
+    let signal: AbortSignal | undefined = undefined;
+    if (signalOrController instanceof AbortController) {
+      controller = signalOrController;
+      signal = signalOrController.signal;
+    } else if (signalOrController) {
+      signal = signalOrController;
+    } else {
+      controller = new AbortController();
+      signal = controller.signal;
+    }
+    if (controller) {
+      set({ streamingController: controller });
+    }
 
     try {
       // 사용자 메시지 추가
@@ -406,8 +426,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       }
     } finally {
-      set({ isSending: false });
+      set({ isSending: false, streamingController: null });
     }
+  },
+
+  // 스트리밍 취소
+  cancelStreaming: () => {
+    const state = get();
+    if (state.streamingController && !state.streamingController.signal.aborted) {
+      try {
+        state.streamingController.abort();
+      } catch (e) {
+        console.warn('Abort failed', e);
+      }
+    }
+    // isSending 은 sendMessage finally에서 false되지만 즉시 UI 반영 위해 설정
+    set({ isSending: false, streamingController: null });
   },
 
   // 메시지 편집 시작

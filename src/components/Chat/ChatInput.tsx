@@ -151,7 +151,7 @@ const ChatInput = () => {
   };
 
   return (
-    <div ref={containerRef} className="border-t border-border/60 bg-surface-alt dark:bg-neutral-900/70 backdrop-blur pt-3 md:pt-4 px-3 md:px-6 pb-4 flex flex-col gap-3">
+  <div ref={containerRef} className="absolute inset-x-0 bottom-0 w-full border-t border-border/60 bg-surface-alt dark:bg-neutral-900/70 backdrop-blur pt-3 md:pt-4 px-3 md:px-6 pb-4 flex flex-col gap-3 z-10">
       {error && (
         <Alert variant="error" icon="warning">
           {error}

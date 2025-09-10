@@ -61,5 +61,4 @@ body {
 .status-chip-success { @apply bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300; }
 .status-chip-error { @apply bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300; }
 
-/* 가변 높이 입력 패딩 동기화 */
-main { padding-bottom: var(--chat-input-h); }
+/* (removed) 전역 main 패딩: ChatContainer 내부에서 자체 패딩 처리로 대체 */

@@ -141,22 +141,36 @@ export const useChatStore = create<ChatState>((set, get) => ({
       document.documentElement.removeAttribute('data-theme');
     }
 
-    // 모델 목록 로드
+    // 모델 목록 로드 및 이전 선택 복원
     try {
       const models = await chatService.getModels();
       set({ availableModels: models });
 
       if (models.length > 0) {
-        set({ selectedModel: models[0] });
+        // 복원 우선순위: LAST_MODEL -> DEFAULT_MODEL -> models[0]
+        const lastModel = localStorage.getItem('LAST_MODEL');
+        const defaultModel = localStorage.getItem('DEFAULT_MODEL');
+        const candidate = lastModel && models.includes(lastModel)
+          ? lastModel
+          : (defaultModel && models.includes(defaultModel)
+            ? defaultModel
+            : models[0]);
+        set({ selectedModel: candidate });
         await get().loadModelSettings();
       }
     } catch (error) {
       console.error('Failed to load models:', error);
-      // 로컬 스토리지에서 마지막 사용 모델 복원
+      // 모델 API 실패 시에도 이전 선택 복원 시도
       const lastModel = localStorage.getItem('LAST_MODEL');
       if (lastModel) {
         set({ selectedModel: lastModel });
         await get().loadModelSettings();
+      } else {
+        const defaultModel = localStorage.getItem('DEFAULT_MODEL');
+        if (defaultModel) {
+          set({ selectedModel: defaultModel });
+          await get().loadModelSettings();
+        }
       }
     }
 
@@ -563,6 +577,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // 선택된 모델 설정
   setSelectedModel: async (model: string) => {
     set({ selectedModel: model });
+    // 선택 즉시 저장하여 새로고침 복원
+    localStorage.setItem('LAST_MODEL', model);
     await get().loadModelSettings();
   },
 

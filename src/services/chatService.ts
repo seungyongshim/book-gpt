@@ -89,10 +89,6 @@ export class ChatService {
       stream: true
     };
 
-    if (maxTokens) {
-      body.max_tokens = maxTokens;
-    }
-
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 

@@ -1,0 +1,71 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run & Debug App (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "preLaunchTask": "vite dev server",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "presentation": { "group": "app", "order": 1 }
+    },
+    {
+      "name": "Run & Debug App (Edge)",
+      "type": "msedge",
+      "request": "launch",
+      "preLaunchTask": "vite dev server",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "presentation": { "group": "app", "order": 2 }
+    },
+    {
+      "name": "Attach to Running Chrome",
+      "type": "chrome",
+      "request": "attach",
+      "port": 9222,
+      "webRoot": "${workspaceFolder}/src",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "presentation": { "group": "advanced", "order": 3 }
+    },
+    {
+      "name": "Vitest Debug (UI)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test:unit:debug"],
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": true,
+      "presentation": { "group": "tests", "order": 4 },
+      "windows": {
+        "runtimeExecutable": "npm.cmd"
+      }
+    },
+    {
+      "name": "Playwright E2E (Debug)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["playwright", "test", "--debug"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "presentation": { "group": "tests", "order": 5 },
+      "windows": {
+        "runtimeExecutable": "npx.cmd"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "App + Playwright",
+      "configurations": ["Run & Debug App (Chrome)", "Playwright E2E (Debug)"]
+    }
+  ]
+}

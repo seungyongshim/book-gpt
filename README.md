@@ -53,3 +53,54 @@ Pages 가 예전 설정(정적 Jekyll 빌드) 혹은 별도 워크플로(`action
 ---
 
 MIT License.
+
+---
+
+### VS Code 디버깅 (F5)
+
+`.vscode/` 폴더에 다음 구성이 추가되었습니다.
+
+- `tasks.json`: `vite dev server` (백그라운드 실행, 준비 문구 `ready in ...ms` 감지)
+- `launch.json`:
+  - `Run & Debug App (Chrome)`: F5 기본 실행으로 Vite + Chrome 디버깅
+  - `Run & Debug App (Edge)`: Edge 브라우저에서 동일
+  - `Attach to Running Chrome`: 수동으로 `chrome --remote-debugging-port=9222` 실행 후 attach
+  - `Vitest Debug (UI)`: 단위 테스트 UI + 인스펙트 모드
+  - `Playwright E2E (Debug)`: E2E 테스트 디버그 세션
+  - 복합: `App + Playwright`
+
+#### 사용 방법
+
+1. 코드에 브레이크포인트 설정
+2. `F5` (기본 Chrome 구성) 실행 → 첫 실행 시 종속성 설치 완료 상태 확인
+3. 페이지가 열리고 중단점에서 실행 정지
+4. 빠른 재시작: `Ctrl + Shift + F5`
+
+#### Vitest 디버깅
+
+단위 테스트를 작성 후 `Vitest Debug (UI)` 구성 선택 → 테스트 목록/상태를 UI에서 확인하며 브레이크포인트로 코드 흐름 추적.
+
+CLI 스크립트:
+
+```bash
+npm run test:unit        # 한 번 실행
+npm run test:unit:watch  # 감시 모드
+npm run test:unit:ui     # UI 실행
+npm run test:unit:debug  # --inspect-brk 포함 (launch.json 사용 권장)
+```
+
+#### Playwright E2E 디버깅
+
+`Playwright E2E (Debug)` 구성은 `--debug` 플래그를 지정하여 Inspector UI를 띄웁니다.
+
+#### Attach 시나리오
+
+수동 Attach가 필요한 경우 (예: PWA DevTools 플래그 커스터마이징):
+
+```bash
+"C:/Program Files/Google/Chrome/Application/chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:/temp/chrome-debug" http://localhost:5173
+```
+
+그 후 `Attach to Running Chrome` 실행.
+
+---

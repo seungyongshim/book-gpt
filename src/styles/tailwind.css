@@ -62,3 +62,67 @@ body {
 .status-chip-error { @apply bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300; }
 
 /* (removed) 전역 main 패딩: ChatContainer 내부에서 자체 패딩 처리로 대체 */
+
+/* ---------------------------------------------
+   Markdown & 코드 블록 (rehype-highlight / hljs)
+   - highlight.js 기본 CSS를 가져오지 않아 다크 모드에서 배경이 밝게 남는 문제 대응
+   - 경량 커스텀 팔레트 적용 (light / dark 공존)
+   --------------------------------------------- */
+/* 공통 래퍼 */
+pre { @apply rounded-md relative; }
+pre code { @apply block; }
+
+/* highlight.js가 code 요소에 hljs 클래스를 부여 */
+.hljs { @apply rounded-md px-4 py-3 overflow-x-auto text-sm leading-relaxed;
+  background: hsl(var(--color-surface-alt) / 1);
+  color: #1f2937; /* neutral-800 */
+}
+/* 다크 모드 배경/글자색 */
+.dark .hljs, [data-theme="dark"] .hljs {
+  background: #1e1e23; /* 어두운 톤 통일 */
+  color: #e5e7eb; /* neutral-200 */
+}
+
+/* 토큰 색상 (가벼운 팔레트) */
+.hljs-comment, .hljs-quote { color: #6b7280; font-style: italic; }
+.dark .hljs-comment, .dark .hljs-quote, [data-theme="dark"] .hljs-comment, [data-theme="dark"] .hljs-quote { color: #9ca3af; }
+
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-meta .hljs-keyword { color: #2563eb; /* blue-600 */ }
+.dark .hljs-keyword, .dark .hljs-selector-tag, .dark .hljs-literal, .dark .hljs-meta .hljs-keyword,
+[data-theme="dark"] .hljs-keyword, [data-theme="dark"] .hljs-selector-tag, [data-theme="dark"] .hljs-literal, [data-theme="dark"] .hljs-meta .hljs-keyword { color: #60a5fa; /* blue-400 */ }
+
+.hljs-string, .hljs-doctag, .hljs-template-variable, .hljs-variable, .hljs-addition { color: #059669; /* emerald-600 */ }
+.dark .hljs-string, .dark .hljs-doctag, .dark .hljs-template-variable, .dark .hljs-variable, .dark .hljs-addition,
+[data-theme="dark"] .hljs-string, [data-theme="dark"] .hljs-doctag, [data-theme="dark"] .hljs-template-variable, [data-theme="dark"] .hljs-variable, [data-theme="dark"] .hljs-addition { color: #34d399; /* emerald-400 */ }
+
+.hljs-attr, .hljs-attribute, .hljs-name, .hljs-selector-id, .hljs-selector-class, .hljs-type { color: #b45309; /* amber-700 */ }
+.dark .hljs-attr, .dark .hljs-attribute, .dark .hljs-name, .dark .hljs-selector-id, .dark .hljs-selector-class, .dark .hljs-type,
+[data-theme="dark"] .hljs-attr, [data-theme="dark"] .hljs-attribute, [data-theme="dark"] .hljs-name, [data-theme="dark"] .hljs-selector-id, [data-theme="dark"] .hljs-selector-class, [data-theme="dark"] .hljs-type { color: #fbbf24; /* amber-400 */ }
+
+.hljs-number, .hljs-symbol, .hljs-bullet, .hljs-link { color: #be185d; /* rose-700 */ }
+.dark .hljs-number, .dark .hljs-symbol, .dark .hljs-bullet, .dark .hljs-link,
+[data-theme="dark"] .hljs-number, [data-theme="dark"] .hljs-symbol, [data-theme="dark"] .hljs-bullet, [data-theme="dark"] .hljs-link { color: #f472b6; /* pink-400 */ }
+
+.hljs-section, .hljs-title { color: #7c3aed; /* violet-600 */ }
+.dark .hljs-section, .dark .hljs-title, [data-theme="dark"] .hljs-section, [data-theme="dark"] .hljs-title { color: #c4b5fd; /* violet-300 */ }
+
+.hljs-deletion { color: #dc2626; }
+.dark .hljs-deletion, [data-theme="dark"] .hljs-deletion { color: #f87171; }
+
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 600; }
+
+/* 인라인 코드 (마크다운) */
+:not(pre) > code { @apply rounded px-1.5 py-0.5 text-[0.85em] font-mono bg-neutral-100 text-neutral-800; }
+.dark :not(pre) > code, [data-theme="dark"] :not(pre) > code { @apply bg-neutral-800 text-neutral-200; }
+
+/* 코드 블록 상단 여백/하단 여백 조정 (prose 미사용 환경 고려) */
+pre { margin-top: 0.75rem; margin-bottom: 0.75rem; }
+
+/* 가독성을 위한 내부 코드 줄바꿈 방지 + 긴 줄 스크롤 */
+pre code { white-space: pre; word-break: normal; }
+
+/* 선택 가시성 */
+.hljs ::selection { background: rgba(147, 197, 253, 0.35); }
+.dark .hljs ::selection, [data-theme="dark"] .hljs ::selection { background: rgba(96, 165, 250, 0.35); }
+

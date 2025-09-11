@@ -9,7 +9,10 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 10",
     "preview": "vite build && vite preview",
     "stylelint": "stylelint \"src/**/*.{css,scss}\" --ignore-disables",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "clsx": "^2.0.0",
@@ -19,10 +22,12 @@
     "react-dom": "^18.2.0",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
+    "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "@types/node": "^20.12.7",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",

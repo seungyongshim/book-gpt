@@ -180,12 +180,8 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
             placeholder="메시지를 입력하세요..."
           />
         ) : (
-          <div className="prose prose-neutral dark:prose-invert max-w-none text-sm">
-            {message.role === 'assistant' ? (
-              <MarkdownRenderer text={message.text} />
-            ) : (
-              <>{message.text}</>
-            )}
+          <div className="prose prose-neutral dark:prose-invert max-w-none text-sm whitespace-pre-wrap break-words">
+            <MarkdownRenderer text={message.text} />
           </div>
         )}
 

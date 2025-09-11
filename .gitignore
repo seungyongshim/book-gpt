@@ -444,3 +444,7 @@ $RECYCLE.BIN/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+# Playwright test reports
+playwright-report/
+test-results/

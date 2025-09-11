@@ -20,9 +20,9 @@ const LazyMarkdown = React.lazy(async () => {
       rehypePlugins={[rehypeHighlight]}
       components={{
         a: (p) => <a {...p} target="_blank" rel="noopener noreferrer" />,
-        // pre 태그 overflow 개선
+        // pre 태그 overflow 개선 - 세로 스크롤바 제거하고 전체 표시
         pre: ({ children, ...rest }) => (
-          <pre className="overflow-auto max-h-[600px]" {...rest}>{children}</pre>
+          <pre className="overflow-x-auto" {...rest}>{children}</pre>
         )
       }}
     >

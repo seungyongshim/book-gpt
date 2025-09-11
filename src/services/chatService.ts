@@ -68,7 +68,7 @@ export class ChatService {
     history: ChatMessage[],
     model: string,
     temperature: number = 1.0,
-    maxTokens?: number,
+    _maxTokens?: number, // Prefixed with underscore to indicate intentionally unused
     signal?: AbortSignal
   ): AsyncIterable<string> {
     if (!model || typeof model !== 'string') {

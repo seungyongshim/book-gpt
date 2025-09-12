@@ -1,8 +1,9 @@
 import { create } from 'zustand';
-import { ChatMessage, Session, ModelSettings, UsageInfo, Book, BookPage } from '../services/types';
+import { ChatMessage, Session, ModelSettings, UsageInfo, Book, BookPage, ToolCall } from '../services/types';
 import { StorageService } from '../services/storageService';
 import { chatService } from '../services/chatService';
 import { bookService } from '../services/bookService';
+import { toolsService } from '../services/toolsService';
 
 // 간단한 UUID 생성 함수
 const generateId = (): string => {
@@ -388,20 +389,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
         // 시스템 메시지에 책 컨텍스트 추가
         const contextMessage: ChatMessage = { 
           role: 'system', 
-          text: `다음은 참고할 책의 내용입니다:\n\n${bookContext}\n\n위 내용을 참고하여 사용자의 질문에 답변해주세요.`
+          text: `다음은 참고할 책의 내용입니다:\n\n${bookContext}\n\n위 내용을 참고하여 사용자의 질문에 답변해주세요. 필요시 save_response_as_book_page 또는 create_book_from_response 함수를 사용하여 응답을 책으로 저장할 수 있습니다.`
         };
         messagesWithContext = [...state.messages, contextMessage, userMessage];
+      } else {
+        // 책 컨텍스트가 없어도 tool 사용 안내 추가
+        const toolHintMessage: ChatMessage = {
+          role: 'system',
+          text: '필요시 save_response_as_book_page 또는 create_book_from_response 함수를 사용하여 응답을 책으로 저장할 수 있습니다.'
+        };
+        messagesWithContext = [...state.messages, toolHintMessage, userMessage];
       }
       
       set({ messages: messagesWithContext, userInput: '' });
 
       // 어시스턴트 메시지 준비
-      const assistantMessage: ChatMessage = { role: 'assistant', text: '' };
-      const messagesWithAssistant = [...messagesWithContext, assistantMessage];
+      let assistantMessage: ChatMessage = { role: 'assistant', text: '' };
+      let messagesWithAssistant = [...messagesWithContext, assistantMessage];
       set({ messages: messagesWithAssistant });
 
       // 스트리밍 응답 처리 (컨텍스트가 포함된 메시지 사용)
       let responseText = '';
+      let toolCalls: ToolCall[] = [];
+      
       const stream = chatService.getResponseStreaming(
         messagesWithContext,
         model,
@@ -411,9 +421,57 @@ export const useChatStore = create<ChatState>((set, get) => ({
       );
 
       for await (const chunk of stream) {
-        responseText += chunk;
-        const updatedMessages = [...messagesWithContext, { role: 'assistant' as const, text: responseText }];
-        set({ messages: updatedMessages });
+        if (chunk.type === 'content' && chunk.content) {
+          responseText += chunk.content;
+          assistantMessage = { role: 'assistant', text: responseText };
+          messagesWithAssistant = [...messagesWithContext, assistantMessage];
+          set({ messages: messagesWithAssistant });
+        } else if (chunk.type === 'tool_calls' && chunk.tool_calls) {
+          // Tool calls 누적
+          toolCalls.push(...chunk.tool_calls);
+          assistantMessage = { 
+            role: 'assistant', 
+            text: responseText,
+            tool_calls: toolCalls
+          };
+          messagesWithAssistant = [...messagesWithContext, assistantMessage];
+          set({ messages: messagesWithAssistant });
+        }
+      }
+
+      // Tool calls 실행
+      if (toolCalls.length > 0) {
+        for (const toolCall of toolCalls) {
+          try {
+            // Tool 실행
+            const toolResult = await toolsService.executeToolCall(toolCall);
+            
+            // Tool 결과 메시지 추가
+            const toolMessage: ChatMessage = {
+              role: 'tool',
+              text: toolResult,
+              tool_call_id: toolCall.id,
+              name: toolCall.function.name
+            };
+            
+            messagesWithAssistant = [...messagesWithAssistant, toolMessage];
+            set({ messages: messagesWithAssistant });
+
+            // 책 목록이 변경되었을 수 있으므로 재로드
+            get().loadBooks();
+            
+          } catch (error) {
+            console.error('Tool execution error:', error);
+            const errorMessage: ChatMessage = {
+              role: 'tool',
+              text: `오류: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              tool_call_id: toolCall.id,
+              name: toolCall.function.name
+            };
+            messagesWithAssistant = [...messagesWithAssistant, errorMessage];
+            set({ messages: messagesWithAssistant });
+          }
+        }
       }
 
       // 세션 업데이트

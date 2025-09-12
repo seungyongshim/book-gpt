@@ -70,7 +70,7 @@ const BookSelector: React.FC<BookSelectorProps> = ({ className = '' }) => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 h-8 px-3 rounded-md bg-white/70 dark:bg-neutral-900/60 border border-border/60 text-xs hover:bg-white/90 dark:hover:bg-neutral-900/80 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors"
         aria-label="책 선택"
-        title={selectedBook ? `${selectedBook.title} (${pageCount}페이지, #N으로 페이지 참조 가능)` : '책 선택'}
+        title={selectedBook ? `${selectedBook.title} (${pageCount}페이지, #N으로 페이지 참조 가능, AI가 응답을 책으로 저장 가능)` : '책 선택 - AI 응답을 책으로 저장 가능'}
       >
         <Icon name="book-open" size={14} />
         <div className="flex flex-col items-start truncate max-w-[120px]">
@@ -109,6 +109,14 @@ const BookSelector: React.FC<BookSelectorProps> = ({ className = '' }) => {
                 </div>
               </div>
             )}
+            
+            {/* AI 저장 기능 도움말 */}
+            <div className="p-2 bg-green-50 dark:bg-green-900/20 border-b border-border/60">
+              <div className="flex items-center gap-2 text-xs text-green-700 dark:text-green-300">
+                <Icon name="book" size={12} />
+                <span>💡 AI가 답변을 자동으로 책 페이지로 저장할 수 있습니다</span>
+              </div>
+            </div>
             
             {/* 검색 입력 */}
             <div className="p-2 border-b border-border/60">

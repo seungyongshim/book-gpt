@@ -125,6 +125,7 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
       case 'user': return '사용자';
       case 'assistant': return '어시스턴트';
       case 'system': return '시스템';
+      case 'tool': return '도구 실행 결과';
       default: return role;
     }
   };
@@ -135,8 +136,31 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
       case 'user': return base + ' chat-bubble-user self-end';
       case 'assistant': return base + ' chat-bubble-assistant';
       case 'system': return base + ' chat-bubble-system';
+      case 'tool': return base + ' chat-bubble-tool border-l-4 border-l-blue-400';
       default: return base;
     }
+  };
+
+  // Tool calls 렌더링을 위한 함수
+  const renderToolCalls = () => {
+    if (!message.tool_calls || message.tool_calls.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="mt-2 space-y-2">
+        {message.tool_calls.map((toolCall, index) => (
+          <div key={`${toolCall.id}-${index}`} className="bg-blue-50 dark:bg-blue-900/20 rounded-md p-3 border-l-4 border-l-blue-400">
+            <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
+              🛠️ 도구 호출: {toolCall.function.name}
+            </div>
+            <div className="text-xs text-blue-700 dark:text-blue-300">
+              {JSON.stringify(JSON.parse(toolCall.function.arguments), null, 2)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const isLastAssistantMessage =
@@ -180,9 +204,19 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
             placeholder="메시지를 입력하세요..."
           />
         ) : (
-          <div className="prose prose-neutral dark:prose-invert max-w-none text-sm whitespace-pre-wrap break-words">
-            <MarkdownRenderer text={message.text} />
-          </div>
+          <>
+            <div className="prose prose-neutral dark:prose-invert max-w-none text-sm whitespace-pre-wrap break-words">
+              <MarkdownRenderer text={message.text} />
+            </div>
+            {/* Tool calls 렌더링 */}
+            {renderToolCalls()}
+            {/* Tool message인 경우 함수 이름 표시 */}
+            {message.role === 'tool' && message.name && (
+              <div className="text-xs text-blue-600 dark:text-blue-400 font-semibold">
+                📋 {message.name} 실행 완료
+              </div>
+            )}
+          </>
         )}
 
         {/* 어시스턴트 메시지 하단에 문자수 카운트 상시 표시

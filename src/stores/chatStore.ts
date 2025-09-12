@@ -36,6 +36,7 @@ export interface ChatState {
   showMobileHistory: boolean;
   showSettingsOverlay: boolean;
   isDarkMode: boolean;
+  currentView: 'chat' | 'novel-generator';
 
   // 메시지 편집
   editingMessageIndex: number | null;
@@ -86,6 +87,7 @@ export interface ChatState {
   toggleSettingsOverlay: () => void;
   closeSettingsOverlay: () => void;
   toggleTheme: () => Promise<void>;
+  setCurrentView: (view: 'chat' | 'novel-generator') => void;
 
   // 사용량
   loadUsage: () => Promise<void>;
@@ -111,6 +113,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   showMobileHistory: false,
   showSettingsOverlay: false,
   isDarkMode: false,
+  currentView: 'chat',
   editingMessageIndex: null,
   editingText: '',
   systemMessage: 'You are a helpful assistant.',
@@ -740,6 +743,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // 로컬 스토리지에 저장
     localStorage.setItem('THEME_PREFERENCE', newDarkMode ? 'dark' : 'light');
+  },
+
+  // 현재 뷰 설정
+  setCurrentView: (view: 'chat' | 'novel-generator') => {
+    set({ currentView: view });
   },
 
   // 사용량 로드

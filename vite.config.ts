@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 // Node 전역에 대한 타입 경고 억제
@@ -7,10 +7,7 @@ declare const process: any;
 
 // Sass deprecation warnings silencing for build output cleanliness
 // Note: We already migrated code; these silence messages from upstream tooling (legacy-js-api, mixed-decls)
-process.env.SASS_SILENCE_DEPRECATIONS = [
-  'legacy-js-api',
-  'mixed-decls',
-].join(',');
+process.env.SASS_SILENCE_DEPRECATIONS = ['legacy-js-api', 'mixed-decls'].join(',');
 
 // GitHub Actions에서 빌드되는 경우 리포지토리 이름을 base로 사용
 // 예: seungyongshim/chatgpt-like -> /chatgpt-like/
@@ -23,7 +20,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    host: true
+    host: true,
+  },
+  test: {
+    exclude: ['**/node_modules/**', '**/tests/e2e/**', '**/playwright-report/**'],
+    environment: 'jsdom',
+    globals: true,
   },
   build: {
     outDir: 'dist',
@@ -31,19 +33,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: [
-            'react',
-            'react-dom',
-            'zustand'
-          ],
-          markdown: [
-            'react-markdown',
-            'remark-gfm',
-            'rehype-highlight',
-            'highlight.js'
-          ]
-        }
-      }
-    }
-  }
-})
+          vendor: ['react', 'react-dom', 'zustand'],
+          markdown: ['react-markdown', 'remark-gfm', 'rehype-highlight', 'highlight.js'],
+        },
+      },
+    },
+  },
+});

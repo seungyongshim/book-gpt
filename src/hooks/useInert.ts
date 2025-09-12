@@ -42,12 +42,12 @@ export function useInert(ref: React.RefObject<HTMLElement>, inactive: boolean) {
         );
         focusables.forEach(f => {
           const orig = f.getAttribute('data-orig-tabindex');
-            if (orig !== null) {
-              f.setAttribute('tabindex', orig);
-              f.removeAttribute('data-orig-tabindex');
-            } else {
-              f.removeAttribute('tabindex');
-            }
+          if (orig !== null) {
+            f.setAttribute('tabindex', orig);
+            f.removeAttribute('data-orig-tabindex');
+          } else {
+            f.removeAttribute('tabindex');
+          }
         });
       }
     }

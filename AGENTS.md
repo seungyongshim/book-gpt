@@ -7,6 +7,7 @@ Book-GPT는 GPT를 활용하여 채팅 기반 인터페이스로 책을 작성�
 ## 🏗️ 아키텍처 개요
 
 ### 핵심 기능
+
 - **채팅 기반 UI**: 실시간 메시지 주고받기, 스트리밍 응답
 - **AI 책 작성**: GPT를 활용한 자동 목차 생성 및 챕터 작성
 - **실시간 편집**: 생성된 내용의 즉시 편집 및 수정
@@ -16,22 +17,26 @@ Book-GPT는 GPT를 활용하여 채팅 기반 인터페이스로 책을 작성�
 ### 기술 스택
 
 #### 프론트엔드 코어
+
 - **React 18** - Hook 기반, Concurrent Features 활용
 - **TypeScript** - 타입 안정성 보장
 - **Vite** - 빠른 개발 환경 및 빌드
 - **React Router v6** - SPA 라우팅
 
 #### 상태 관리
+
 - **Zustand** - 가벼운 클라이언트 상태 관리
 - **TanStack Query (React Query)** - 서버 상태 관리 및 캐싱
 
 #### UI/UX
+
 - **Tailwind CSS** - 유틸리티 기반 스타일링
 - **Headless UI** - 접근성이 보장된 무헤드 컴포넌트
 - **Framer Motion** - 부드러운 애니메이션
 - **React Markdown** - 마크다운 렌더링
 
 #### 개발 도구
+
 - **ESLint + Prettier** - 코드 품질 및 포맷팅
 - **Husky** - Git 훅 관리
 - **Vitest** - 단위 테스트
@@ -100,6 +105,7 @@ src/
 ## 🎨 컴포넌트 아키텍처
 
 ### 메인 레이아웃
+
 ```tsx
 <Layout>
   <Header />
@@ -118,6 +124,7 @@ src/
 ```
 
 ### 채팅 인터페이스
+
 ```tsx
 <ChatContainer>
   <MessageList>
@@ -131,18 +138,16 @@ src/
 ```
 
 ### 책 편집 인터페이스
+
 ```tsx
 <BookEditor>
   <div className="flex">
-    <ChapterList 
+    <ChapterList
       chapters={book.chapters}
       selectedChapter={selectedChapter}
       onChapterSelect={setSelectedChapter}
     />
-    <ChapterEditor 
-      chapter={selectedChapter}
-      onChapterUpdate={updateChapter}
-    />
+    <ChapterEditor chapter={selectedChapter} onChapterUpdate={updateChapter} />
   </div>
   <TableOfContents book={book} />
 </BookEditor>
@@ -151,13 +156,14 @@ src/
 ## 🗄️ 상태 관리
 
 ### Chat Store (chatStore.ts)
+
 ```typescript
 interface ChatState {
   messages: Message[];
   currentConversationId: string | null;
   isLoading: boolean;
   streamingMessage: string | null;
-  
+
   // Actions
   addMessage: (message: Message) => void;
   updateStreamingMessage: (content: string) => void;
@@ -167,13 +173,14 @@ interface ChatState {
 ```
 
 ### Book Store (bookStore.ts)
+
 ```typescript
 interface BookState {
   books: Book[];
   currentBook: Book | null;
   selectedChapter: Chapter | null;
   isGenerating: boolean;
-  
+
   // Actions
   createBook: (title: string, description: string) => void;
   updateBook: (id: string, updates: Partial<Book>) => void;
@@ -185,12 +192,13 @@ interface BookState {
 ```
 
 ### UI Store (uiStore.ts)
+
 ```typescript
 interface UIState {
   sidebarOpen: boolean;
   activeModal: string | null;
   theme: 'light' | 'dark';
-  
+
   // Actions
   toggleSidebar: () => void;
   openModal: (modalId: string) => void;
@@ -202,6 +210,7 @@ interface UIState {
 ## 🤖 GPT API 연동
 
 ### GPT Service 구조
+
 ```typescript
 class GPTService {
   // 스트리밍 채팅 응답
@@ -209,28 +218,20 @@ class GPTService {
     messages: ChatMessage[],
     onChunk: (chunk: string) => void
   ): Promise<void>;
-  
+
   // 책 목차 생성
-  async generateTableOfContents(
-    topic: string,
-    requirements: string[]
-  ): Promise<TableOfContents>;
-  
+  async generateTableOfContents(topic: string, requirements: string[]): Promise<TableOfContents>;
+
   // 챕터 내용 생성
-  async generateChapter(
-    context: BookContext,
-    chapterOutline: ChapterOutline
-  ): Promise<string>;
-  
+  async generateChapter(context: BookContext, chapterOutline: ChapterOutline): Promise<string>;
+
   // 내용 개선 제안
-  async improveContent(
-    content: string,
-    improvementType: string
-  ): Promise<string>;
+  async improveContent(content: string, improvementType: string): Promise<string>;
 }
 ```
 
 ### 에러 처리 전략
+
 - **Rate Limiting**: 429 에러 시 지수 백오프 재시도
 - **Network Errors**: 자동 재시도 및 사용자 알림
 - **API Key 관리**: 환경변수 및 보안 저장
@@ -260,6 +261,7 @@ class GPTService {
    - 최종 완성본 저장/내보내기
 
 ### 반응형 디자인
+
 - **Desktop**: 사이드바 + 메인 컨텐츠 레이아웃
 - **Tablet**: 접을 수 있는 사이드바
 - **Mobile**: 하단 탭 네비게이션 + 풀스크린 모드
@@ -267,6 +269,7 @@ class GPTService {
 ## 🔄 데이터 플로우
 
 ### 메시지 처리 플로우
+
 ```
 User Input → ChatStore → GPT Service → Streaming Response → UI Update
      ↓
@@ -274,6 +277,7 @@ Book Context Update → BookStore → Local Storage
 ```
 
 ### 책 생성 플로우
+
 ```
 Topic Discussion → TOC Generation → Chapter Creation → Real-time Editing
        ↓                ↓               ↓              ↓
@@ -283,11 +287,13 @@ Topic Discussion → TOC Generation → Chapter Creation → Real-time Editing
 ## 🔐 보안 및 성능
 
 ### 보안 조치
+
 - **API Key 보호**: 환경변수 및 프록시 서버 사용
 - **XSS 방지**: DOMPurify를 통한 사용자 입력 정화
 - **CSRF 보호**: 토큰 기반 요청 검증
 
 ### 성능 최적화
+
 - **코드 스플리팅**: React.lazy()를 통한 라우트별 분할
 - **메모이제이션**: React.memo, useMemo, useCallback 활용
 - **가상화**: 긴 채팅 리스트를 위한 react-window
@@ -296,6 +302,7 @@ Topic Discussion → TOC Generation → Chapter Creation → Real-time Editing
 ## 🚀 개발 및 배포
 
 ### 개발 환경 설정
+
 ```bash
 # 프로젝트 설치
 npm install
@@ -314,6 +321,7 @@ npm run test
 ```
 
 ### 빌드 및 배포
+
 ```bash
 # 프로덕션 빌드
 npm run build
@@ -328,18 +336,21 @@ npm run deploy
 ## 📋 향후 확장 계획
 
 ### Phase 1: 기본 기능
+
 - [x] 채팅 기반 UI 구현
 - [x] GPT API 연동
 - [x] 기본 책 편집 기능
 - [x] 로컬 저장소 연동
 
 ### Phase 2: 고급 기능
+
 - [ ] 다중 언어 지원
 - [ ] 책 템플릿 시스템
 - [ ] 협업 기능 (실시간 공유)
 - [ ] PDF/EPUB 내보내기
 
 ### Phase 3: 확장 기능
+
 - [ ] 이미지 생성 연동 (DALL-E)
 - [ ] 음성 인식/합성
 - [ ] 모바일 앱 (React Native)

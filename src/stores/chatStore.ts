@@ -6,8 +6,8 @@ import { chatService } from '../services/chatService';
 // 간단한 UUID 생성 함수
 const generateId = (): string => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 };
@@ -154,11 +154,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
         // 복원 우선순위: LAST_MODEL -> DEFAULT_MODEL -> models[0]
         const lastModel = localStorage.getItem('LAST_MODEL');
         const defaultModel = localStorage.getItem('DEFAULT_MODEL');
-        const candidate = lastModel && models.includes(lastModel)
-          ? lastModel
-          : (defaultModel && models.includes(defaultModel)
-            ? defaultModel
-            : models[0]);
+        const candidate =
+          lastModel && models.includes(lastModel)
+            ? lastModel
+            : defaultModel && models.includes(defaultModel)
+              ? defaultModel
+              : models[0];
         set({ selectedModel: candidate });
         await get().loadModelSettings();
       }
@@ -194,14 +195,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
         title: '새 대화',
         history: [{ role: 'system', text: systemMsg }],
         lastUpdated: new Date(),
-        systemMessage: systemMsg
+        systemMessage: systemMsg,
       };
 
       set({
         sessions: [defaultSession],
         currentSessionId: sessionId,
         currentSession: defaultSession,
-        messages: defaultSession.history
+        messages: defaultSession.history,
       });
     } else {
       const firstSession = loadedSessions[0];
@@ -209,7 +210,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         sessions: loadedSessions,
         currentSessionId: firstSession.id,
         currentSession: firstSession,
-        messages: firstSession.history
+        messages: firstSession.history,
       });
 
       // 현재 세션의 시스템 메시지 UI에 반영
@@ -233,7 +234,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       title: '새 대화',
       history: [{ role: 'system', text: state.systemMessage }],
       lastUpdated: new Date(),
-      systemMessage: state.systemMessage
+      systemMessage: state.systemMessage,
     };
 
     const newSessions = [newSession, ...state.sessions];
@@ -241,7 +242,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       sessions: newSessions,
       currentSessionId: sessionId,
       currentSession: newSession,
-      messages: newSession.history
+      messages: newSession.history,
     });
 
     get().saveSessions();
@@ -255,7 +256,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({
         currentSessionId: id,
         currentSession: session,
-        messages: session.history
+        messages: session.history,
       });
 
       // 세션의 시스템 메시지로 UI 업데이트
@@ -286,7 +287,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       sessions: newSessions,
       currentSessionId: newCurrentSessionId,
       currentSession: newCurrentSession,
-      messages: newMessages
+      messages: newMessages,
     });
 
     await get().saveSessions();
@@ -299,9 +300,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     const firstUserMessage = state.currentSession.history.find(m => m.role === 'user');
     if (firstUserMessage) {
-      const title = firstUserMessage.text.length > 20
-        ? firstUserMessage.text.substring(0, 20) + '…'
-        : firstUserMessage.text;
+      const title =
+        firstUserMessage.text.length > 20
+          ? firstUserMessage.text.substring(0, 20) + '…'
+          : firstUserMessage.text;
 
       const updatedSession = { ...state.currentSession, title, lastUpdated: new Date() };
       const updatedSessions = state.sessions.map(s =>
@@ -310,7 +312,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       set({
         sessions: updatedSessions,
-        currentSession: updatedSession
+        currentSession: updatedSession,
       });
     }
   },
@@ -380,7 +382,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       for await (const chunk of stream) {
         responseText += chunk;
-        const updatedMessages = [...newMessages, { role: 'assistant' as const, text: responseText }];
+        const updatedMessages = [
+          ...newMessages,
+          { role: 'assistant' as const, text: responseText },
+        ];
         set({ messages: updatedMessages });
       }
 
@@ -392,7 +397,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const updatedSession = {
           ...state.currentSession,
           history: get().messages,
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
         };
 
         const updatedSessions = state.sessions.map(s =>
@@ -401,7 +406,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         set({
           sessions: updatedSessions,
-          currentSession: updatedSession
+          currentSession: updatedSession,
         });
       }
 
@@ -410,7 +415,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       // 사용량 정보 업데이트 (백그라운드)
       get().loadUsage();
-
     } catch (error) {
       if (error instanceof Error && error.message.includes('cancelled')) {
         // 취소는 오류로 간주하지 않음
@@ -419,9 +423,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         // 빈 어시스턴트 메시지 제거
         const currentMessages = get().messages;
-        if (currentMessages.length > 0 &&
+        if (
+          currentMessages.length > 0 &&
           currentMessages[currentMessages.length - 1].role === 'assistant' &&
-          !currentMessages[currentMessages.length - 1].text) {
+          !currentMessages[currentMessages.length - 1].text
+        ) {
           set({ messages: currentMessages.slice(0, -1) });
         }
       }
@@ -449,7 +455,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const state = get();
     set({
       editingMessageIndex: index,
-      editingText: state.messages[index]?.text || ''
+      editingText: state.messages[index]?.text || '',
     });
   },
 
@@ -463,7 +469,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({
         messages: updatedMessages,
         editingMessageIndex: null,
-        editingText: ''
+        editingText: '',
       });
 
       // 시스템 메시지 편집한 경우
@@ -475,7 +481,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             ...state.currentSession,
             systemMessage: state.editingText,
             history: updatedMessages,
-            lastUpdated: new Date()
+            lastUpdated: new Date(),
           };
 
           const updatedSessions = state.sessions.map(s =>
@@ -484,7 +490,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
           set({
             sessions: updatedSessions,
-            currentSession: updatedSession
+            currentSession: updatedSession,
           });
         }
       } else if (state.currentSession) {
@@ -492,7 +498,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const updatedSession = {
           ...state.currentSession,
           history: updatedMessages,
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
         };
 
         const updatedSessions = state.sessions.map(s =>
@@ -501,7 +507,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         set({
           sessions: updatedSessions,
-          currentSession: updatedSession
+          currentSession: updatedSession,
         });
       }
 
@@ -513,7 +519,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   cancelEditMessage: () => {
     set({
       editingMessageIndex: null,
-      editingText: ''
+      editingText: '',
     });
   },
 
@@ -532,7 +538,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         messages: updatedMessages,
         systemMessage: defaultSystemMessage,
         editingMessageIndex: null,
-        editingText: ''
+        editingText: '',
       });
 
       if (state.currentSession) {
@@ -540,7 +546,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ...state.currentSession,
           systemMessage: defaultSystemMessage,
           history: updatedMessages,
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
         };
 
         const updatedSessions = state.sessions.map(s =>
@@ -549,7 +555,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         set({
           sessions: updatedSessions,
-          currentSession: updatedSession
+          currentSession: updatedSession,
         });
       }
     } else {
@@ -568,7 +574,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const updatedSession = {
           ...state.currentSession,
           history: updatedMessages,
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
         };
 
         const updatedSessions = state.sessions.map(s =>
@@ -577,7 +583,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         set({
           sessions: updatedSessions,
-          currentSession: updatedSession
+          currentSession: updatedSession,
         });
       }
     }
@@ -601,7 +607,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     set({
       messages: messagesToKeep,
-      userInput: messageToResend.text
+      userInput: messageToResend.text,
     });
 
     // 메시지 재전송
@@ -640,7 +646,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const settings: ModelSettings = JSON.parse(saved);
         set({
           temperature: settings.temperature ?? 1.0,
-          maxTokens: settings.maxTokens ?? null
+          maxTokens: settings.maxTokens ?? null,
         });
       } catch (error) {
         console.error('Failed to parse model settings:', error);
@@ -659,7 +665,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const key = `MODEL_SETTINGS::${state.selectedModel}`;
     const settings: ModelSettings = {
       temperature: state.temperature,
-      maxTokens: state.maxTokens ?? undefined
+      maxTokens: state.maxTokens ?? undefined,
     };
 
     localStorage.setItem(key, JSON.stringify(settings));
@@ -676,7 +682,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const updatedSession = {
         ...state.currentSession,
         systemMessage: message,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       };
 
       // 현재 세션의 첫 번째 메시지(시스템 메시지) 업데이트
@@ -697,7 +703,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({
         sessions: updatedSessions,
         currentSession: updatedSession,
-        messages: updatedMessages
+        messages: updatedMessages,
       });
 
       await get().saveSessions();
@@ -763,6 +769,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // 효과적인 모델 반환
   getEffectiveModel: () => {
     const state = get();
-    return state.selectedModel || (state.availableModels.length > 0 ? state.availableModels[0] : 'gpt-4o');
-  }
+    return (
+      state.selectedModel ||
+      (state.availableModels.length > 0 ? state.availableModels[0] : 'gpt-4o')
+    );
+  },
 }));

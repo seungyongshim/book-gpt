@@ -1,13 +1,13 @@
 // ==========================================================================
 // Main SCSS File - ChatGPT-like React App (Sass modules)
 // ==========================================================================
-@use "abstracts" as *;
-@use "base/reset";
-@use "base/typography";
-@use "layout/layout";
-@use "components/components";
-@use "pages/chat-input";
-@use "pages/chat-sidebar";
-@use "pages/message-list";
-@use "pages/settings-panel";
-@use "pages/usage-info";
+@use 'abstracts' as *;
+@use 'base/reset';
+@use 'base/typography';
+@use 'layout/layout';
+@use 'components/components';
+@use 'pages/chat-input';
+@use 'pages/chat-sidebar';
+@use 'pages/message-list';
+@use 'pages/settings-panel';
+@use 'pages/usage-info';

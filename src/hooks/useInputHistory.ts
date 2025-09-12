@@ -15,7 +15,7 @@ export interface InputHistoryController {
 }
 
 // 내부 캐싱된 리스트는 최신이 index 0
-export function useInputHistory(options: UseInputHistoryOptions = {}): InputHistoryController {
+export function useInputHistory(_options: UseInputHistoryOptions = {}): InputHistoryController {
   const [ready, setReady] = useState(false);
   const historyRef = useRef<string[]>([]);
   const pointerRef = useRef<number>(-1); // -1 => 현재 입력 (빈 상태)
@@ -34,7 +34,9 @@ export function useInputHistory(options: UseInputHistoryOptions = {}): InputHist
         if (!cancelled) setReady(true); // fallback ready
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const resetPointer = useCallback(() => {
@@ -64,14 +66,17 @@ export function useInputHistory(options: UseInputHistoryOptions = {}): InputHist
     }
   }, [ready]);
 
-  const record = useCallback(async (content: string) => {
-    await recordInput(content);
-    // 캐시 즉시 반영: recordInput 내부가 recentCache 업데이트 수행
-    // 여기서는 historyRef 재동기화 필요
-    const list = await getCachedRecent();
-    historyRef.current = list;
-    resetPointer();
-  }, [resetPointer]);
+  const record = useCallback(
+    async (content: string) => {
+      await recordInput(content);
+      // 캐시 즉시 반영: recordInput 내부가 recentCache 업데이트 수행
+      // 여기서는 historyRef 재동기화 필요
+      const list = await getCachedRecent();
+      historyRef.current = list;
+      resetPointer();
+    },
+    [resetPointer]
+  );
 
   const isNavigating = useCallback(() => pointerRef.current !== -1, []);
 

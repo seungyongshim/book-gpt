@@ -38,11 +38,11 @@ export function getDB(): Promise<IDBPDatabase | null> {
         if (!db.objectStoreNames.contains(STORE)) {
           const store = db.createObjectStore(STORE, {
             keyPath: 'id',
-            autoIncrement: true
+            autoIncrement: true,
           });
           store.createIndex('createdAt', 'createdAt', { unique: false });
         }
-      }
+      },
     }).catch(err => {
       console.warn('[historyDB] open failed, fallback to memory', err);
       return null as any;
@@ -72,9 +72,12 @@ export async function addHistory(content: string): Promise<void> {
   try {
     let cursor = await store.index('createdAt').openCursor(null, 'prev');
     if (cursor) lastRecent = cursor.value as InputHistoryRecord;
-  } catch {}
+  } catch {
+    // Ignore cursor errors - fallback to allow duplicate
+  }
   if (lastRecent && lastRecent.content === trimmed) {
-    await tx.done; return;
+    await tx.done;
+    return;
   }
   await store.add({ content: trimmed, createdAt: Date.now() });
   await tx.done;

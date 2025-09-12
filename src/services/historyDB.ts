@@ -72,7 +72,9 @@ export async function addHistory(content: string): Promise<void> {
   try {
     let cursor = await store.index('createdAt').openCursor(null, 'prev');
     if (cursor) lastRecent = cursor.value as InputHistoryRecord;
-  } catch {}
+  } catch {
+    // Empty catch block - we ignore cursor errors and continue
+  }
   if (lastRecent && lastRecent.content === trimmed) {
     await tx.done; return;
   }

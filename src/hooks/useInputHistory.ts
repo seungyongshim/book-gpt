@@ -15,7 +15,7 @@ export interface InputHistoryController {
 }
 
 // 내부 캐싱된 리스트는 최신이 index 0
-export function useInputHistory(options: UseInputHistoryOptions = {}): InputHistoryController {
+export function useInputHistory(_options: UseInputHistoryOptions = {}): InputHistoryController {
   const [ready, setReady] = useState(false);
   const historyRef = useRef<string[]>([]);
   const pointerRef = useRef<number>(-1); // -1 => 현재 입력 (빈 상태)

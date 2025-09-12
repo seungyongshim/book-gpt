@@ -30,3 +30,23 @@ export interface UsageInfo {
   totalPremiumRequests?: number;
   premiumRequestsUsed?: number;
 }
+
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  description?: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BookDto {
+  id: string;
+  title: string;
+  author: string;
+  description?: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}

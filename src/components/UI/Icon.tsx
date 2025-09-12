@@ -18,7 +18,12 @@ import {
   Trash2,
   Waves,
   X,
-  CircleSlash
+  CircleSlash,
+  Loader2,
+  Book,
+  BookOpen,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { IconName } from './Icon.types';
 
@@ -40,7 +45,12 @@ const ICON_MAP: Record<IconName, React.ComponentType<any>> = {
   stop: Square,
   pencil: Pencil,
   clipboard: Clipboard,
-  reload: RotateCcw
+  reload: RotateCcw,
+  loader: Loader2,
+  book: Book,
+  'book-open': BookOpen,
+  'chevron-up': ChevronUp,
+  'chevron-down': ChevronDown
 };
 
 export interface IconProps extends Omit<React.SVGProps<SVGSVGElement>, 'name'> {

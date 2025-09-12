@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useInputHistory } from '../../hooks/useInputHistory';
 import Icon from '../UI/Icon';
 import Alert from '../UI/Alert';
+import BookSelector from '../UI/BookSelector';
 import { useChatStore } from '../../stores/chatStore';
 import UsageInfo from '../UI/UsageInfo';
 
@@ -191,6 +192,9 @@ const ChatInput = () => {
         </div>
         {/* 하단 컨트롤 바 */}
         <div className="flex flex-wrap items-center gap-3 py-2 px-2 rounded-md bg-neutral-100/60 dark:bg-neutral-800/60 border border-border/50">
+          {/* 책 선택 */}
+          <BookSelector />
+          
           <div className="flex items-center gap-2">
             {availableModels.length > 0 ? (
               <select

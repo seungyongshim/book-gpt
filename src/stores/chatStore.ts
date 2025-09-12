@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { ChatMessage, Session, ModelSettings, UsageInfo } from '../services/types';
+import { ChatMessage, Session, ModelSettings, UsageInfo, Book } from '../services/types';
 import { StorageService } from '../services/storageService';
 import { chatService } from '../services/chatService';
+import { bookService } from '../services/bookService';
 
 // 간단한 UUID 생성 함수
 const generateId = (): string => {
@@ -48,6 +49,11 @@ export interface ChatState {
   currentUsage: UsageInfo | null;
   loadingUsage: boolean;
 
+  // 책 관리
+  availableBooks: Book[];
+  selectedBook: Book | null;
+  loadingBooks: boolean;
+
   // Actions
   initializeApp: () => Promise<void>;
 
@@ -90,6 +96,11 @@ export interface ChatState {
   // 사용량
   loadUsage: () => Promise<void>;
 
+  // 책 관리
+  loadBooks: () => Promise<void>;
+  setSelectedBook: (book: Book | null) => void;
+  getBookContext: () => string;
+
   // 유틸리티
   getEffectiveModel: () => string;
 }
@@ -116,6 +127,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   systemMessage: 'You are a helpful assistant.',
   currentUsage: null,
   loadingUsage: false,
+  availableBooks: [],
+  selectedBook: null,
+  loadingBooks: false,
 
   // 앱 초기화
   initializeApp: async () => {
@@ -220,6 +234,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // 사용량 정보 로드
     get().loadUsage();
+
+    // 책 데이터 로드
+    get().loadBooks();
 
     console.log('App initialization completed');
   },
@@ -360,18 +377,30 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       // 사용자 메시지 추가
       const userMessage: ChatMessage = { role: 'user', text: state.userInput.trim() };
-      const newMessages = [...state.messages, userMessage];
-      set({ messages: newMessages, userInput: '' });
+      
+      // 선택된 책이 있으면 컨텍스트 추가
+      let messagesWithContext = [...state.messages, userMessage];
+      const bookContext = get().getBookContext();
+      if (bookContext) {
+        // 시스템 메시지에 책 컨텍스트 추가
+        const contextMessage: ChatMessage = { 
+          role: 'system', 
+          text: `다음은 참고할 책의 내용입니다:\n\n${bookContext}\n\n위 내용을 참고하여 사용자의 질문에 답변해주세요.`
+        };
+        messagesWithContext = [...state.messages, contextMessage, userMessage];
+      }
+      
+      set({ messages: messagesWithContext, userInput: '' });
 
       // 어시스턴트 메시지 준비
       const assistantMessage: ChatMessage = { role: 'assistant', text: '' };
-      const messagesWithAssistant = [...newMessages, assistantMessage];
+      const messagesWithAssistant = [...messagesWithContext, assistantMessage];
       set({ messages: messagesWithAssistant });
 
-      // 스트리밍 응답 처리
+      // 스트리밍 응답 처리 (컨텍스트가 포함된 메시지 사용)
       let responseText = '';
       const stream = chatService.getResponseStreaming(
-        newMessages,
+        messagesWithContext,
         model,
         state.temperature,
         state.maxTokens ?? undefined,
@@ -380,7 +409,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       for await (const chunk of stream) {
         responseText += chunk;
-        const updatedMessages = [...newMessages, { role: 'assistant' as const, text: responseText }];
+        const updatedMessages = [...messagesWithContext, { role: 'assistant' as const, text: responseText }];
         set({ messages: updatedMessages });
       }
 
@@ -764,5 +793,37 @@ export const useChatStore = create<ChatState>((set, get) => ({
   getEffectiveModel: () => {
     const state = get();
     return state.selectedModel || (state.availableModels.length > 0 ? state.availableModels[0] : 'gpt-4o');
+  },
+
+  // 책 로드
+  loadBooks: async () => {
+    const state = get();
+    if (state.loadingBooks) return;
+
+    set({ loadingBooks: true });
+
+    try {
+      await bookService.initializeBooks();
+      const books = await bookService.getAllBooks();
+      set({ availableBooks: books });
+    } catch (error) {
+      console.error('Failed to load books:', error);
+      set({ availableBooks: [] });
+    } finally {
+      set({ loadingBooks: false });
+    }
+  },
+
+  // 선택된 책 설정
+  setSelectedBook: (book: Book | null) => {
+    set({ selectedBook: book });
+  },
+
+  // 책 컨텍스트 반환
+  getBookContext: () => {
+    const state = get();
+    if (!state.selectedBook) return '';
+    
+    return `제목: ${state.selectedBook.title}\n저자: ${state.selectedBook.author}\n\n${state.selectedBook.content}`;
   }
 }));

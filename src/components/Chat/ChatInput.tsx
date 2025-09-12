@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useInputHistory } from '../../hooks/useInputHistory';
 import Icon from '../UI/Icon';
 import Alert from '../UI/Alert';
 import { useChatStore } from '../../stores/chatStore';
@@ -22,6 +23,7 @@ const ChatInput = () => {
   const [textareaHeight] = useState(52); // 기본 높이 (고정 시작 높이)
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputHistory = useInputHistory();
 
   // userInput 변경 시 로컬 상태도 업데이트
   useEffect(() => {
@@ -70,16 +72,47 @@ const ChatInput = () => {
     const value = e.target.value;
     setLocalInput(value);
     setUserInput(value);
+    inputHistory.resetPointer();
     autoResize();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // IME 조합 중이면 무시
-  const anyEvt: any = e; // IME 조합 상태 확인용 (브라우저 KeyboardEvent 확장)
-  if (anyEvt.isComposing) return;
+    const anyEvt: any = e; // IME 조합 상태 확인용
+    if (anyEvt.isComposing) return;
+
+    // 전송 단축키
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleSendOrCancel();
+      return;
+    }
+
+    // 히스토리 탐색 (빈 입력 상태에서만)
+  if (!e.shiftKey && (localInput.trim() === '' || inputHistory.isNavigating()) && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      if (!inputHistory.ready) return; // 아직 로드 안됨
+      e.preventDefault();
+      if (e.key === 'ArrowUp') {
+        const prev = inputHistory.prev();
+        if (prev !== null) {
+          setLocalInput(prev);
+          setUserInput(prev);
+        }
+      } else if (e.key === 'ArrowDown') {
+        const next = inputHistory.next();
+        if (next !== null) {
+          setLocalInput(next);
+          setUserInput(next);
+        }
+      }
+      // 커서를 끝으로 이동
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          const len = textareaRef.current.value.length;
+          textareaRef.current.selectionStart = len;
+          textareaRef.current.selectionEnd = len;
+        }
+      });
     }
   };
 
@@ -92,9 +125,13 @@ const ChatInput = () => {
     if (!localInput.trim()) return;
 
     try {
-    const controller = new AbortController();
-    // sendMessage는 AbortController도 허용 (스토어 내부에서 처리)
-    await sendMessage(controller);
+      const controller = new AbortController();
+      const originalInput = localInput; // 전송 직전 내용 보관
+      // sendMessage는 AbortController도 허용 (스토어 내부에서 처리)
+      await sendMessage(controller);
+
+      // 히스토리에 기록 (비동기, 실패 무시)
+      inputHistory.record(originalInput).catch(() => {});
 
       // 포커스를 다시 텍스트 영역으로
       setTimeout(() => {

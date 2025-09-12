@@ -1,112 +1,107 @@
 // ==========================================================================
 // Variables - SCSS Variables for ChatGPT-like React App
 // ==========================================================================
-@use "sass:map";
+@use 'sass:map';
 
 // Color palette
 $colors: (
-    // Brand colors
-    primary: #1b6ec2,
-    primary-dark: #1861ac,
+  // Brand colors
+  primary: #1b6ec2,
+  primary-dark: #1861ac,
 
-    // Neutral colors
-    white: #ffffff,
-    black: #000000,
-    gray-50: #f8f9fa,
-    gray-100: #e9ecef,
-    gray-200: #dee2e6,
-    gray-300: #ced4da,
-    gray-400: #adb5bd,
-    gray-500: #6c757d,
-    gray-600: #495057,
-    gray-700: #343a40,
-    gray-800: #212529,
-    gray-900: #0d1117,
+  // Neutral colors
+  white: #ffffff,
+  black: #000000,
+  gray-50: #f8f9fa,
+  gray-100: #e9ecef,
+  gray-200: #dee2e6,
+  gray-300: #ced4da,
+  gray-400: #adb5bd,
+  gray-500: #6c757d,
+  gray-600: #495057,
+  gray-700: #343a40,
+  gray-800: #212529,
+  gray-900: #0d1117,
 
-    // Semantic colors
-    success: #28a745,
-    info: #17a2b8,
-    warning: #ffc107,
-    danger: #dc3545,
+  // Semantic colors
+  success: #28a745,
+  info: #17a2b8,
+  warning: #ffc107,
+  danger: #dc3545,
 
-    // Special colors
-    link: #0077cc,
-    link-dark: #74c0fc,
-    error: #a00,
-    error-dark: #ff6b6b
+  // Special colors
+  link: #0077cc,
+  link-dark: #74c0fc,
+  error: #a00,
+  error-dark: #ff6b6b
 );
 
 // Theme colors
 $light-theme: (
-    bg-primary: map.get($colors, white),
-    bg-secondary: map.get($colors, gray-50),
-    bg-tertiary: map.get($colors, gray-100),
-    text-primary: map.get($colors, gray-800),
-    text-secondary: map.get($colors, gray-500),
-    text-muted: #888,
-    border-color: map.get($colors, gray-200),
-    border-light: #eee,
-    shadow: 0 2px 4px rgba(0, 0, 0, 0.05),
-    overlay-bg: rgba(0, 0, 0, 0.5),
+  bg-primary: map.get($colors, white),
+  bg-secondary: map.get($colors, gray-50),
+  bg-tertiary: map.get($colors, gray-100),
+  text-primary: map.get($colors, gray-800),
+  text-secondary: map.get($colors, gray-500),
+  text-muted: #888,
+  border-color: map.get($colors, gray-200),
+  border-light: #eee,
+  shadow: 0 2px 4px rgba(0, 0, 0, 0.05),
+  overlay-bg: rgba(0, 0, 0, 0.5),
+  // Message colors - ChatGPT style
+  msg-user-bg: #2563eb,
+  msg-user-text: white,
+  msg-assistant-bg: #f1f5f9,
+  msg-assistant-text: #1e293b,
+  msg-system-bg: #fef3c7,
+  msg-system-border: #f59e0b,
+  system-badge-bg: #f59e0b,
 
-    // Message colors - ChatGPT style
-    msg-user-bg: #2563eb,
-    msg-user-text: white,
-    msg-assistant-bg: #f1f5f9,
-    msg-assistant-text: #1e293b,
-    msg-system-bg: #fef3c7,
-    msg-system-border: #f59e0b,
-    system-badge-bg: #f59e0b,
-
-    // Usage info colors
-    usage-bg: linear-gradient(135deg, map.get($colors, gray-50) 0%, map.get($colors, gray-100) 100%),
-    usage-border: map.get($colors, gray-200),
-    usage-text: map.get($colors, gray-500),
-
-    // Button colors
-    btn-primary-bg: map.get($colors, primary),
-    btn-primary-border: map.get($colors, primary-dark),
-    link-color: map.get($colors, link),
-
-    // Error colors
-    error-color: map.get($colors, error),
-    error-ui-bg: lightyellow
+  // Usage info colors
+  usage-bg: linear-gradient(135deg, map.get($colors, gray-50) 0%, map.get($colors, gray-100) 100%),
+  usage-border: map.get($colors, gray-200),
+  usage-text: map.get($colors, gray-500),
+  // Button colors
+  btn-primary-bg: map.get($colors, primary),
+  btn-primary-border: map.get($colors, primary-dark),
+  link-color: map.get($colors, link),
+  // Error colors
+  error-color: map.get($colors, error),
+  error-ui-bg: lightyellow,
 );
 
 $dark-theme: (
-    bg-primary: #1a1a1a,
-    bg-secondary: #2d2d2d,
-    bg-tertiary: #404040,
-    text-primary: map.get($colors, white),
-    text-secondary: #b0b0b0,
-    text-muted: #888,
-    border-color: #404040,
-    border-light: #333,
-    shadow: 0 2px 4px rgba(0, 0, 0, 0.3),
-    overlay-bg: rgba(0, 0, 0, 0.8),
+  bg-primary: #1a1a1a,
+  bg-secondary: #2d2d2d,
+  bg-tertiary: #404040,
+  text-primary: map.get($colors, white),
+  text-secondary: #b0b0b0,
+  text-muted: #888,
+  border-color: #404040,
+  border-light: #333,
+  shadow: 0 2px 4px rgba(0, 0, 0, 0.3),
+  overlay-bg: rgba(0, 0, 0, 0.8),
+  // Message colors - dark theme ChatGPT style
+  msg-user-bg: #3b82f6,
+  msg-user-text: white,
+  msg-assistant-bg: #374151,
+  msg-assistant-text: #f9fafb,
+  msg-system-bg: #451a03,
+  msg-system-border: #f59e0b,
+  system-badge-bg: #f59e0b,
 
-    // Message colors - dark theme ChatGPT style
-    msg-user-bg: #3b82f6,
-    msg-user-text: white,
-    msg-assistant-bg: #374151,
-    msg-assistant-text: #f9fafb,
-    msg-system-bg: #451a03,
-    msg-system-border: #f59e0b,
-    system-badge-bg: #f59e0b,
+  // Usage info colors - dark theme
+  usage-bg: linear-gradient(135deg, #2d2d2d 0%, #404040 100%),
+  usage-border: #555,
+  usage-text: #b0b0b0,
 
-    // Usage info colors - dark theme
-    usage-bg: linear-gradient(135deg, #2d2d2d 0%, #404040 100%),
-    usage-border: #555,
-    usage-text: #b0b0b0,
-
-    // Button colors - dark theme
-    btn-primary-bg: #4dabf7,
-    btn-primary-border: #339af0,
-    link-color: map.get($colors, link-dark),
-
-    // Error colors - dark theme
-    error-color: map.get($colors, error-dark),
-    error-ui-bg: #5c2e04
+  // Button colors - dark theme
+  btn-primary-bg: #4dabf7,
+  btn-primary-border: #339af0,
+  link-color: map.get($colors, link-dark),
+  // Error colors - dark theme
+  error-color: map.get($colors, error-dark),
+  error-ui-bg: #5c2e04,
 );
 
 // Typography
@@ -119,34 +114,35 @@ $line-height-base: 1.6 !default;
 // Spacing
 $spacer: 1rem !default;
 $spacers: (
-    0: 0,
-    1: $spacer * 0.25,
-    // 0.25rem
-    2: $spacer * 0.5,
-    // 0.5rem
-    3: $spacer * 0.75,
-    // 0.75rem
-    4: $spacer,
-    // 1rem
-    5: $spacer * 1.25,
-    // 1.25rem
-    6: $spacer * 1.5,
-    // 1.5rem
-    8: $spacer * 2,
-    // 2rem
-    10: $spacer * 2.5,
-    // 2.5rem
-    12: $spacer * 3 // 3rem
-    ) !default;
+  0: 0,
+  1: $spacer * 0.25,
+  // 0.25rem
+  2: $spacer * 0.5,
+  // 0.5rem
+  3: $spacer * 0.75,
+  // 0.75rem
+  4: $spacer,
+  // 1rem
+  5: $spacer * 1.25,
+  // 1.25rem
+  6: $spacer * 1.5,
+  // 1.5rem
+  8: $spacer * 2,
+  // 2rem
+  10: $spacer * 2.5,
+  // 2.5rem
+  12: $spacer * 3, // 3rem
+) !default;
 
 // Breakpoints
 $breakpoints: (
-    xs: 0,
-    sm: 576px,
-    md: 768px,
-    lg: 992px,
-    xl: 1200px,
-    xxl: 1400px) !default;
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 992px,
+  xl: 1200px,
+  xxl: 1400px,
+) !default;
 
 // Border radius
 $border-radius-sm: 0.25rem !default;

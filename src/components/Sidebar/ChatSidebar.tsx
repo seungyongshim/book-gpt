@@ -77,8 +77,8 @@ const ChatSidebar = () => {
           </button>
         </div>
 
-  <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin overscroll-contain">
-          {sessions.map((session) => (
+        <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin overscroll-contain">
+          {sessions.map(session => (
             <div
               key={session.id}
               onClick={() => handleSwitchSession(session.id)}
@@ -86,14 +86,16 @@ const ChatSidebar = () => {
               aria-pressed={session.id === currentSessionId}
               className={`group relative rounded-md border border-border/50 px-3 py-2 cursor-pointer text-sm transition shadow-sm hover:shadow-md hover:border-primary/40 hover:bg-primary/5 dark:hover:bg-primary/10 flex flex-col ${session.id === currentSessionId ? 'border-primary/60 bg-primary/10 dark:bg-primary/20' : 'bg-surface dark:bg-neutral-800/60'}`}
             >
-              <div className="font-medium line-clamp-1 pr-7 min-w-0 break-words">{session.title}</div>
+              <div className="font-medium line-clamp-1 pr-7 min-w-0 break-words">
+                {session.title}
+              </div>
               <div className="text-[10px] mt-1 text-neutral-500 dark:text-neutral-400 min-w-0">
                 {new Date(session.lastUpdated).toLocaleDateString('ko-KR')}
               </div>
               {sessions.length > 1 && (
                 <button
                   className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition icon-btn h-7 w-7 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                  onClick={(e) => handleDeleteSession(e, session.id)}
+                  onClick={e => handleDeleteSession(e, session.id)}
                   title="대화 삭제"
                 >
                   <Icon name="trash" size={14} />
@@ -106,7 +108,10 @@ const ChatSidebar = () => {
 
       {/* 모바일 오버레이 */}
       {showMobileHistory && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden" onClick={closeMobileHistory}></div>
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden"
+          onClick={closeMobileHistory}
+        ></div>
       )}
     </>
   );

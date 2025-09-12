@@ -4,7 +4,7 @@ GitHub Pages 배포는 GitHub Actions 워크플로(`.github/workflows/deploy.yml
 
 ### 주요 명령
 
-````bash
+```bash
 # 개발 서버
 npm run dev
 
@@ -13,7 +13,7 @@ npm run build
 
 # 로컬 프리뷰
 npm run preview
-````
+```
 
 ### GitHub Pages 설정 체크리스트
 
@@ -39,6 +39,7 @@ const ghBase = process.env.GITHUB_REPOSITORY
 Pages 가 예전 설정(정적 Jekyll 빌드) 혹은 별도 워크플로(`actions/jekyll-build-pages`)를 트리거하면서 `_config.yml` 또는 `docs` 디렉터리를 찾으려 했으나 SPA 구조에는 존재하지 않아 실패했습니다. 현재는 전용 Node 빌드 워크플로만 유지하면 됩니다.
 
 해결 조치:
+
 - `.github/workflows/deploy.yml` 만 유지
 - `public/.nojekyll` 추가 (완료)
 - Settings > Pages > Source 확인
@@ -61,6 +62,7 @@ MIT License.
 채팅 입력창이 비어있을 때 키보드 `ArrowUp / ArrowDown` 으로 과거에 전송한 사용자 입력을 순환 탐색할 수 있습니다.
 
 구현 개요:
+
 - 저장소: IndexedDB (`chat_input_history` 오브젝트 스토어) — 브라우저가 차단된 경우 세션 메모리 fallback
 - 중복 방지: 직전 입력과 동일하면 저장하지 않음
 - 최대 저장 개수: 300 (초과 시 가장 오래된 항목부터 제거)
@@ -68,11 +70,13 @@ MIT License.
 - 전송 성공 시(사용자 메시지 전송) 현재 입력을 기록
 
 사용 방법:
+
 1. 새로운 입력을 여러 번 전송
 2. 입력창 내용을 모두 지워 빈 상태로 둔 뒤 `ArrowUp` → 가장 최근 입력부터 역순 표시
 3. `ArrowDown` → 다시 최신 방향으로 이동, 시작 지점(-1)으로 돌아오면 빈 문자열
 
 추가 예정(옵션):
+
 - Settings 패널에 "입력 히스토리 저장 비활성화" 토글
 - 다중 탭 동기화 (BroadcastChannel)
 - 히스토리 검색 패널 (단축키)

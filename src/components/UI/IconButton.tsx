@@ -13,14 +13,16 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 const variantClasses: Record<NonNullable<IconButtonProps['variant']>, string> = {
   default: 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700',
   primary: 'text-primary hover:bg-primary/10',
-  danger: 'text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/10',
-  success: 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-500/10'
+  danger:
+    'text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/10',
+  success:
+    'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-500/10',
 };
 
 const sizeClasses: Record<NonNullable<IconButtonProps['size']>, string> = {
   sm: 'h-7 w-7 text-xs',
   md: 'h-8 w-8 text-sm',
-  lg: 'h-10 w-10 text-base'
+  lg: 'h-10 w-10 text-base',
 };
 
 export const IconButton: React.FC<IconButtonProps> = ({

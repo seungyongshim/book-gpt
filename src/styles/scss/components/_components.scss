@@ -1,90 +1,90 @@
 // ==========================================================================
 // Components - Reusable UI Components for ChatGPT-like React App
 // ==========================================================================
-@use "sass:color" as s-color;
-@use "sass:map";
-@use "../abstracts" as *;
+@use 'sass:color' as s-color;
+@use 'sass:map';
+@use '../abstracts' as *;
 
 // Button Components
 // ==========================================================================
 
 // Base button class
 .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: spacing(2) spacing(4);
-    font-family: $font-family-base;
-    font-size: $font-size-base;
-    font-weight: $font-weight-normal;
-    line-height: 1.5;
-    text-align: center;
-    text-decoration: none;
-    vertical-align: middle;
-    cursor: pointer;
-    user-select: none;
-    border: 1px solid transparent;
-    border-radius: $border-radius;
-    transition: $transition-base;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: spacing(2) spacing(4);
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  font-weight: $font-weight-normal;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid transparent;
+  border-radius: $border-radius;
+  transition: $transition-base;
 
-    &:focus {
-        outline: 0;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    }
+  &:focus {
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
 
-    &:disabled,
-    &.disabled {
-        pointer-events: none;
-        opacity: 0.65;
-    }
+  &:disabled,
+  &.disabled {
+    pointer-events: none;
+    opacity: 0.65;
+  }
 
-    // Button sizes
-    &--sm {
-        padding: spacing(1) spacing(2);
-        font-size: 0.875rem;
-        border-radius: $border-radius-sm;
-    }
+  // Button sizes
+  &--sm {
+    padding: spacing(1) spacing(2);
+    font-size: 0.875rem;
+    border-radius: $border-radius-sm;
+  }
 
-    &--lg {
-        padding: spacing(3) spacing(6);
-        font-size: 1.125rem;
-        border-radius: $border-radius-lg;
-    }
+  &--lg {
+    padding: spacing(3) spacing(6);
+    font-size: 1.125rem;
+    border-radius: $border-radius-lg;
+  }
 }
 
 // Primary button
 .btn--primary {
-    @include button-style(var(--btn-primary-bg), white, var(--btn-primary-border));
+  @include button-style(var(--btn-primary-bg), white, var(--btn-primary-border));
 }
 
 // Secondary button
 .btn--secondary {
-    @include button-style(var(--bg-secondary), var(--text-primary), var(--border-color));
+  @include button-style(var(--bg-secondary), var(--text-primary), var(--border-color));
 }
 
 // Danger button
 .btn--danger {
-    @include button-style(color(danger), white);
+  @include button-style(color(danger), white);
 }
 
 // Ghost button
 .btn--ghost {
-    @include ghost-button();
+  @include ghost-button();
 }
 
 // Icon button
 .btn--icon {
-    @include icon-button(40px);
+  @include icon-button(40px);
 
-    &.btn--sm {
-        width: 32px;
-        height: 32px;
-    }
+  &.btn--sm {
+    width: 32px;
+    height: 32px;
+  }
 
-    &.btn--lg {
-        width: 48px;
-        height: 48px;
-    }
+  &.btn--lg {
+    width: 48px;
+    height: 48px;
+  }
 }
 
 // Form Controls
@@ -92,134 +92,144 @@
 
 // Base form control
 .form-control {
-    @include form-control-style();
+  @include form-control-style();
 
-    &--sm {
-        padding: spacing(2) spacing(3);
-        font-size: 0.875rem;
-    }
+  &--sm {
+    padding: spacing(2) spacing(3);
+    font-size: 0.875rem;
+  }
 
-    &--lg {
-        padding: spacing(4) spacing(5);
-        font-size: 1.125rem;
-    }
+  &--lg {
+    padding: spacing(4) spacing(5);
+    font-size: 1.125rem;
+  }
 }
 
 // Form select
 
 .form-select {
-    // Include responsive mixin first (may emit nested rules)
-    @include form-control-style();
+  // Include responsive mixin first (may emit nested rules)
+  @include form-control-style();
 
-    // Then wrap declarations to opt into the new behavior after nested rules
-    & {
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
-        background-repeat: no-repeat;
-        background-position: right spacing(3) center;
-        background-size: 16px 12px;
-        padding-right: 2.5rem;
-    }
+  // Then wrap declarations to opt into the new behavior after nested rules
+  & {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right spacing(3) center;
+    background-size: 16px 12px;
+    padding-right: 2.5rem;
+  }
 
-    &:focus {
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23007bff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
-    }
+  &:focus {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23007bff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+  }
 }
 
 // Form range
 .form-range {
-    width: 100%;
-    height: 1.5rem;
-    padding: 0;
-    background-color: transparent;
-    appearance: none;
+  width: 100%;
+  height: 1.5rem;
+  padding: 0;
+  background-color: transparent;
+  appearance: none;
 
-    &:focus {
-        outline: 0;
-
-        &::-webkit-slider-thumb {
-            box-shadow: 0 0 0 1px var(--bg-primary), 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-        }
-
-        &::-moz-range-thumb {
-            box-shadow: 0 0 0 1px var(--bg-primary), 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-        }
-    }
-
-    &::-webkit-slider-track {
-        width: 100%;
-        height: 0.5rem;
-        color: transparent;
-        cursor: pointer;
-        background-color: var(--border-color);
-        border-color: transparent;
-        border-radius: spacing(4);
-    }
+  &:focus {
+    outline: 0;
 
     &::-webkit-slider-thumb {
-        width: 1rem;
-        height: 1rem;
-        margin-top: -0.25rem;
-        background-color: var(--btn-primary-bg);
-        border: 0;
-        border-radius: spacing(4);
-        transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-        appearance: none;
-
-        &:active {
-            background-color: s-color.adjust(color(primary), $lightness: 35%);
-        }
-    }
-
-    &::-moz-range-track {
-        width: 100%;
-        height: 0.5rem;
-        color: transparent;
-        cursor: pointer;
-        background-color: var(--border-color);
-        border-color: transparent;
-        border-radius: spacing(4);
+      box-shadow:
+        0 0 0 1px var(--bg-primary),
+        0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     }
 
     &::-moz-range-thumb {
-        width: 1rem;
-        height: 1rem;
-        background-color: var(--btn-primary-bg);
-        border: 0;
-        border-radius: spacing(4);
-        transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-        appearance: none;
-
-        &:active {
-            background-color: s-color.adjust(color(primary), $lightness: 35%);
-        }
+      box-shadow:
+        0 0 0 1px var(--bg-primary),
+        0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     }
+  }
+
+  &::-webkit-slider-track {
+    width: 100%;
+    height: 0.5rem;
+    color: transparent;
+    cursor: pointer;
+    background-color: var(--border-color);
+    border-color: transparent;
+    border-radius: spacing(4);
+  }
+
+  &::-webkit-slider-thumb {
+    width: 1rem;
+    height: 1rem;
+    margin-top: -0.25rem;
+    background-color: var(--btn-primary-bg);
+    border: 0;
+    border-radius: spacing(4);
+    transition:
+      background-color 0.15s ease-in-out,
+      border-color 0.15s ease-in-out,
+      box-shadow 0.15s ease-in-out;
+    appearance: none;
+
+    &:active {
+      background-color: s-color.adjust(color(primary), $lightness: 35%);
+    }
+  }
+
+  &::-moz-range-track {
+    width: 100%;
+    height: 0.5rem;
+    color: transparent;
+    cursor: pointer;
+    background-color: var(--border-color);
+    border-color: transparent;
+    border-radius: spacing(4);
+  }
+
+  &::-moz-range-thumb {
+    width: 1rem;
+    height: 1rem;
+    background-color: var(--btn-primary-bg);
+    border: 0;
+    border-radius: spacing(4);
+    transition:
+      background-color 0.15s ease-in-out,
+      border-color 0.15s ease-in-out,
+      box-shadow 0.15s ease-in-out;
+    appearance: none;
+
+    &:active {
+      background-color: s-color.adjust(color(primary), $lightness: 35%);
+    }
+  }
 }
 
 // Input Group
 .input-group {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  width: 100%;
+
+  > .form-control,
+  > .form-select {
     position: relative;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: stretch;
-    width: 100%;
+    flex: 1 1 auto;
+    width: 1%;
+    min-width: 0;
+  }
 
-    >.form-control,
-    >.form-select {
-        position: relative;
-        flex: 1 1 auto;
-        width: 1%;
-        min-width: 0;
-    }
+  > .form-control:focus,
+  > .form-select:focus {
+    z-index: 3;
+  }
 
-    >.form-control:focus,
-    >.form-select:focus {
-        z-index: 3;
-    }
-
-    .btn {
-        position: relative;
-        z-index: 2;
-    }
+  .btn {
+    position: relative;
+    z-index: 2;
+  }
 }
 
 // Message Components
@@ -228,114 +238,114 @@
 
 // Legacy message class for backwards compatibility
 .message {
-    // This class is deprecated - use .message-item instead
-    // Keeping for compatibility until migration is complete
-    margin-bottom: spacing(4);
-    transition: $transition-base;
+  // This class is deprecated - use .message-item instead
+  // Keeping for compatibility until migration is complete
+  margin-bottom: spacing(4);
+  transition: $transition-base;
 }
 
 // Card Components
 // ==========================================================================
 
 .card {
-    @include card-style();
+  @include card-style();
 
-    &__header {
-        padding: spacing(4) spacing(4) spacing(2);
-        border-bottom: 1px solid var(--border-color);
+  &__header {
+    padding: spacing(4) spacing(4) spacing(2);
+    border-bottom: 1px solid var(--border-color);
 
-        h1,
-        h2,
-        h3,
-        h4,
-        h5,
-        h6 {
-            margin-bottom: 0;
-        }
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      margin-bottom: 0;
     }
+  }
 
-    &__body {
-        padding: spacing(4);
-    }
+  &__body {
+    padding: spacing(4);
+  }
 
-    &__footer {
-        padding: spacing(2) spacing(4) spacing(4);
-        border-top: 1px solid var(--border-color);
-    }
+  &__footer {
+    padding: spacing(2) spacing(4) spacing(4);
+    border-top: 1px solid var(--border-color);
+  }
 }
 
 // Badge Components
 // ==========================================================================
 
 .badge {
-    display: inline-block;
-    padding: 0.375em 0.75em;
-    font-size: 0.75em;
-    font-weight: $font-weight-bold;
-    line-height: 1;
-    color: white;
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: baseline;
-    border-radius: $border-radius;
+  display: inline-block;
+  padding: 0.375em 0.75em;
+  font-size: 0.75em;
+  font-weight: $font-weight-bold;
+  line-height: 1;
+  color: white;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: $border-radius;
 
-    &--primary {
-        background-color: var(--btn-primary-bg);
-    }
+  &--primary {
+    background-color: var(--btn-primary-bg);
+  }
 
-    &--secondary {
-        background-color: var(--bg-secondary);
-        color: var(--text-primary);
-    }
+  &--secondary {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+  }
 
-    &--success {
-        background-color: color(success);
-    }
+  &--success {
+    background-color: color(success);
+  }
 
-    &--danger {
-        background-color: color(danger);
-    }
+  &--danger {
+    background-color: color(danger);
+  }
 
-    &--warning {
-        background-color: color(warning);
-        color: var(--text-primary);
-    }
+  &--warning {
+    background-color: color(warning);
+    color: var(--text-primary);
+  }
 
-    &--info {
-        background-color: color(info);
-    }
+  &--info {
+    background-color: color(info);
+  }
 }
 
 // Loading Components
 // ==========================================================================
 
 .spinner {
-    display: inline-block;
-    width: 2rem;
-    height: 2rem;
-    vertical-align: -0.125em;
-    border: 0.25em solid currentColor;
-    border-right-color: transparent;
-    border-radius: 50%;
-    animation: spinner-border 0.75s linear infinite;
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  vertical-align: -0.125em;
+  border: 0.25em solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinner-border 0.75s linear infinite;
 
-    &--sm {
-        width: 1rem;
-        height: 1rem;
-        border-width: 0.125em;
-    }
+  &--sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.125em;
+  }
 
-    &--lg {
-        width: 3rem;
-        height: 3rem;
-        border-width: 0.375em;
-    }
+  &--lg {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.375em;
+  }
 }
 
 @keyframes spinner-border {
-    to {
-        transform: rotate(360deg);
-    }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 // Global spin animation은 abstracts/_mixins.scss에 정의되어 사용됩니다.
@@ -344,65 +354,65 @@
 // ==========================================================================
 
 .progress {
-    @include progress-structure(var(--bg-secondary), $border-radius, 1rem);
+  @include progress-structure(var(--bg-secondary), $border-radius, 1rem);
 }
 
 // Alert Components
 // ==========================================================================
 
 .alert {
-    position: relative;
-    padding: spacing(3) spacing(4);
-    margin-bottom: spacing(4);
-    border: 1px solid transparent;
-    border-radius: $border-radius;
+  position: relative;
+  padding: spacing(3) spacing(4);
+  margin-bottom: spacing(4);
+  border: 1px solid transparent;
+  border-radius: $border-radius;
 
-    &--primary {
-        color: s-color.adjust(color(primary), $lightness: -20%);
-        background-color: s-color.adjust(color(primary), $lightness: 45%);
-        border-color: s-color.adjust(color(primary), $lightness: 35%);
+  &--primary {
+    color: s-color.adjust(color(primary), $lightness: -20%);
+    background-color: s-color.adjust(color(primary), $lightness: 45%);
+    border-color: s-color.adjust(color(primary), $lightness: 35%);
+  }
+
+  &--success {
+    color: s-color.adjust(color(success), $lightness: -20%);
+    background-color: s-color.adjust(color(success), $lightness: 45%);
+    border-color: s-color.adjust(color(success), $lightness: 35%);
+  }
+
+  &--danger {
+    color: var(--error-color);
+    background-color: var(--error-ui-bg);
+    border-color: s-color.adjust(color(danger), $lightness: 35%);
+    border-left: 4px solid var(--error-color);
+  }
+
+  &--warning {
+    color: s-color.adjust(color(warning), $lightness: -20%);
+    background-color: s-color.adjust(color(warning), $lightness: 45%);
+    border-color: s-color.adjust(color(warning), $lightness: 35%);
+  }
+
+  &--info {
+    color: s-color.adjust(color(info), $lightness: -20%);
+    background-color: s-color.adjust(color(info), $lightness: 45%);
+    border-color: s-color.adjust(color(info), $lightness: 35%);
+  }
+
+  &__close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    padding: 1.25rem 1rem;
+    color: inherit;
+    background: none;
+    border: 0;
+    opacity: 0.5;
+
+    &:hover {
+      opacity: 0.75;
     }
-
-    &--success {
-        color: s-color.adjust(color(success), $lightness: -20%);
-        background-color: s-color.adjust(color(success), $lightness: 45%);
-        border-color: s-color.adjust(color(success), $lightness: 35%);
-    }
-
-    &--danger {
-        color: var(--error-color);
-        background-color: var(--error-ui-bg);
-        border-color: s-color.adjust(color(danger), $lightness: 35%);
-        border-left: 4px solid var(--error-color);
-    }
-
-    &--warning {
-        color: s-color.adjust(color(warning), $lightness: -20%);
-        background-color: s-color.adjust(color(warning), $lightness: 45%);
-        border-color: s-color.adjust(color(warning), $lightness: 35%);
-    }
-
-    &--info {
-        color: s-color.adjust(color(info), $lightness: -20%);
-        background-color: s-color.adjust(color(info), $lightness: 45%);
-        border-color: s-color.adjust(color(info), $lightness: 35%);
-    }
-
-    &__close {
-        position: absolute;
-        top: 0;
-        right: 0;
-        z-index: 2;
-        padding: 1.25rem 1rem;
-        color: inherit;
-        background: none;
-        border: 0;
-        opacity: 0.5;
-
-        &:hover {
-            opacity: 0.75;
-        }
-    }
+  }
 }
 
 // Utility Classes
@@ -410,148 +420,148 @@
 
 // Display utilities
 .d-none {
-    display: none !important;
+  display: none !important;
 }
 
 .d-inline {
-    display: inline !important;
+  display: inline !important;
 }
 
 .d-inline-block {
-    display: inline-block !important;
+  display: inline-block !important;
 }
 
 .d-block {
-    display: block !important;
+  display: block !important;
 }
 
 .d-flex {
-    display: flex !important;
+  display: flex !important;
 }
 
 .d-inline-flex {
-    display: inline-flex !important;
+  display: inline-flex !important;
 }
 
 // Flex utilities
 .flex-row {
-    flex-direction: row !important;
+  flex-direction: row !important;
 }
 
 .flex-column {
-    flex-direction: column !important;
+  flex-direction: column !important;
 }
 
 .flex-wrap {
-    flex-wrap: wrap !important;
+  flex-wrap: wrap !important;
 }
 
 .flex-nowrap {
-    flex-wrap: nowrap !important;
+  flex-wrap: nowrap !important;
 }
 
 .flex-fill {
-    flex: 1 1 auto !important;
+  flex: 1 1 auto !important;
 }
 
 .flex-grow-0 {
-    flex-grow: 0 !important;
+  flex-grow: 0 !important;
 }
 
 .flex-grow-1 {
-    flex-grow: 1 !important;
+  flex-grow: 1 !important;
 }
 
 .flex-shrink-0 {
-    flex-shrink: 0 !important;
+  flex-shrink: 0 !important;
 }
 
 .flex-shrink-1 {
-    flex-shrink: 1 !important;
+  flex-shrink: 1 !important;
 }
 
 // Alignment utilities
 .justify-content-start {
-    justify-content: flex-start !important;
+  justify-content: flex-start !important;
 }
 
 .justify-content-end {
-    justify-content: flex-end !important;
+  justify-content: flex-end !important;
 }
 
 .justify-content-center {
-    justify-content: center !important;
+  justify-content: center !important;
 }
 
 .justify-content-between {
-    justify-content: space-between !important;
+  justify-content: space-between !important;
 }
 
 .justify-content-around {
-    justify-content: space-around !important;
+  justify-content: space-around !important;
 }
 
 .justify-content-evenly {
-    justify-content: space-evenly !important;
+  justify-content: space-evenly !important;
 }
 
 .align-items-start {
-    align-items: flex-start !important;
+  align-items: flex-start !important;
 }
 
 .align-items-end {
-    align-items: flex-end !important;
+  align-items: flex-end !important;
 }
 
 .align-items-center {
-    align-items: center !important;
+  align-items: center !important;
 }
 
 .align-items-baseline {
-    align-items: baseline !important;
+  align-items: baseline !important;
 }
 
 .align-items-stretch {
-    align-items: stretch !important;
+  align-items: stretch !important;
 }
 
 // Spacing utilities
 @each $breakpoint in map.keys($breakpoints) {
-    @include media-breakpoint-up($breakpoint) {
-        $infix: if($breakpoint ==xs, "", "-#{$breakpoint}");
+  @include media-breakpoint-up($breakpoint) {
+    $infix: if($breakpoint ==xs, '', '-#{$breakpoint}');
 
-        @each $prop, $abbrev in (margin: m, padding: p) {
-            @each $size, $length in $spacers {
-                .#{$abbrev}#{$infix}-#{$size} {
-                    #{$prop}: $length !important;
-                }
-
-                .#{$abbrev}t#{$infix}-#{$size} {
-                    #{$prop}-top: $length !important;
-                }
-
-                .#{$abbrev}r#{$infix}-#{$size} {
-                    #{$prop}-right: $length !important;
-                }
-
-                .#{$abbrev}b#{$infix}-#{$size} {
-                    #{$prop}-bottom: $length !important;
-                }
-
-                .#{$abbrev}l#{$infix}-#{$size} {
-                    #{$prop}-left: $length !important;
-                }
-
-                .#{$abbrev}x#{$infix}-#{$size} {
-                    #{$prop}-right: $length !important;
-                    #{$prop}-left: $length !important;
-                }
-
-                .#{$abbrev}y#{$infix}-#{$size} {
-                    #{$prop}-top: $length !important;
-                    #{$prop}-bottom: $length !important;
-                }
-            }
+    @each $prop, $abbrev in (margin: m, padding: p) {
+      @each $size, $length in $spacers {
+        .#{$abbrev}#{$infix}-#{$size} {
+          #{$prop}: $length !important;
         }
+
+        .#{$abbrev}t#{$infix}-#{$size} {
+          #{$prop}-top: $length !important;
+        }
+
+        .#{$abbrev}r#{$infix}-#{$size} {
+          #{$prop}-right: $length !important;
+        }
+
+        .#{$abbrev}b#{$infix}-#{$size} {
+          #{$prop}-bottom: $length !important;
+        }
+
+        .#{$abbrev}l#{$infix}-#{$size} {
+          #{$prop}-left: $length !important;
+        }
+
+        .#{$abbrev}x#{$infix}-#{$size} {
+          #{$prop}-right: $length !important;
+          #{$prop}-left: $length !important;
+        }
+
+        .#{$abbrev}y#{$infix}-#{$size} {
+          #{$prop}-top: $length !important;
+          #{$prop}-bottom: $length !important;
+        }
+      }
     }
+  }
 }

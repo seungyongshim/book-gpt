@@ -1,562 +1,599 @@
 // ==========================================================================
 // Chat Input Component - Actual HTML class structure styles
 // ==========================================================================
-@use "../abstracts" as *;
+@use '../abstracts' as *;
 
 // Main chat input container (fixed at bottom)
 // 콘텐츠 컬럼 가로폭을 그대로 채우도록 sticky 하단 고정
 .chat-input-container {
-    position: sticky;
-    bottom: 0;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: $zindex-fixed;
+  background-color: var(--bg-primary);
+  padding: spacing(4);
+  // Use elevation on container via pseudo wrapper (inset upward shadow)
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+
+  // 부모가 overflow: hidden인 경우 sticky가 작동하므로
+  // 상위 `.chat-content`에는 overflow: hidden 유지하되, 스크롤 컨테이너는 `.message-list`로 한정
+
+  @include media-breakpoint-down(md) {
     left: 0;
-    right: 0;
-    z-index: $zindex-fixed;
-    background-color: var(--bg-primary);
-    padding: spacing(4);
-    // Use elevation on container via pseudo wrapper (inset upward shadow)
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-
-    // 부모가 overflow: hidden인 경우 sticky가 작동하므로
-    // 상위 `.chat-content`에는 overflow: hidden 유지하되, 스크롤 컨테이너는 `.message-list`로 한정
-
-    @include media-breakpoint-down(md) {
-        left: 0;
-        padding: spacing(3);
-    }
+    padding: spacing(3);
+  }
 }
 
 // Chat input wrapper
 .chat-input-wrapper {
-    max-width: 100%;
-    width: 100%;
+  max-width: 100%;
+  width: 100%;
 }
 
 // Input controls section
 .input-controls {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: spacing(3);
-    margin-bottom: spacing(3);
-    flex-wrap: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: spacing(3);
+  margin-bottom: spacing(3);
+  flex-wrap: nowrap;
 
-    @include media-breakpoint-down(md) {
-        gap: spacing(2);
-        margin-bottom: spacing(2);
-    }
+  @include media-breakpoint-down(md) {
+    gap: spacing(2);
+    margin-bottom: spacing(2);
+  }
 
-    @include media-breakpoint-down(sm) {
-        gap: spacing(2);
-        margin-bottom: spacing(2);
-        padding: spacing(2);
-        background-color: var(--bg-secondary);
-        border-radius: $border-radius;
-        border: 1px solid var(--border-color);
-        flex-wrap: wrap;
-        justify-content: space-around;
-    }
+  @include media-breakpoint-down(sm) {
+    gap: spacing(2);
+    margin-bottom: spacing(2);
+    padding: spacing(2);
+    background-color: var(--bg-secondary);
+    border-radius: $border-radius;
+    border: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    justify-content: space-around;
+  }
 }
 
 // Model selection dropdown
 @mixin model-control-shared {
+  // 먼저 form-control 스타일을 적용해 중첩 규칙 이전에 선언이 나오도록 정렬
+  & {
+    @include form-control-style;
+  }
 
-    // 먼저 form-control 스타일을 적용해 중첩 규칙 이전에 선언이 나오도록 정렬
-    & {
-        @include form-control-style;
-    }
+  // Base declarations next
+  & {
+    flex: 1;
+    min-width: 150px;
+    max-width: 200px;
+    font-size: 0.875rem;
+    padding: spacing(2) spacing(3);
+  }
 
-    // Base declarations next
-    & {
-        flex: 1;
-        min-width: 150px;
-        max-width: 200px;
-        font-size: 0.875rem;
-        padding: spacing(2) spacing(3);
-    }
+  @include media-breakpoint-down(md) {
+    min-width: 120px;
+    font-size: 0.8rem;
+  }
 
-    @include media-breakpoint-down(md) {
-        min-width: 120px;
-        font-size: 0.8rem;
-    }
-
-    @include media-breakpoint-down(sm) {
-        flex: 1;
-        min-width: auto;
-        max-width: none;
-        font-size: 0.8rem;
-        padding: spacing(2);
-        background-color: var(--bg-primary);
-        border: 1px solid var(--border-color);
-        border-radius: $border-radius-sm;
-    }
+  @include media-breakpoint-down(sm) {
+    flex: 1;
+    min-width: auto;
+    max-width: none;
+    font-size: 0.8rem;
+    padding: spacing(2);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: $border-radius-sm;
+  }
 }
 
 .model-select {
-    @include model-control-shared;
+  @include model-control-shared;
 
-    option {
-        background-color: var(--bg-primary);
-        color: var(--text-primary);
+  option {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 
-        @include media-breakpoint-down(sm) {
-            padding: spacing(1);
-        }
+    @include media-breakpoint-down(sm) {
+      padding: spacing(1);
     }
+  }
 }
 
 // Model input for manual entry
 .model-input {
-    @include model-control-shared;
+  @include model-control-shared;
 }
 
 // Effective model display
 .effective-model {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    font-style: italic;
-    margin-left: spacing(2);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-left: spacing(2);
 }
 
 // Temperature control
 // 레거시 레인지(다른 곳에서 사용 가능성), 유지하되 현재 화면에서는 사용 안 함
 .temperature-range {
-    & {
-        @include form-control-style;
-    }
+  & {
+    @include form-control-style;
+  }
 
-    & {
-        flex: 0 0 120px;
-        min-width: 120px;
-        height: 6px;
-        background: linear-gradient(90deg,
-                color(info) 0%,
-                color(success) 25%,
-                color(warning) 50%,
-                color(danger) 75%,
-                color(primary) 100%);
-        border-radius: 3px;
-        border: none;
-        padding: 0;
-    }
+  & {
+    flex: 0 0 120px;
+    min-width: 120px;
+    height: 6px;
+    background: linear-gradient(
+      90deg,
+      color(info) 0%,
+      color(success) 25%,
+      color(warning) 50%,
+      color(danger) 75%,
+      color(primary) 100%
+    );
+    border-radius: 3px;
+    border: none;
+    padding: 0;
+  }
 
-    @include media-breakpoint-down(md) {
-        flex: 0 0 100px;
-        min-width: 100px;
-        height: 5px;
-    }
+  @include media-breakpoint-down(md) {
+    flex: 0 0 100px;
+    min-width: 100px;
+    height: 5px;
+  }
+
+  @include media-breakpoint-down(sm) {
+    flex: 0 0 80px;
+    min-width: 80px;
+    height: 8px;
+    margin: 0;
+  }
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--btn-primary-bg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: $transition-base;
 
     @include media-breakpoint-down(sm) {
-        flex: 0 0 80px;
-        min-width: 80px;
-        height: 8px;
-        margin: 0;
+      width: 20px;
+      height: 20px;
+      border-width: 3px;
     }
 
-    &::-webkit-slider-thumb {
-        appearance: none;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: white;
-        border: 2px solid var(--btn-primary-bg);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        cursor: pointer;
-        transition: $transition-base;
-
-        @include media-breakpoint-down(sm) {
-            width: 20px;
-            height: 20px;
-            border-width: 3px;
-        }
-
-        &:hover {
-            // No scale on hover
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
+    &:hover {
+      // No scale on hover
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     }
+  }
 
-    &::-moz-range-thumb {
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: white;
-        border: 2px solid var(--btn-primary-bg);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        cursor: pointer;
-        border: none;
+  &::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--btn-primary-bg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    border: none;
 
-        @include media-breakpoint-down(sm) {
-            width: 20px;
-            height: 20px;
-            border-width: 3px;
-        }
+    @include media-breakpoint-down(sm) {
+      width: 20px;
+      height: 20px;
+      border-width: 3px;
     }
+  }
 }
 
 // 레거시 값 배지 (다이얼 내부 표시로 대체)
 .temperature-value {
-    flex: 0 0 auto;
-    font-size: 0.875rem;
-    font-weight: $font-weight-bold;
-    background: linear-gradient(135deg, var(--btn-primary-bg), color(info));
-    color: white;
-    padding: spacing(1) spacing(2);
-    border-radius: $border-radius;
-    min-width: 2.5rem;
-    text-align: center;
-    @include elevation(sm);
+  flex: 0 0 auto;
+  font-size: 0.875rem;
+  font-weight: $font-weight-bold;
+  background: linear-gradient(135deg, var(--btn-primary-bg), color(info));
+  color: white;
+  padding: spacing(1) spacing(2);
+  border-radius: $border-radius;
+  min-width: 2.5rem;
+  text-align: center;
+  @include elevation(sm);
 
-    @include media-breakpoint-down(sm) {
-        font-size: 0.8rem;
-        padding: spacing(1);
-        min-width: 2rem;
-        border-radius: $border-radius-pill;
-        margin: 0;
-    }
+  @include media-breakpoint-down(sm) {
+    font-size: 0.8rem;
+    padding: spacing(1);
+    min-width: 2rem;
+    border-radius: $border-radius-pill;
+    margin: 0;
+  }
 }
 
 // Jonathan Ive-esque Temperature Dial
 .temperature-group {
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
 }
 
 .temperature-dial {
-    position: relative;
-    display: inline-flex;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      120% 120% at 30% 30%,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 255, 255, 0.6) 30%,
+      rgba(255, 255, 255, 0.1) 60%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.3));
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  // CSS 변수: 색상
+  --dial-accent-start: var(--btn-primary-bg);
+  --dial-accent-end: #17a2b8;
+  --dial-track: rgba(0, 0, 0, 0.08);
+
+  &:focus-visible {
+    outline: 2px solid var(--btn-primary-bg);
+    outline-offset: 2px;
+  }
+
+  .dial-svg {
+    display: block;
+  }
+
+  .dial-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: radial-gradient(120% 120% at 30% 30%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.6) 30%, rgba(255, 255, 255, 0.1) 60%, rgba(255, 255, 255, 0) 100%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.3));
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -2px 6px rgba(0, 0, 0, 0.06);
-    border: 1px solid var(--border-color);
-    cursor: pointer;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
+    background: radial-gradient(
+      60% 60% at 50% 40%,
+      rgba(255, 255, 255, 0.9),
+      rgba(255, 255, 255, 0.2)
+    );
+    box-shadow:
+      inset 0 8px 16px rgba(0, 0, 0, 0.04),
+      inset 0 -4px 8px rgba(0, 0, 0, 0.06);
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.1s ease;
 
-    // CSS 변수: 색상
-    --dial-accent-start: var(--btn-primary-bg);
-    --dial-accent-end: #17a2b8;
-    --dial-track: rgba(0, 0, 0, 0.08);
-
-    &:focus-visible {
-        outline: 2px solid var(--btn-primary-bg);
-        outline-offset: 2px;
+    &.focus {
+      box-shadow:
+        inset 0 10px 18px rgba(0, 0, 0, 0.06),
+        inset 0 -6px 10px rgba(0, 0, 0, 0.08);
     }
+  }
 
-    .dial-svg {
-        display: block;
-    }
+  .dial-value {
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    color: var(--text-primary);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+}
+
+[data-theme='dark'] {
+  .temperature-dial {
+    background:
+      radial-gradient(
+        120% 120% at 30% 30%,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.04) 30%,
+        rgba(255, 255, 255, 0.02) 60%,
+        rgba(255, 255, 255, 0) 100%
+      ),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    box-shadow:
+      0 8px 22px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 -2px 8px rgba(0, 0, 0, 0.5);
+    border-color: var(--border-color);
+    --dial-track: rgba(255, 255, 255, 0.12);
 
     .dial-center {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        background: radial-gradient(60% 60% at 50% 40%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.2));
-        box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.04), inset 0 -4px 8px rgba(0, 0, 0, 0.06);
-        transition: box-shadow 0.2s ease, transform 0.1s ease;
-
-        &.focus {
-            box-shadow: inset 0 10px 18px rgba(0, 0, 0, 0.06), inset 0 -6px 10px rgba(0, 0, 0, 0.08);
-        }
+      background: radial-gradient(
+        60% 60% at 50% 40%,
+        rgba(255, 255, 255, 0.06),
+        rgba(255, 255, 255, 0.01)
+      );
+      box-shadow:
+        inset 0 8px 18px rgba(0, 0, 0, 0.6),
+        inset 0 -4px 10px rgba(0, 0, 0, 0.7);
     }
 
     .dial-value {
-        font-weight: 700;
-        font-size: 0.95rem;
-        letter-spacing: 0.5px;
-        color: var(--text-primary);
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+      color: var(--text-primary);
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
     }
-}
-
-[data-theme="dark"] {
-    .temperature-dial {
-        background: radial-gradient(120% 120% at 30% 30%, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.04) 30%, rgba(255, 255, 255, 0.02) 60%, rgba(255, 255, 255, 0) 100%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 -2px 8px rgba(0, 0, 0, 0.5);
-        border-color: var(--border-color);
-        --dial-track: rgba(255, 255, 255, 0.12);
-
-        .dial-center {
-            background: radial-gradient(60% 60% at 50% 40%, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01));
-            box-shadow: inset 0 8px 18px rgba(0, 0, 0, 0.6), inset 0 -4px 10px rgba(0, 0, 0, 0.7);
-        }
-
-        .dial-value {
-            color: var(--text-primary);
-            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
-        }
-    }
+  }
 }
 
 // Usage information display - 이제 버튼 내부에서만 사용
 .usage-info {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
 
-    .usage-text {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-        font-weight: $font-weight-bold;
-        white-space: nowrap;
-        padding: spacing(1) spacing(2);
-        background-color: var(--bg-secondary);
-        border-radius: $border-radius;
-        border: 1px solid var(--border-color);
+  .usage-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: $font-weight-bold;
+    white-space: nowrap;
+    padding: spacing(1) spacing(2);
+    background-color: var(--bg-secondary);
+    border-radius: $border-radius;
+    border: 1px solid var(--border-color);
 
-        @include media-breakpoint-down(sm) {
-            font-size: 0.8rem;
-            padding: spacing(1);
-        }
+    @include media-breakpoint-down(sm) {
+      font-size: 0.8rem;
+      padding: spacing(1);
     }
+  }
 }
 
 // Main input area
 .input-area {
-    display: flex;
-    gap: spacing(3);
-    align-items: flex-end;
+  display: flex;
+  gap: spacing(3);
+  align-items: flex-end;
 
-    @include media-breakpoint-down(md) {
-        gap: spacing(2);
-        margin-top: spacing(2);
-    }
+  @include media-breakpoint-down(md) {
+    gap: spacing(2);
+    margin-top: spacing(2);
+  }
 
-    @include media-breakpoint-down(sm) {
-        gap: spacing(2);
-        margin-top: spacing(3);
-    }
+  @include media-breakpoint-down(sm) {
+    gap: spacing(2);
+    margin-top: spacing(3);
+  }
 }
 
 // Textarea container with resize handle
 .textarea-container {
-    position: relative;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 // Text input field
 .message-input {
-    & {
-        @include form-control-style;
-    }
+  & {
+    @include form-control-style;
+  }
 
-    & {
-        flex: 1;
-        min-height: 60px;
-        max-height: 400px;
-        resize: none;
-        line-height: 1.5;
-        font-family: $font-family-base;
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-    }
+  & {
+    flex: 1;
+    min-height: 60px;
+    max-height: 400px;
+    resize: none;
+    line-height: 1.5;
+    font-family: $font-family-base;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
 
-    @include media-breakpoint-down(sm) {
-        min-height: 50px;
-    }
+  @include media-breakpoint-down(sm) {
+    min-height: 50px;
+  }
 
-    &:disabled {
-        opacity: 0.6;
-        background-color: var(--bg-secondary);
-    }
+  &:disabled {
+    opacity: 0.6;
+    background-color: var(--bg-secondary);
+  }
 
-    &::placeholder {
-        color: var(--text-muted);
-        font-style: italic;
-    }
+  &::placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+  }
 
-    &:focus {
-        border-bottom-color: var(--btn-primary-bg);
-    }
+  &:focus {
+    border-bottom-color: var(--btn-primary-bg);
+  }
 }
 
 // Resize handle
 .resize-handle {
-    position: relative;
-    height: 12px;
-    background-color: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-top: none;
-    border-radius: 0 0 $border-radius $border-radius;
-    cursor: ns-resize;
+  position: relative;
+  height: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 $border-radius $border-radius;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  user-select: none;
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--btn-primary-bg);
+  }
+
+  &.resizing {
+    background-color: var(--btn-primary-bg);
+    border-color: var(--btn-primary-bg);
+
+    .resize-indicator span {
+      background-color: white;
+    }
+  }
+
+  .resize-indicator {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    user-select: none;
+    flex-direction: column;
+    gap: 1px;
 
-    &:hover {
-        background-color: var(--bg-tertiary);
-        border-color: var(--btn-primary-bg);
+    span {
+      width: 20px;
+      height: 1px;
+      background-color: var(--text-muted);
+      border-radius: 1px;
+      transition: background-color 0.2s ease;
     }
+  }
 
-    &.resizing {
-        background-color: var(--btn-primary-bg);
-        border-color: var(--btn-primary-bg);
+  @include media-breakpoint-down(sm) {
+    height: 14px;
 
-        .resize-indicator span {
-            background-color: white;
-        }
+    .resize-indicator span {
+      width: 16px;
+      height: 1.5px;
     }
-
-    .resize-indicator {
-        display: flex;
-        flex-direction: column;
-        gap: 1px;
-
-        span {
-            width: 20px;
-            height: 1px;
-            background-color: var(--text-muted);
-            border-radius: 1px;
-            transition: background-color 0.2s ease;
-        }
-    }
-
-    @include media-breakpoint-down(sm) {
-        height: 14px;
-
-        .resize-indicator span {
-            width: 16px;
-            height: 1.5px;
-        }
-    }
+  }
 }
 
 // Send button
 .send-btn {
-    & {
-        @include button-style(var(--btn-primary-bg), white, var(--btn-primary-border));
-    }
+  & {
+    @include button-style(var(--btn-primary-bg), white, var(--btn-primary-border));
+  }
 
-    & {
-        min-height: 60px;
-        min-width: 100px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: spacing(2);
+  & {
+    min-height: 60px;
+    min-width: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: spacing(2);
+  }
+
+  @include media-breakpoint-down(sm) {
+    min-height: 50px;
+    min-width: 80px;
+    padding: spacing(1);
+  }
+
+  &:hover:not(:disabled) {
+    @include elevation(md);
+  }
+
+  &.sending {
+    background-color: var(--error-color);
+
+    &:hover {
+      background-color: var(--error-color);
+      filter: brightness(0.9);
     }
+  }
+
+  .send-btn-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: spacing(1);
+    width: 100%;
+  }
+
+  i {
+    font-size: 1.2rem;
 
     @include media-breakpoint-down(sm) {
-        min-height: 50px;
-        min-width: 80px;
-        padding: spacing(1);
+      font-size: 1rem;
     }
+  }
 
-    &:hover:not(:disabled) {
-        @include elevation(md);
+  // 버튼 내부의 사용량 정보 스타일
+  .usage-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    order: 2;
+    width: 100%;
+
+    .usage-text {
+      font-size: 0.65rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: $font-weight-bold;
+      white-space: nowrap;
+      padding: 0;
+      background: transparent;
+      border: none;
+      margin: 0;
+
+      @include media-breakpoint-down(sm) {
+        font-size: 0.6rem;
+      }
     }
-
-    &.sending {
-        background-color: var(--error-color);
-
-        &:hover {
-            background-color: var(--error-color);
-            filter: brightness(0.9);
-        }
-    }
-
-    .send-btn-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: spacing(1);
-        width: 100%;
-    }
-
-    i {
-        font-size: 1.2rem;
-
-        @include media-breakpoint-down(sm) {
-            font-size: 1rem;
-        }
-    }
-
-    // 버튼 내부의 사용량 정보 스타일
-    .usage-info {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0;
-        padding: 0;
-        background: transparent;
-        border: none;
-        order: 2;
-        width: 100%;
-
-        .usage-text {
-            font-size: 0.65rem;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: $font-weight-bold;
-            white-space: nowrap;
-            padding: 0;
-            background: transparent;
-            border: none;
-            margin: 0;
-
-            @include media-breakpoint-down(sm) {
-                font-size: 0.6rem;
-            }
-        }
-    }
+  }
 }
 
 // Error message display
 .chat-input-error {
-    background-color: var(--error-ui-bg);
-    color: var(--error-color);
-    border: 1px solid var(--error-color);
-    border-radius: $border-radius;
-    padding: spacing(2) spacing(3);
-    margin-bottom: spacing(3);
-    @include flex-center;
-    gap: spacing(2);
-    font-size: 0.875rem;
+  background-color: var(--error-ui-bg);
+  color: var(--error-color);
+  border: 1px solid var(--error-color);
+  border-radius: $border-radius;
+  padding: spacing(2) spacing(3);
+  margin-bottom: spacing(3);
+  @include flex-center;
+  gap: spacing(2);
+  font-size: 0.875rem;
 }
 
 // Dark theme specific adjustments
-[data-theme="dark"] {
-    .chat-input-container {
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.4);
+[data-theme='dark'] {
+  .chat-input-container {
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.4);
+  }
+
+  .temperature-range {
+    &::-webkit-slider-thumb {
+      background: var(--bg-primary);
+      border-color: var(--btn-primary-bg);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
     }
 
-    .temperature-range {
-        &::-webkit-slider-thumb {
-            background: var(--bg-primary);
-            border-color: var(--btn-primary-bg);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-        }
-
-        &::-moz-range-thumb {
-            background: var(--bg-primary);
-            border-color: var(--btn-primary-bg);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-        }
+    &::-moz-range-thumb {
+      background: var(--bg-primary);
+      border-color: var(--btn-primary-bg);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
     }
+  }
 
-    .temperature-value {
-        background: linear-gradient(135deg, var(--btn-primary-bg), color(info));
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-    }
+  .temperature-value {
+    background: linear-gradient(135deg, var(--btn-primary-bg), color(info));
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  }
 
-    .model-select {
-        option {
-            background-color: var(--bg-secondary);
-            color: var(--text-primary);
-        }
+  .model-select {
+    option {
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
     }
+  }
 }
 
 // Animations: use global `@keyframes spin` defined in abstracts/_mixins.scss

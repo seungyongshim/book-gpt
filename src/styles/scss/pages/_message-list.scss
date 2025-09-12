@@ -1,290 +1,290 @@
 // ==========================================================================
 // MessageList Component - ChatGPT-style Message Display
 // ==========================================================================
-@use "../abstracts" as *;
+@use '../abstracts' as *;
 
 .message-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: spacing(3);
-    display: flex;
-    flex-direction: column;
-    gap: $message-gap;
+  flex: 1;
+  overflow-y: auto;
+  padding: spacing(3);
+  display: flex;
+  flex-direction: column;
+  gap: $message-gap;
 
-    // Fade in animation for the entire list
-    animation: fadeIn 0.5s ease-out;
+  // Fade in animation for the entire list
+  animation: fadeIn 0.5s ease-out;
 
-    // Custom scrollbar for better UX (use mixin to avoid duplication)
-    @include custom-scrollbar(6px, transparent, var(--border-color));
+  // Custom scrollbar for better UX (use mixin to avoid duplication)
+  @include custom-scrollbar(6px, transparent, var(--border-color));
 
-    // 고정 입력창과 겹치지 않도록 하단 여백 확보
-    padding-bottom: calc(var(--chat-input-h, #{$chat-input-height}) + #{spacing(2)});
+  // 고정 입력창과 겹치지 않도록 하단 여백 확보
+  padding-bottom: calc(var(--chat-input-h, #{$chat-input-height}) + #{spacing(2)});
 }
 
 // Message Item Base
 .message-item {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+
+  // Message header with role and actions
+  .message-header {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: spacing(1);
+    opacity: 1; // Always visible for mobile/touch
+    transition: opacity 0.2s ease;
+
+    .message-role {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      padding: 2px 6px;
+      background: var(--bg-secondary);
+      border-radius: $border-radius-sm;
+    }
+
+    .message-actions {
+      @include message-actions;
+    }
+  }
+
+  // Message content wrapper
+  .message-content {
     position: relative;
 
-    // Message header with role and actions
-    .message-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: spacing(1);
-        opacity: 1; // Always visible for mobile/touch
-        transition: opacity 0.2s ease;
-
-        .message-role {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            padding: 2px 6px;
-            background: var(--bg-secondary);
-            border-radius: $border-radius-sm;
-        }
-
-        .message-actions {
-            @include message-actions;
-        }
+    .message-text {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      line-height: 1.6;
     }
 
-    // Message content wrapper
+    // 메타 정보(문자수 카운터 등)
+    .message-meta {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: spacing(1);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+
+      .char-counter {
+        background: transparent;
+        padding: 0;
+        line-height: 1;
+      }
+    }
+
+    .message-edit-textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      border: 2px solid var(--btn-primary-bg);
+      border-radius: $border-radius;
+      padding: spacing(3);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+
+      &:focus {
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(27, 110, 194, 0.25);
+      }
+    }
+
+    // 하단 푸터 액션 버튼 (응답/assistant 버블 하단)
+    .message-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: spacing(1);
+      opacity: 1;
+      transition: opacity 0.2s ease;
+
+      .message-actions {
+        @include message-actions;
+      }
+    }
+  }
+
+  // Header/actions are always visible; no hover reveal behavior
+
+  // User message styles
+  &.message-user {
+    align-items: flex-end;
+
     .message-content {
-        position: relative;
-
-        .message-text {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            line-height: 1.6;
-        }
-
-        // 메타 정보(문자수 카운터 등)
-        .message-meta {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: spacing(1);
-            font-size: 0.75rem;
-            color: var(--text-muted);
-
-            .char-counter {
-                background: transparent;
-                padding: 0;
-                line-height: 1;
-            }
-        }
-
-        .message-edit-textarea {
-            width: 100%;
-            min-height: 120px;
-            resize: vertical;
-            border: 2px solid var(--btn-primary-bg);
-            border-radius: $border-radius;
-            padding: spacing(3);
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: inherit;
-            line-height: inherit;
-
-            &:focus {
-                outline: none;
-                box-shadow: 0 0 0 0.2rem rgba(27, 110, 194, 0.25);
-            }
-        }
-
-        // 하단 푸터 액션 버튼 (응답/assistant 버블 하단)
-        .message-footer {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: spacing(1);
-            opacity: 1;
-            transition: opacity 0.2s ease;
-
-            .message-actions {
-                @include message-actions;
-            }
-        }
+      @include message-bubble-user;
     }
 
-    // Header/actions are always visible; no hover reveal behavior
+    .message-role {
+      align-self: flex-end;
+      margin-right: spacing(2);
+    }
+  }
 
-    // User message styles
-    &.message-user {
-        align-items: flex-end;
+  // Assistant message styles
+  &.message-assistant {
+    align-items: flex-start;
 
-        .message-content {
-            @include message-bubble-user;
-        }
-
-        .message-role {
-            align-self: flex-end;
-            margin-right: spacing(2);
-        }
+    .message-content {
+      @include message-bubble-assistant;
     }
 
-    // Assistant message styles  
-    &.message-assistant {
-        align-items: flex-start;
-
-        .message-content {
-            @include message-bubble-assistant;
-        }
-
-        .message-role {
-            align-self: flex-start;
-            margin-left: spacing(2);
-        }
-
-        // Removed hover-dependent character count indicator for mobile-first simplicity
+    .message-role {
+      align-self: flex-start;
+      margin-left: spacing(2);
     }
 
-    // System message styles
-    &.message-system {
-        align-items: center;
+    // Removed hover-dependent character count indicator for mobile-first simplicity
+  }
 
-        .message-content {
-            @include message-bubble-system;
-        }
+  // System message styles
+  &.message-system {
+    align-items: center;
 
-        .message-role {
-            display: none; // Hidden as it's shown in the bubble badge
-        }
+    .message-content {
+      @include message-bubble-system;
     }
+
+    .message-role {
+      display: none; // Hidden as it's shown in the bubble badge
+    }
+  }
 }
 
 // Typing indicator removed; replaced by in-bubble character counter during streaming
 
 // Welcome message styles
 .welcome-message {
-    align-self: center;
-    text-align: center;
-    padding: spacing(6) spacing(4);
-    color: var(--text-secondary);
+  align-self: center;
+  text-align: center;
+  padding: spacing(6) spacing(4);
+  color: var(--text-secondary);
 
-    h2 {
-        margin-bottom: spacing(3);
-        font-size: 1.5rem;
-        font-weight: 300;
-        color: var(--text-primary);
+  h2 {
+    margin-bottom: spacing(3);
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--text-primary);
+  }
+
+  p {
+    margin-bottom: spacing(4);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .suggestion-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: spacing(2);
+    justify-content: center;
+    margin-top: spacing(4);
+
+    .chip {
+      padding: spacing(2) spacing(3);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: $border-radius-pill;
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--bg-tertiary);
+        @include elevation(sm);
+      }
     }
-
-    p {
-        margin-bottom: spacing(4);
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }
-
-    .suggestion-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: spacing(2);
-        justify-content: center;
-        margin-top: spacing(4);
-
-        .chip {
-            padding: spacing(2) spacing(3);
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: $border-radius-pill;
-            font-size: 0.875rem;
-            color: var(--text-primary);
-            cursor: pointer;
-            transition: all 0.2s ease;
-
-            &:hover {
-                background: var(--bg-tertiary);
-                @include elevation(sm);
-            }
-        }
-    }
+  }
 }
 
 // Error message styles
 .error-message {
-    align-self: center;
-    background: var(--error-ui-bg);
-    border: 1px solid var(--error-color);
-    border-left: 4px solid var(--error-color);
-    color: var(--error-color);
-    padding: spacing(3) spacing(4);
-    border-radius: $border-radius;
-    margin: spacing(2) 0;
-    font-size: 0.875rem;
+  align-self: center;
+  background: var(--error-ui-bg);
+  border: 1px solid var(--error-color);
+  border-left: 4px solid var(--error-color);
+  color: var(--error-color);
+  padding: spacing(3) spacing(4);
+  border-radius: $border-radius;
+  margin: spacing(2) 0;
+  font-size: 0.875rem;
 
-    .error-title {
-        font-weight: 600;
-        margin-bottom: spacing(1);
-    }
+  .error-title {
+    font-weight: 600;
+    margin-bottom: spacing(1);
+  }
 
-    .error-details {
-        opacity: 0.8;
-        font-size: 0.8rem;
-    }
+  .error-details {
+    opacity: 0.8;
+    font-size: 0.8rem;
+  }
 }
 
 // Animations
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
+  from {
+    opacity: 0;
+  }
 
-    to {
-        opacity: 1;
-    }
+  to {
+    opacity: 1;
+  }
 }
 
 // Responsive design
 @include media-breakpoint-down(md) {
-    .message-list {
-        padding: spacing(2);
-        gap: spacing(1);
+  .message-list {
+    padding: spacing(2);
+    gap: spacing(1);
 
-        // BEM 변형 셀렉터(.message-item__content) 사용 안함 → 정리
+    // BEM 변형 셀렉터(.message-item__content) 사용 안함 → 정리
 
-        .welcome-message {
-            padding: spacing(4) spacing(2);
+    .welcome-message {
+      padding: spacing(4) spacing(2);
 
-            .suggestion-chips {
-                .chip {
-                    font-size: 0.8rem;
-                    padding: spacing(1) spacing(2);
-                }
-            }
+      .suggestion-chips {
+        .chip {
+          font-size: 0.8rem;
+          padding: spacing(1) spacing(2);
         }
+      }
     }
+  }
 }
 
 @include media-breakpoint-down(sm) {
-    // 모바일 전용 추가 스타일이 필요하면 이후에 보강
+  // 모바일 전용 추가 스타일이 필요하면 이후에 보강
 }
 
 // High contrast mode support
 @media (prefers-contrast: high) {
-    .message-item {
-        &.message-user .message-content {
-            border: 2px solid var(--text-primary);
-        }
-
-        &.message-assistant .message-content {
-            border: 2px solid var(--text-secondary);
-        }
+  .message-item {
+    &.message-user .message-content {
+      border: 2px solid var(--text-primary);
     }
+
+    &.message-assistant .message-content {
+      border: 2px solid var(--text-secondary);
+    }
+  }
 }
 
 // Reduced motion support
 @media (prefers-reduced-motion: reduce) {
-    .message-item {
-        .message-content {
-            animation: none;
-            transition: none;
-        }
-
-        &:hover {
-            transform: none;
-        }
+  .message-item {
+    .message-content {
+      animation: none;
+      transition: none;
     }
+
+    &:hover {
+      transform: none;
+    }
+  }
 }

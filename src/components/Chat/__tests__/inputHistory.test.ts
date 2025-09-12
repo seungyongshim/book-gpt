@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { addHistory, getRecent, clearAll, pruneOld } from '../../../services/historyDB';
-import { recordInput, getCachedRecent, invalidateHistoryCache, INPUT_HISTORY_MAX } from '../../../services/inputHistoryRepository';
+import { getRecent, clearAll, pruneOld } from '../../../services/historyDB';
+import {
+  recordInput,
+  getCachedRecent,
+  invalidateHistoryCache,
+  INPUT_HISTORY_MAX,
+} from '../../../services/inputHistoryRepository';
 
 // NOTE: historyDB는 fallback(in-memory)을 사용하므로 fake-indexeddb 없이도 기본 동작 테스트 가능.
 // 실제 IndexedDB 환경 테스트가 필요하면 fake-indexeddb를 setup 단계에서 주입.

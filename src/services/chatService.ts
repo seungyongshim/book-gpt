@@ -64,7 +64,7 @@ export class ChatService {
   }
 
   // 채팅 응답 스트리밍
-  async* getResponseStreaming(
+  async *getResponseStreaming(
     history: ChatMessage[],
     model: string,
     temperature: number = 1.0,
@@ -77,7 +77,7 @@ export class ChatService {
 
     const messages = history.map(m => ({
       role: m.role,
-      content: m.text || ''
+      content: m.text || '',
     }));
 
     messages.push({ role: 'assistant', content: '응답하겠습니다.' });
@@ -86,24 +86,26 @@ export class ChatService {
       model,
       messages,
       temperature,
-      stream: true
+      stream: true,
     };
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     // 사용자가 제공한 signal과 타임아웃 signal을 결합
-    const combinedSignal = signal ? this.combineSignals([signal, controller.signal]) : controller.signal;
+    const combinedSignal = signal
+      ? this.combineSignals([signal, controller.signal])
+      : controller.signal;
 
     try {
       const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'anthropic-beta': 'output-128k-2025-02-19'
+          'anthropic-beta': 'output-128k-2025-02-19',
         },
         body: JSON.stringify(body),
-        signal: combinedSignal
+        signal: combinedSignal,
       });
 
       clearTimeout(timeoutId);
@@ -226,8 +228,12 @@ export class ChatService {
         }
 
         // 사용량 계산
-        if (usageInfo.totalPremiumRequests !== undefined && usageInfo.premiumRequestsLeft !== undefined) {
-          usageInfo.premiumRequestsUsed = usageInfo.totalPremiumRequests - usageInfo.premiumRequestsLeft;
+        if (
+          usageInfo.totalPremiumRequests !== undefined &&
+          usageInfo.premiumRequestsLeft !== undefined
+        ) {
+          usageInfo.premiumRequestsUsed =
+            usageInfo.totalPremiumRequests - usageInfo.premiumRequestsLeft;
         }
       }
 

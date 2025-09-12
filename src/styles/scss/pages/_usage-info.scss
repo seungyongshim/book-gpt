@@ -1,131 +1,132 @@
 // ==========================================================================
 // UsageInfo Component - Usage Information Display Styles
 // ==========================================================================
-@use "../abstracts" as *;
+@use '../abstracts' as *;
 
 .usage-info {
+  // Main usage info container
+  &__container {
+    padding: spacing(3);
+    background: var(--usage-bg);
+    border-radius: $border-radius-lg;
+    border: 1px solid var(--usage-border);
+    margin-top: spacing(2);
+    box-shadow: var(--shadow);
+  }
 
-    // Main usage info container
-    &__container {
-        padding: spacing(3);
-        background: var(--usage-bg);
-        border-radius: $border-radius-lg;
-        border: 1px solid var(--usage-border);
-        margin-top: spacing(2);
-        box-shadow: var(--shadow);
+  // Usage display layout
+  &__display {
+    @include flex-between;
+    align-items: center;
+    gap: spacing(4);
+  }
+
+  // Text information section
+  &__text {
+    &-container {
+      min-width: 120px;
+      flex-shrink: 0;
     }
 
-    // Usage display layout
-    &__display {
-        @include flex-between;
-        align-items: center;
-        gap: spacing(4);
+    &-percentage {
+      font-weight: $font-weight-bold;
+      font-size: 0.85rem;
+      color: var(--text-primary);
     }
 
-    // Text information section
-    &__text {
-        &-container {
-            min-width: 120px;
-            flex-shrink: 0;
-        }
+    &-label {
+      margin-top: 2px;
+      font-weight: $font-weight-bold;
+      letter-spacing: 0.3px;
+      font-size: 0.75rem;
+      color: var(--usage-text);
+    }
+  }
 
-        &-percentage {
-            font-weight: $font-weight-bold;
-            font-size: 0.85rem;
-            color: var(--text-primary);
-        }
-
-        &-label {
-            margin-top: 2px;
-            font-weight: $font-weight-bold;
-            letter-spacing: 0.3px;
-            font-size: 0.75rem;
-            color: var(--usage-text);
-        }
+  // Progress bar section
+  &__progress {
+    &-container {
+      max-width: 200px;
+      min-width: 150px;
+      flex: 1;
     }
 
-    // Progress bar section
-    &__progress {
-        &-container {
-            max-width: 200px;
-            min-width: 150px;
-            flex: 1;
-        }
+    &-bar {
+      @include progress-structure(rgba(0, 0, 0, 0.1), 3px, 6px);
 
-        &-bar {
-            @include progress-structure(rgba(0, 0, 0, 0.1), 3px, 6px);
-
-            .progress__bar {
-                background-image: linear-gradient(45deg,
-                        rgba(255, 255, 255, 0.15) 25%,
-                        transparent 25%,
-                        transparent 50%,
-                        rgba(255, 255, 255, 0.15) 50%,
-                        rgba(255, 255, 255, 0.15) 75%,
-                        transparent 75%,
-                        transparent);
-                background-size: 1rem 1rem;
-                animation: progress-bar-stripes 1s linear infinite;
-            }
-        }
-
-        &-labels {
-            @include flex-between;
-            margin-top: 3px;
-            font-size: 0.65rem;
-            color: var(--usage-text);
-            font-weight: $font-weight-bold;
-        }
+      .progress__bar {
+        background-image: linear-gradient(
+          45deg,
+          rgba(255, 255, 255, 0.15) 25%,
+          transparent 25%,
+          transparent 50%,
+          rgba(255, 255, 255, 0.15) 50%,
+          rgba(255, 255, 255, 0.15) 75%,
+          transparent 75%,
+          transparent
+        );
+        background-size: 1rem 1rem;
+        animation: progress-bar-stripes 1s linear infinite;
+      }
     }
 
-    // Refresh button
-    &__refresh-btn {
-        @include icon-button(32px);
+    &-labels {
+      @include flex-between;
+      margin-top: 3px;
+      font-size: 0.65rem;
+      color: var(--usage-text);
+      font-weight: $font-weight-bold;
+    }
+  }
 
-        &:hover {
-            color: color(info) !important;
-            background-color: rgba(color(info), 0.1);
-            transform: scale(1.05);
-        }
+  // Refresh button
+  &__refresh-btn {
+    @include icon-button(32px);
 
-        &--spinning {
-            animation: spin 1s linear infinite;
-        }
+    &:hover {
+      color: color(info) !important;
+      background-color: rgba(color(info), 0.1);
+      transform: scale(1.05);
     }
 
-    // Icons
-    &__icon {
-        &--pulse {
-            color: color(info);
-            font-size: 1rem;
-        }
-
-        &--info {
-            color: var(--usage-text);
-        }
+    &--spinning {
+      animation: spin 1s linear infinite;
     }
+  }
+
+  // Icons
+  &__icon {
+    &--pulse {
+      color: color(info);
+      font-size: 1rem;
+    }
+
+    &--info {
+      color: var(--usage-text);
+    }
+  }
 }
 
 // Dark theme adjustments
-[data-theme="dark"] {
-    .usage-info {
-        &__progress {
-            &-bar {
-                background-color: rgba(255, 255, 255, 0.1);
-            }
-        }
+[data-theme='dark'] {
+  .usage-info {
+    &__progress {
+      &-bar {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
     }
+  }
 }
 
 // Animations
 @keyframes progress-bar-stripes {
-    from {
-        background-position: 1rem 0;
-    }
+  from {
+    background-position: 1rem 0;
+  }
 
-    to {
-        background-position: 0 0;
-    }
+  to {
+    background-position: 0 0;
+  }
 }
 
 // Use global @keyframes spin defined in components

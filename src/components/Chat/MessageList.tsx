@@ -21,21 +21,12 @@ const MessageList = ({ endRef }: MessageListProps) => {
       aria-relevant="additions text"
     >
       {systemMessage && (
-        <MessageItem
-          message={systemMessage}
-          messageIndex={messages.indexOf(systemMessage)}
-        />
+        <MessageItem message={systemMessage} messageIndex={messages.indexOf(systemMessage)} />
       )}
 
-      {otherMessages.map((message) => {
+      {otherMessages.map(message => {
         const originalIndex = messages.indexOf(message);
-        return (
-          <MessageItem
-            key={originalIndex}
-            message={message}
-            messageIndex={originalIndex}
-          />
-        );
+        return <MessageItem key={originalIndex} message={message} messageIndex={originalIndex} />;
       })}
 
       {/* 스크롤 하단 위치 관찰용 sentinel */}

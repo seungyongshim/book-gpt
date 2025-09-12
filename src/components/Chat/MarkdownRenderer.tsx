@@ -7,7 +7,7 @@ const LazyMarkdown = React.lazy(async () => {
     import('react-markdown'),
     import('remark-gfm'),
     import('remark-breaks'),
-    import('rehype-highlight')
+    import('rehype-highlight'),
   ]);
   const ReactMarkdown = rm.default;
   const remarkGfm = rgfm.default;
@@ -19,11 +19,13 @@ const LazyMarkdown = React.lazy(async () => {
       remarkPlugins={[remarkGfm, remarkBreaks]}
       rehypePlugins={[rehypeHighlight]}
       components={{
-        a: (p) => <a {...p} target="_blank" rel="noopener noreferrer" />,
+        a: p => <a {...p} target="_blank" rel="noopener noreferrer" />,
         // pre 태그 overflow 개선 - 세로 스크롤바 제거하고 전체 표시
         pre: ({ children, ...rest }) => (
-          <pre className="overflow-x-auto" {...rest}>{children}</pre>
-        )
+          <pre className="overflow-x-auto" {...rest}>
+            {children}
+          </pre>
+        ),
       }}
     >
       {props.children}

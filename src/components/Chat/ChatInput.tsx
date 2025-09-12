@@ -89,7 +89,11 @@ const ChatInput = () => {
     }
 
     // 히스토리 탐색 (빈 입력 상태에서만)
-  if (!e.shiftKey && (localInput.trim() === '' || inputHistory.isNavigating()) && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+    if (
+      !e.shiftKey &&
+      (localInput.trim() === '' || inputHistory.isNavigating()) &&
+      (e.key === 'ArrowUp' || e.key === 'ArrowDown')
+    ) {
       if (!inputHistory.ready) return; // 아직 로드 안됨
       e.preventDefault();
       if (e.key === 'ArrowUp') {
@@ -139,7 +143,6 @@ const ChatInput = () => {
           textareaRef.current.focus();
         }
       }, 100);
-
     } catch (error) {
       console.error('Send message error:', error);
     }
@@ -156,7 +159,10 @@ const ChatInput = () => {
   };
 
   return (
-  <div ref={containerRef} className="absolute inset-x-0 bottom-0 w-full z-10 border-t border-border/40 bg-gradient-to-b from-neutral-50/60 via-neutral-50/80 to-neutral-100/90 dark:from-neutral-900/40 dark:via-neutral-900/60 dark:to-neutral-900/80 backdrop-blur-md">
+    <div
+      ref={containerRef}
+      className="absolute inset-x-0 bottom-0 w-full z-10 border-t border-border/40 bg-gradient-to-b from-neutral-50/60 via-neutral-50/80 to-neutral-100/90 dark:from-neutral-900/40 dark:via-neutral-900/60 dark:to-neutral-900/80 backdrop-blur-md"
+    >
       <div className="px-3 md:px-6 pt-3 md:pt-4 flex flex-col gap-2">
         {error && (
           <Alert variant="error" icon="warning">
@@ -187,7 +193,9 @@ const ChatInput = () => {
               {isSending ? <Icon name="x" size={18} /> : <Icon name="arrow-right" size={18} />}
             </button>
           </div>
-          <div className="absolute -bottom-5 right-1 text-[10px] text-neutral-500 dark:text-neutral-400"><UsageInfo /></div>
+          <div className="absolute -bottom-5 right-1 text-[10px] text-neutral-500 dark:text-neutral-400">
+            <UsageInfo />
+          </div>
         </div>
         {/* 하단 컨트롤 바 */}
         <div className="flex flex-wrap items-center gap-3 py-2 px-2 rounded-md bg-neutral-100/60 dark:bg-neutral-800/60 border border-border/50">
@@ -199,21 +207,31 @@ const ChatInput = () => {
                 onChange={handleModelChange}
                 className="h-8 rounded-md bg-white/70 dark:bg-neutral-900/60 border border-border/60 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
               >
-                {selectedModel === '' && <option value="" disabled>모델…</option>}
-                {availableModels.map(m => <option key={m} value={m}>{m}</option>)}
+                {selectedModel === '' && (
+                  <option value="" disabled>
+                    모델…
+                  </option>
+                )}
+                {availableModels.map(m => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
               </select>
             ) : (
               <input
                 aria-label="모델명 입력"
                 placeholder="모델명"
                 value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
+                onChange={e => setSelectedModel(e.target.value)}
                 className="h-8 w-[140px] rounded-md bg-white/70 dark:bg-neutral-900/60 border border-border/60 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             )}
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Temp</label>
+            <label className="text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+              Temp
+            </label>
             <input
               type="range"
               min={0}
@@ -224,7 +242,9 @@ const ChatInput = () => {
               aria-label="온도"
               className="h-2 w-32 accent-primary cursor-pointer"
             />
-            <span className="text-xs tabular-nums w-8 text-right text-neutral-600 dark:text-neutral-300">{temperature.toFixed(1)}</span>
+            <span className="text-xs tabular-nums w-8 text-right text-neutral-600 dark:text-neutral-300">
+              {temperature.toFixed(1)}
+            </span>
           </div>
         </div>
       </div>

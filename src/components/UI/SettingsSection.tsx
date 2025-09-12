@@ -17,7 +17,10 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
   ...rest
 }) => {
   return (
-    <section className={`settings-section ${dense ? 'space-y-4' : ''} ${className || ''}`} {...rest}>
+    <section
+      className={`settings-section ${dense ? 'space-y-4' : ''} ${className || ''}`}
+      {...rest}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <h6 className="settings-section-title">{title}</h6>
@@ -29,9 +32,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
         </div>
         {actions && <div className="shrink-0 flex items-center gap-2">{actions}</div>}
       </div>
-      <div className="space-y-3">
-        {children}
-      </div>
+      <div className="space-y-3">{children}</div>
     </section>
   );
 };

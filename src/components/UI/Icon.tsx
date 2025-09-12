@@ -18,7 +18,7 @@ import {
   Trash2,
   Waves,
   X,
-  CircleSlash
+  CircleSlash,
 } from 'lucide-react';
 import { IconName } from './Icon.types';
 
@@ -40,7 +40,7 @@ const ICON_MAP: Record<IconName, React.ComponentType<any>> = {
   stop: Square,
   pencil: Pencil,
   clipboard: Clipboard,
-  reload: RotateCcw
+  reload: RotateCcw,
 };
 
 export interface IconProps extends Omit<React.SVGProps<SVGSVGElement>, 'name'> {
@@ -56,9 +56,19 @@ export const Icon: React.FC<IconProps> = ({ name, size = 16, title, className, .
     if (process.env.NODE_ENV !== 'production') {
       console.warn(`[Icon] Unknown icon name: ${name}`);
     }
-    return <CircleSlash size={size} className={className} strokeWidth={2} aria-hidden focusable={false} />;
+    return (
+      <CircleSlash
+        size={size}
+        className={className}
+        strokeWidth={2}
+        aria-hidden
+        focusable={false}
+      />
+    );
   }
-  const ariaProps: Record<string, any> = title ? { role: 'img', 'aria-label': title } : { 'aria-hidden': true, focusable: false };
+  const ariaProps: Record<string, any> = title
+    ? { role: 'img', 'aria-label': title }
+    : { 'aria-hidden': true, focusable: false };
   return <LucideComp size={size} className={className} strokeWidth={2} {...ariaProps} {...rest} />;
 };
 

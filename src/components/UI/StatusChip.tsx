@@ -25,7 +25,10 @@ export const StatusChip: React.FC<StatusChipProps> = ({
 }) => {
   const sizeCls = small ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1';
   return (
-    <div className={`inline-flex items-center gap-1 rounded font-medium ${sizeCls} ${styleMap[state]} ${className || ''}`} {...rest}>
+    <div
+      className={`inline-flex items-center gap-1 rounded font-medium ${sizeCls} ${styleMap[state]} ${className || ''}`}
+      {...rest}
+    >
       {icon && <Icon name={icon} size={small ? 12 : 14} />}
       <span className="truncate max-w-[160px]">{children}</span>
     </div>

@@ -1,15 +1,15 @@
 {
-    "name": "ChatGPT-like",
-    "short_name": "ChatGPT-like",
-    "start_url": ".",
-    "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#ffffff",
-    "icons": [
-        {
-            "src": "./icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png"
-        }
-    ]
+  "name": "ChatGPT-like",
+  "short_name": "ChatGPT-like",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
 }

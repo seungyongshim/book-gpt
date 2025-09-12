@@ -32,12 +32,18 @@ const MessageActionButtons: React.FC<MessageActionButtonsProps> = ({
   showFooterVariant,
   isSystemReset,
   showStop,
-  onStop
+  onStop,
 }) => {
   if (isEditing) {
     return (
       <div className="flex items-center gap-1">
-        <IconButton icon="check" variant="success" title="저장 (Ctrl+Enter)" ariaLabel="저장" onClick={onSave} />
+        <IconButton
+          icon="check"
+          variant="success"
+          title="저장 (Ctrl+Enter)"
+          ariaLabel="저장"
+          onClick={onSave}
+        />
         <IconButton icon="x" title="취소 (Esc)" ariaLabel="취소" onClick={onCancel} />
       </div>
     );
@@ -46,21 +52,23 @@ const MessageActionButtons: React.FC<MessageActionButtonsProps> = ({
   return (
     <div className="flex items-center gap-1">
       {showStop && (
-        <IconButton
-          icon="stop"
-          variant="danger"
-          title="중단"
-          ariaLabel="중단"
-          onClick={onStop}
-        />
+        <IconButton icon="stop" variant="danger" title="중단" ariaLabel="중단" onClick={onStop} />
       )}
       <IconButton icon="pencil" title="편집" ariaLabel="편집" onClick={onStartEdit} />
       <IconButton icon="clipboard" title="복사" ariaLabel="복사" onClick={onCopy} />
       {copied && (
-        <span className="text-xs text-green-600 dark:text-green-400" aria-live="polite">복사됨</span>
+        <span className="text-xs text-green-600 dark:text-green-400" aria-live="polite">
+          복사됨
+        </span>
       )}
       {messageRole === 'user' && !showFooterVariant && (
-        <IconButton icon="reload" title="재전송" ariaLabel="재전송" onClick={onResend} disabled={isSending} />
+        <IconButton
+          icon="reload"
+          title="재전송"
+          ariaLabel="재전송"
+          onClick={onResend}
+          disabled={isSending}
+        />
       )}
       <IconButton
         icon={isSystemReset ? 'loop-circular' : 'trash'}

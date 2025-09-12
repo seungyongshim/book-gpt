@@ -65,7 +65,9 @@ const SettingsPanel = () => {
       setConnectionStatus(result ? 'IndexedDB 테스트 성공' : 'IndexedDB 테스트 실패');
       setConnectionOk(result);
     } catch (error) {
-      setConnectionStatus(`IndexedDB 테스트 실패: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setConnectionStatus(
+        `IndexedDB 테스트 실패: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       setConnectionOk(false);
     }
   };
@@ -79,7 +81,9 @@ const SettingsPanel = () => {
         setTimeout(() => window.location.reload(), 800);
       }
     } catch (error) {
-      setConnectionStatus(`IndexedDB 초기화 실패: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setConnectionStatus(
+        `IndexedDB 초기화 실패: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       setConnectionOk(false);
     }
   };
@@ -101,58 +105,92 @@ const SettingsPanel = () => {
 
         <div className="space-y-10">
           <SettingsSection title="시스템 메시지">
-            <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400" htmlFor="system-message">시스템 메시지</label>
+            <label
+              className="text-xs font-medium text-neutral-500 dark:text-neutral-400"
+              htmlFor="system-message"
+            >
+              시스템 메시지
+            </label>
             <textarea
               id="system-message"
               className="settings-textarea"
               value={localSystemMessage}
-              onChange={(e) => setLocalSystemMessage(e.target.value)}
+              onChange={e => setLocalSystemMessage(e.target.value)}
               placeholder="시스템 메시지를 입력하세요..."
               rows={4}
             />
-            <Button onClick={handleSystemMessageChange} variant="primary" leftIcon="check">시스템 메시지 저장</Button>
+            <Button onClick={handleSystemMessageChange} variant="primary" leftIcon="check">
+              시스템 메시지 저장
+            </Button>
           </SettingsSection>
 
           <SettingsSection title={`현재 모델 설정 (${selectedModel})`}>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400" htmlFor="max-tokens">최대 토큰 수</label>
+              <label
+                className="text-xs font-medium text-neutral-500 dark:text-neutral-400"
+                htmlFor="max-tokens"
+              >
+                최대 토큰 수
+              </label>
               <input
                 id="max-tokens"
                 type="number"
                 className="settings-input"
                 value={localMaxTokens}
-                onChange={(e) => setLocalMaxTokens(e.target.value)}
+                onChange={e => setLocalMaxTokens(e.target.value)}
                 placeholder="비워두면 제한 없음"
                 min={1}
                 max={100000}
               />
             </div>
-            <Button onClick={handleModelSettingsChange} variant="primary" leftIcon="check">모델 설정 저장</Button>
+            <Button onClick={handleModelSettingsChange} variant="primary" leftIcon="check">
+              모델 설정 저장
+            </Button>
           </SettingsSection>
 
           <SettingsSection title="기본 설정">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400" htmlFor="default-model">기본 모델</label>
+              <label
+                className="text-xs font-medium text-neutral-500 dark:text-neutral-400"
+                htmlFor="default-model"
+              >
+                기본 모델
+              </label>
               <input
                 id="default-model"
                 type="text"
                 className="settings-input"
                 value={defaultModel}
-                onChange={(e) => setDefaultModel(e.target.value)}
+                onChange={e => setDefaultModel(e.target.value)}
                 placeholder="기본 모델명을 입력하세요"
               />
             </div>
-            <Button onClick={handleSaveDefaults} variant="secondary" leftIcon="check">기본 설정 저장</Button>
+            <Button onClick={handleSaveDefaults} variant="secondary" leftIcon="check">
+              기본 설정 저장
+            </Button>
           </SettingsSection>
 
           <SettingsSection title="연결 테스트">
             <div className="flex flex-wrap gap-2">
-              <Button onClick={handleTestConnection} variant="secondary" leftIcon="loop">API 연결 테스트</Button>
-              <Button onClick={handleTestIndexedDB} variant="secondary" leftIcon="data-transfer-download">IndexedDB 테스트</Button>
-              <Button onClick={handleClearIndexedDB} variant="danger" leftIcon="trash">데이터 초기화</Button>
+              <Button onClick={handleTestConnection} variant="secondary" leftIcon="loop">
+                API 연결 테스트
+              </Button>
+              <Button
+                onClick={handleTestIndexedDB}
+                variant="secondary"
+                leftIcon="data-transfer-download"
+              >
+                IndexedDB 테스트
+              </Button>
+              <Button onClick={handleClearIndexedDB} variant="danger" leftIcon="trash">
+                데이터 초기화
+              </Button>
             </div>
             {connectionStatus && (
-              <StatusChip state={connectionOk ? 'success' : 'error'} icon={connectionOk ? 'check' : 'warning'}>
+              <StatusChip
+                state={connectionOk ? 'success' : 'error'}
+                icon={connectionOk ? 'check' : 'warning'}
+              >
                 {connectionStatus}
               </StatusChip>
             )}

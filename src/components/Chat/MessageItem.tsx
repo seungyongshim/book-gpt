@@ -122,20 +122,28 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
 
   const getRoleDisplayName = (role: string) => {
     switch (role) {
-      case 'user': return '사용자';
-      case 'assistant': return '어시스턴트';
-      case 'system': return '시스템';
-      default: return role;
+      case 'user':
+        return '사용자';
+      case 'assistant':
+        return '어시스턴트';
+      case 'system':
+        return '시스템';
+      default:
+        return role;
     }
   };
 
   const getRoleClass = (role: string) => {
     const base = 'chat-bubble-base';
     switch (role) {
-      case 'user': return base + ' chat-bubble-user self-end';
-      case 'assistant': return base + ' chat-bubble-assistant';
-      case 'system': return base + ' chat-bubble-system';
-      default: return base;
+      case 'user':
+        return base + ' chat-bubble-user self-end';
+      case 'assistant':
+        return base + ' chat-bubble-assistant';
+      case 'system':
+        return base + ' chat-bubble-system';
+      default:
+        return base;
     }
   };
 
@@ -159,7 +167,7 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
           copied={copied}
           onStartEdit={handleStartEdit}
           onCopy={handleCopyToClipboard}
-            onResend={handleResend}
+          onResend={handleResend}
           onDelete={handleDelete}
           onSave={handleSaveEdit}
           onCancel={handleCancelEdit}

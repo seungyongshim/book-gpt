@@ -15,23 +15,23 @@ class ChatStorage {
     return new Promise((resolve, reject) => {
       console.log('Initializing IndexedDB...');
       const request = indexedDB.open(this.dbName, this.version);
-      
+
       request.onerror = () => {
         console.error('IndexedDB open error:', request.error);
         reject(request.error);
       };
-      
+
       request.onsuccess = () => {
         console.log('IndexedDB opened successfully');
         this.db = request.result;
         this.isInitialized = true;
         resolve(this.db);
       };
-      
-      request.onupgradeneeded = (event) => {
+
+      request.onupgradeneeded = event => {
         console.log('IndexedDB upgrade needed, creating object stores...');
         const db = (event.target as IDBOpenDBRequest).result;
-        
+
         // 세션 스토어 생성
         if (!db.objectStoreNames.contains('sessions')) {
           console.log('Creating sessions object store...');
@@ -40,13 +40,13 @@ class ChatStorage {
           sessionStore.createIndex('createdAt', 'createdAt', { unique: false });
           sessionStore.createIndex('lastUpdated', 'lastUpdated', { unique: false });
         }
-        
+
         // 설정 스토어 생성
         if (!db.objectStoreNames.contains('settings')) {
           console.log('Creating settings object store...');
           db.createObjectStore('settings', { keyPath: 'key' });
         }
-        
+
         console.log('IndexedDB upgrade completed');
       };
     });
@@ -54,17 +54,17 @@ class ChatStorage {
 
   async saveSessions(sessions: SessionDto[]): Promise<void> {
     if (!this.db) await this.init();
-    
+
     const transaction = this.db!.transaction(['sessions'], 'readwrite');
     const store = transaction.objectStore('sessions');
-    
+
     // 기존 세션들 삭제
     await new Promise<void>((resolve, reject) => {
       const clearRequest = store.clear();
       clearRequest.onsuccess = () => resolve();
       clearRequest.onerror = () => reject(clearRequest.error);
     });
-    
+
     // 새 세션들 저장
     for (const session of sessions) {
       const sessionData = {
@@ -73,23 +73,23 @@ class ChatStorage {
         history: session.history,
         lastUpdated: session.lastUpdated,
         systemMessage: session.systemMessage,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
       console.log('Saving session to IndexedDB:', sessionData);
-      
+
       // 유효성 검사
       if (!sessionData.id) {
         console.error('Invalid session data: missing id', session);
         throw new Error('Session must have a valid id');
       }
-      
+
       await new Promise<void>((resolve, reject) => {
         const request = store.add(sessionData);
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
       });
     }
-    
+
     return new Promise((resolve, reject) => {
       transaction.oncomplete = () => {
         console.log('Sessions saved to IndexedDB successfully');
@@ -104,11 +104,11 @@ class ChatStorage {
 
   async loadSessions(): Promise<SessionDto[]> {
     if (!this.db) await this.init();
-    
+
     const transaction = this.db!.transaction(['sessions'], 'readonly');
     const store = transaction.objectStore('sessions');
     const request = store.getAll();
-    
+
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
         const sessions = request.result.map((session: any) => ({
@@ -116,7 +116,7 @@ class ChatStorage {
           title: session.title,
           history: session.history,
           lastUpdated: session.lastUpdated ? session.lastUpdated : new Date().toISOString(),
-          systemMessage: session.systemMessage
+          systemMessage: session.systemMessage,
         }));
         console.log('Loaded sessions from IndexedDB:', sessions);
         resolve(sessions);
@@ -130,10 +130,10 @@ class ChatStorage {
 
   async saveSetting(key: string, value: any): Promise<void> {
     if (!this.db) await this.init();
-    
+
     const transaction = this.db!.transaction(['settings'], 'readwrite');
     const store = transaction.objectStore('settings');
-    
+
     await new Promise<void>((resolve, reject) => {
       const request = store.put({ key, value });
       request.onsuccess = () => resolve();
@@ -143,11 +143,11 @@ class ChatStorage {
 
   async loadSetting(key: string): Promise<any> {
     if (!this.db) await this.init();
-    
+
     const transaction = this.db!.transaction(['settings'], 'readonly');
     const store = transaction.objectStore('settings');
     const request = store.get(key);
-    
+
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
         const result = request.result;
@@ -159,10 +159,10 @@ class ChatStorage {
 
   async clear(): Promise<void> {
     if (!this.db) await this.init();
-    
+
     const transaction = this.db!.transaction(['sessions'], 'readwrite');
     const store = transaction.objectStore('sessions');
-    
+
     return new Promise((resolve, reject) => {
       const request = store.clear();
       request.onsuccess = () => {
@@ -179,31 +179,33 @@ class ChatStorage {
   async test(): Promise<boolean> {
     try {
       console.log('Testing IndexedDB...');
-      
+
       // 먼저 초기화 확인
       if (!this.isInitialized) {
         console.log('IndexedDB not initialized, initializing now...');
         await this.init();
       }
-      
+
       // 테스트 세션 생성
-      const testSessions: SessionDto[] = [{
-        id: '12345678-1234-1234-1234-123456789abc',
-        title: 'Test Session',
-        history: [
-          { role: 'system', text: 'You are a helpful assistant.' },
-          { role: 'user', text: 'Hello' },
-          { role: 'assistant', text: 'Hi there!' }
-        ],
-        lastUpdated: new Date().toISOString()
-      }];
-      
+      const testSessions: SessionDto[] = [
+        {
+          id: '12345678-1234-1234-1234-123456789abc',
+          title: 'Test Session',
+          history: [
+            { role: 'system', text: 'You are a helpful assistant.' },
+            { role: 'user', text: 'Hello' },
+            { role: 'assistant', text: 'Hi there!' },
+          ],
+          lastUpdated: new Date().toISOString(),
+        },
+      ];
+
       console.log('Saving test sessions...');
       await this.saveSessions(testSessions);
-      
+
       console.log('Loading test sessions...');
       const loaded = await this.loadSessions();
-      
+
       console.log('Test completed. Loaded sessions:', loaded);
       return loaded.length > 0;
     } catch (error) {
@@ -218,7 +220,6 @@ export const chatStorage = new ChatStorage();
 
 // 스토리지 서비스 클래스
 export class StorageService {
-  
   // IndexedDB 초기화
   static async initializeStorage(): Promise<boolean> {
     try {
@@ -238,11 +239,11 @@ export class StorageService {
       title: s.title,
       history: s.history.map(m => ({ role: m.role, text: m.text })),
       lastUpdated: s.lastUpdated.toISOString(),
-      systemMessage: s.systemMessage
+      systemMessage: s.systemMessage,
     }));
-    
+
     console.log(`Attempting to save ${sessionDtos.length} sessions to IndexedDB...`);
-    
+
     try {
       await chatStorage.saveSessions(sessionDtos);
       console.log('Sessions saved to IndexedDB successfully');
@@ -261,17 +262,17 @@ export class StorageService {
       console.log('Attempting to load sessions from IndexedDB...');
       const sessionDtos = await chatStorage.loadSessions();
       console.log(`Loaded ${sessionDtos?.length ?? 0} sessions from IndexedDB`);
-      
+
       if (sessionDtos && sessionDtos.length > 0) {
         return sessionDtos.map(d => ({
           id: d.id,
           title: d.title,
-          history: d.history.map(x => ({ 
-            role: x.role as 'user' | 'assistant' | 'system', 
-            text: x.text 
+          history: d.history.map(x => ({
+            role: x.role as 'user' | 'assistant' | 'system',
+            text: x.text,
           })),
           lastUpdated: new Date(d.lastUpdated),
-          systemMessage: d.systemMessage
+          systemMessage: d.systemMessage,
         }));
       }
     } catch (error) {
@@ -289,12 +290,12 @@ export class StorageService {
           return parsed.map(d => ({
             id: d.id,
             title: d.title,
-            history: d.history.map(x => ({ 
-              role: x.role as 'user' | 'assistant' | 'system', 
-              text: x.text 
+            history: d.history.map(x => ({
+              role: x.role as 'user' | 'assistant' | 'system',
+              text: x.text,
             })),
             lastUpdated: new Date(d.lastUpdated),
-            systemMessage: d.systemMessage
+            systemMessage: d.systemMessage,
           }));
         }
       } catch (parseError) {

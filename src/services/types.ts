@@ -1,7 +1,10 @@
 // 타입 정의
 export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'tool';
   text: string;
+  tool_calls?: ToolCall[];
+  tool_call_id?: string;
+  name?: string;
 }
 
 export interface Session {
@@ -29,4 +32,58 @@ export interface UsageInfo {
   premiumRequestsLeft?: number;
   totalPremiumRequests?: number;
   premiumRequestsUsed?: number;
+}
+
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  description?: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BookPage {
+  pageNumber: number;
+  title: string;
+  content: string;
+}
+
+export interface BookDto {
+  id: string;
+  title: string;
+  author: string;
+  description?: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// OpenAI Function Calling 관련 타입들
+export interface OpenAIFunction {
+  name: string;
+  description: string;
+  parameters: {
+    type: string;
+    properties: Record<string, any>;
+    required?: string[];
+  };
+}
+
+export interface FunctionCall {
+  name: string;
+  arguments: string;
+}
+
+export interface ToolCall {
+  id: string;
+  type: 'function';
+  function: FunctionCall;
+}
+
+export interface ToolMessage extends ChatMessage {
+  role: 'tool';
+  tool_call_id: string;
+  name: string;
 }

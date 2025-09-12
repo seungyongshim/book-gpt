@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getCachedRecent, recordInput } from '../services/inputHistoryRepository';
 
-interface UseInputHistoryOptions {
-  preload?: number; // override preload size (optional)
-}
-
 export interface InputHistoryController {
   ready: boolean;
   prev: () => string | null; // 이전(과거로 이동) -> 더 오래된 입력
@@ -15,7 +11,7 @@ export interface InputHistoryController {
 }
 
 // 내부 캐싱된 리스트는 최신이 index 0
-export function useInputHistory(options: UseInputHistoryOptions = {}): InputHistoryController {
+export function useInputHistory(): InputHistoryController {
   const [ready, setReady] = useState(false);
   const historyRef = useRef<string[]>([]);
   const pointerRef = useRef<number>(-1); // -1 => 현재 입력 (빈 상태)

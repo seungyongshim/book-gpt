@@ -43,6 +43,7 @@ body {
 .chat-bubble-user { @apply bg-primary/10 border-primary/30; }
 .chat-bubble-assistant { @apply bg-neutral-100 dark:bg-neutral-800 border-border/50; }
 .chat-bubble-system { @apply bg-amber-50 dark:bg-amber-900/30 border-amber-400/40; }
+.chat-bubble-tool { @apply bg-blue-50 dark:bg-blue-900/30 border-blue-400/40; }
 
 /* 아이콘 버튼 기본 */
 .icon-btn { @apply h-8 w-8 inline-flex items-center justify-center rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed; }

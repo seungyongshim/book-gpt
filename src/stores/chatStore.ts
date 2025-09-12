@@ -1,7 +1,9 @@
 import { create } from 'zustand';
-import { ChatMessage, Session, ModelSettings, UsageInfo } from '../services/types';
+import { ChatMessage, Session, ModelSettings, UsageInfo, Book, BookPage, ToolCall } from '../services/types';
 import { StorageService } from '../services/storageService';
 import { chatService } from '../services/chatService';
+import { bookService } from '../services/bookService';
+import { toolsService } from '../services/toolsService';
 
 // 간단한 UUID 생성 함수
 const generateId = (): string => {
@@ -48,6 +50,12 @@ export interface ChatState {
   currentUsage: UsageInfo | null;
   loadingUsage: boolean;
 
+  // 책 관리
+  availableBooks: Book[];
+  selectedBook: Book | null;
+  loadingBooks: boolean;
+  referencedPage: BookPage | null;
+
   // Actions
   initializeApp: () => Promise<void>;
 
@@ -90,6 +98,12 @@ export interface ChatState {
   // 사용량
   loadUsage: () => Promise<void>;
 
+  // 책 관리
+  loadBooks: () => Promise<void>;
+  setSelectedBook: (book: Book | null) => void;
+  getBookContext: (userInput?: string) => Promise<string>;
+  detectPageReference: (input: string) => number | null;
+
   // 유틸리티
   getEffectiveModel: () => string;
 }
@@ -116,6 +130,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   systemMessage: 'You are a helpful assistant.',
   currentUsage: null,
   loadingUsage: false,
+  availableBooks: [],
+  selectedBook: null,
+  loadingBooks: false,
+  referencedPage: null,
 
   // 앱 초기화
   initializeApp: async () => {
@@ -220,6 +238,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // 사용량 정보 로드
     get().loadUsage();
+
+    // 책 데이터 로드
+    get().loadBooks();
 
     console.log('App initialization completed');
   },
@@ -360,18 +381,39 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       // 사용자 메시지 추가
       const userMessage: ChatMessage = { role: 'user', text: state.userInput.trim() };
-      const newMessages = [...state.messages, userMessage];
-      set({ messages: newMessages, userInput: '' });
+      
+      // 선택된 책이 있으면 컨텍스트 추가
+      let messagesWithContext = [...state.messages, userMessage];
+      const bookContext = await get().getBookContext(state.userInput.trim());
+      if (bookContext) {
+        // 시스템 메시지에 책 컨텍스트 추가
+        const contextMessage: ChatMessage = { 
+          role: 'system', 
+          text: `다음은 참고할 책의 내용입니다:\n\n${bookContext}\n\n위 내용을 참고하여 사용자의 질문에 답변해주세요. 필요시 save_response_as_book_page 또는 create_book_from_response 함수를 사용하여 응답을 책으로 저장할 수 있습니다.`
+        };
+        messagesWithContext = [...state.messages, contextMessage, userMessage];
+      } else {
+        // 책 컨텍스트가 없어도 tool 사용 안내 추가
+        const toolHintMessage: ChatMessage = {
+          role: 'system',
+          text: '필요시 save_response_as_book_page 또는 create_book_from_response 함수를 사용하여 응답을 책으로 저장할 수 있습니다.'
+        };
+        messagesWithContext = [...state.messages, toolHintMessage, userMessage];
+      }
+      
+      set({ messages: messagesWithContext, userInput: '' });
 
       // 어시스턴트 메시지 준비
-      const assistantMessage: ChatMessage = { role: 'assistant', text: '' };
-      const messagesWithAssistant = [...newMessages, assistantMessage];
+      let assistantMessage: ChatMessage = { role: 'assistant', text: '' };
+      let messagesWithAssistant = [...messagesWithContext, assistantMessage];
       set({ messages: messagesWithAssistant });
 
-      // 스트리밍 응답 처리
+      // 스트리밍 응답 처리 (컨텍스트가 포함된 메시지 사용)
       let responseText = '';
+      let toolCalls: ToolCall[] = [];
+      
       const stream = chatService.getResponseStreaming(
-        newMessages,
+        messagesWithContext,
         model,
         state.temperature,
         state.maxTokens ?? undefined,
@@ -379,9 +421,57 @@ export const useChatStore = create<ChatState>((set, get) => ({
       );
 
       for await (const chunk of stream) {
-        responseText += chunk;
-        const updatedMessages = [...newMessages, { role: 'assistant' as const, text: responseText }];
-        set({ messages: updatedMessages });
+        if (chunk.type === 'content' && chunk.content) {
+          responseText += chunk.content;
+          assistantMessage = { role: 'assistant', text: responseText };
+          messagesWithAssistant = [...messagesWithContext, assistantMessage];
+          set({ messages: messagesWithAssistant });
+        } else if (chunk.type === 'tool_calls' && chunk.tool_calls) {
+          // Tool calls 누적
+          toolCalls.push(...chunk.tool_calls);
+          assistantMessage = { 
+            role: 'assistant', 
+            text: responseText,
+            tool_calls: toolCalls
+          };
+          messagesWithAssistant = [...messagesWithContext, assistantMessage];
+          set({ messages: messagesWithAssistant });
+        }
+      }
+
+      // Tool calls 실행
+      if (toolCalls.length > 0) {
+        for (const toolCall of toolCalls) {
+          try {
+            // Tool 실행
+            const toolResult = await toolsService.executeToolCall(toolCall);
+            
+            // Tool 결과 메시지 추가
+            const toolMessage: ChatMessage = {
+              role: 'tool',
+              text: toolResult,
+              tool_call_id: toolCall.id,
+              name: toolCall.function.name
+            };
+            
+            messagesWithAssistant = [...messagesWithAssistant, toolMessage];
+            set({ messages: messagesWithAssistant });
+
+            // 책 목록이 변경되었을 수 있으므로 재로드
+            get().loadBooks();
+            
+          } catch (error) {
+            console.error('Tool execution error:', error);
+            const errorMessage: ChatMessage = {
+              role: 'tool',
+              text: `오류: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              tool_call_id: toolCall.id,
+              name: toolCall.function.name
+            };
+            messagesWithAssistant = [...messagesWithAssistant, errorMessage];
+            set({ messages: messagesWithAssistant });
+          }
+        }
       }
 
       // 세션 업데이트
@@ -764,5 +854,67 @@ export const useChatStore = create<ChatState>((set, get) => ({
   getEffectiveModel: () => {
     const state = get();
     return state.selectedModel || (state.availableModels.length > 0 ? state.availableModels[0] : 'gpt-4o');
+  },
+
+  // 책 로드
+  loadBooks: async () => {
+    const state = get();
+    if (state.loadingBooks) return;
+
+    set({ loadingBooks: true });
+
+    try {
+      await bookService.initializeBooks();
+      const books = await bookService.getAllBooks();
+      set({ availableBooks: books });
+    } catch (error) {
+      console.error('Failed to load books:', error);
+      set({ availableBooks: [] });
+    } finally {
+      set({ loadingBooks: false });
+    }
+  },
+
+  // 선택된 책 설정
+  setSelectedBook: (book: Book | null) => {
+    set({ selectedBook: book, referencedPage: null });
+  },
+
+  // 페이지 참조 감지 (#1, #2 등)
+  detectPageReference: (input: string) => {
+    const match = input.match(/#(\d+)/);
+    return match ? parseInt(match[1], 10) : null;
+  },
+
+  // 책 컨텍스트 반환 (페이지 참조 지원)
+  getBookContext: async (userInput?: string) => {
+    const state = get();
+    if (!state.selectedBook) return '';
+    
+    // 사용자 입력에서 페이지 참조 확인
+    const pageRef = userInput ? get().detectPageReference(userInput) : null;
+    
+    if (pageRef) {
+      // 특정 페이지 참조
+      try {
+        const page = await bookService.getBookPage(state.selectedBook.id, pageRef);
+        if (page) {
+          set({ referencedPage: page });
+          return `제목: ${state.selectedBook.title}\n저자: ${state.selectedBook.author}\n\n[페이지 ${page.pageNumber}: ${page.title}]\n\n${page.content}`;
+        } else {
+          // 페이지가 없는 경우 전체 내용 반환
+          set({ referencedPage: null });
+          return `제목: ${state.selectedBook.title}\n저자: ${state.selectedBook.author}\n\n전체 내용:\n\n${state.selectedBook.content}`;
+        }
+      } catch (error) {
+        console.error('Failed to get book page:', error);
+        set({ referencedPage: null });
+        return `제목: ${state.selectedBook.title}\n저자: ${state.selectedBook.author}\n\n${state.selectedBook.content}`;
+      }
+    } else {
+      // 페이지 참조 없음 - 전체 내용 반환
+      set({ referencedPage: null });
+      return `제목: ${state.selectedBook.title}\n저자: ${state.selectedBook.author}\n\n${state.selectedBook.content}`;
+    }
   }
 }));

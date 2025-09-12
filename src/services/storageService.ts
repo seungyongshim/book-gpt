@@ -1,4 +1,4 @@
-import { Session, SessionDto } from './types';
+import { Session, SessionDto, Book, BookDto } from './types';
 
 // IndexedDB를 사용한 채팅 데이터 저장소
 class ChatStorage {
@@ -45,6 +45,16 @@ class ChatStorage {
         if (!db.objectStoreNames.contains('settings')) {
           console.log('Creating settings object store...');
           db.createObjectStore('settings', { keyPath: 'key' });
+        }
+        
+        // 책 스토어 생성
+        if (!db.objectStoreNames.contains('books')) {
+          console.log('Creating books object store...');
+          const bookStore = db.createObjectStore('books', { keyPath: 'id' });
+          bookStore.createIndex('title', 'title', { unique: false });
+          bookStore.createIndex('author', 'author', { unique: false });
+          bookStore.createIndex('createdAt', 'createdAt', { unique: false });
+          bookStore.createIndex('updatedAt', 'updatedAt', { unique: false });
         }
         
         console.log('IndexedDB upgrade completed');
@@ -98,6 +108,84 @@ class ChatStorage {
       transaction.onerror = () => {
         console.error('Error saving sessions to IndexedDB:', transaction.error);
         reject(transaction.error);
+      };
+    });
+  }
+
+  async saveBooks(books: BookDto[]): Promise<void> {
+    if (!this.db) await this.init();
+    
+    const transaction = this.db!.transaction(['books'], 'readwrite');
+    const store = transaction.objectStore('books');
+    
+    // 기존 책들 삭제
+    await new Promise<void>((resolve, reject) => {
+      const clearRequest = store.clear();
+      clearRequest.onsuccess = () => resolve();
+      clearRequest.onerror = () => reject(clearRequest.error);
+    });
+    
+    // 새 책들 저장
+    for (const book of books) {
+      const bookData = {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        description: book.description,
+        content: book.content,
+        createdAt: book.createdAt,
+        updatedAt: book.updatedAt
+      };
+      console.log('Saving book to IndexedDB:', bookData);
+      
+      if (!bookData.id) {
+        console.error('Invalid book data: missing id', book);
+        throw new Error('Book must have a valid id');
+      }
+      
+      await new Promise<void>((resolve, reject) => {
+        const request = store.add(bookData);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    }
+    
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => {
+        console.log('Books saved to IndexedDB successfully');
+        resolve();
+      };
+      transaction.onerror = () => {
+        console.error('Error saving books to IndexedDB:', transaction.error);
+        reject(transaction.error);
+      };
+    });
+  }
+
+  async loadBooks(): Promise<BookDto[]> {
+    if (!this.db) await this.init();
+    
+    const transaction = this.db!.transaction(['books'], 'readonly');
+    const store = transaction.objectStore('books');
+    const request = store.getAll();
+    
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        const books = request.result.map((book: any) => ({
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          description: book.description,
+          content: book.content,
+          createdAt: book.createdAt,
+          updatedAt: book.updatedAt
+        }));
+        console.log('Loaded books from IndexedDB:', books);
+        resolve(books);
+      };
+      request.onerror = () => {
+        console.error('Error loading books from IndexedDB:', request.error);
+        reject(request.error);
       };
     });
   }
@@ -340,5 +428,79 @@ export class StorageService {
       console.error('Error clearing storage:', error);
       return false;
     }
+  }
+
+  // 책 저장 (IndexedDB 우선, localStorage 폴백)
+  static async saveBooks(books: Book[]): Promise<void> {
+    const bookDtos: BookDto[] = books.map(b => ({
+      id: b.id,
+      title: b.title,
+      author: b.author,
+      description: b.description,
+      content: b.content,
+      createdAt: b.createdAt.toISOString(),
+      updatedAt: b.updatedAt.toISOString()
+    }));
+    
+    console.log(`Attempting to save ${bookDtos.length} books to IndexedDB...`);
+    
+    try {
+      await chatStorage.saveBooks(bookDtos);
+      console.log('Books saved to IndexedDB successfully');
+    } catch (error) {
+      console.log(`Error saving books to IndexedDB: ${error}. Falling back to localStorage`);
+      // localStorage 폴백
+      const json = JSON.stringify(bookDtos);
+      localStorage.setItem('BOOKS', json);
+      console.log('Books saved to localStorage as fallback');
+    }
+  }
+
+  // 책 로드 (IndexedDB 우선, localStorage 폴백)
+  static async loadBooks(): Promise<Book[]> {
+    try {
+      console.log('Attempting to load books from IndexedDB...');
+      const bookDtos = await chatStorage.loadBooks();
+      console.log(`Loaded ${bookDtos?.length ?? 0} books from IndexedDB`);
+      
+      if (bookDtos && bookDtos.length > 0) {
+        return bookDtos.map(d => ({
+          id: d.id,
+          title: d.title,
+          author: d.author,
+          description: d.description,
+          content: d.content,
+          createdAt: new Date(d.createdAt),
+          updatedAt: new Date(d.updatedAt)
+        }));
+      }
+    } catch (error) {
+      console.error(`Error loading books from IndexedDB: ${error}`);
+    }
+
+    // localStorage 폴백
+    console.log('Falling back to localStorage for books...');
+    const json = localStorage.getItem('BOOKS');
+    if (json) {
+      try {
+        const parsed: BookDto[] = JSON.parse(json);
+        if (parsed) {
+          console.log(`Loaded ${parsed.length} books from localStorage fallback`);
+          return parsed.map(d => ({
+            id: d.id,
+            title: d.title,
+            author: d.author,
+            description: d.description,
+            content: d.content,
+            createdAt: new Date(d.createdAt),
+            updatedAt: new Date(d.updatedAt)
+          }));
+        }
+      } catch (parseError) {
+        console.error('Error parsing localStorage books:', parseError);
+      }
+    }
+
+    return [];
   }
 }

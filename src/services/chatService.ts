@@ -1,17 +1,21 @@
-import { ChatMessage, UsageInfo } from './types';
+import { ChatMessage, UsageInfo, ToolCall } from './types';
+import { AVAILABLE_FUNCTIONS } from './toolsService';
 
 export interface ChatServiceConfig {
   baseUrl?: string;
   timeout?: number;
+  enableTools?: boolean;
 }
 
 export class ChatService {
   private baseUrl: string;
   private timeout: number;
+  private enableTools: boolean;
 
   constructor(config: ChatServiceConfig = {}) {
     this.baseUrl = config.baseUrl || 'http://localhost:4141';
     this.timeout = config.timeout || 5 * 60 * 1000; // 5분
+    this.enableTools = config.enableTools ?? true; // 기본적으로 tools 활성화
   }
 
   // 모델 목록 조회
@@ -70,17 +74,30 @@ export class ChatService {
     temperature: number = 1.0,
     _maxTokens?: number, // Prefixed with underscore to indicate intentionally unused
     signal?: AbortSignal
-  ): AsyncIterable<string> {
+  ): AsyncIterable<{ type: 'content' | 'tool_calls', content?: string, tool_calls?: ToolCall[] }> {
     if (!model || typeof model !== 'string') {
       throw new Error('model is required');
     }
 
-    const messages = history.map(m => ({
-      role: m.role,
-      content: m.text || ''
-    }));
+    const messages = history.map(m => {
+      const messageData: any = {
+        role: m.role,
+        content: m.text || ''
+      };
 
-    messages.push({ role: 'assistant', content: '응답하겠습니다.' });
+      // tool calls 추가
+      if (m.tool_calls) {
+        messageData.tool_calls = m.tool_calls;
+      }
+
+      // tool message의 경우 추가 필드
+      if (m.role === 'tool') {
+        messageData.tool_call_id = m.tool_call_id;
+        messageData.name = m.name;
+      }
+
+      return messageData;
+    });
 
     const body: any = {
       model,
@@ -88,6 +105,15 @@ export class ChatService {
       temperature,
       stream: true
     };
+
+    // Tools 추가 (enableTools가 true이고 사용 가능한 함수들이 있는 경우)
+    if (this.enableTools && AVAILABLE_FUNCTIONS.length > 0) {
+      body.tools = AVAILABLE_FUNCTIONS.map(func => ({
+        type: 'function',
+        function: func
+      }));
+      body.tool_choice = 'auto'; // AI가 필요에 따라 도구 사용
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
@@ -159,11 +185,22 @@ export class ChatService {
                     return;
                   }
 
+                  // tool calls 처리
+                  if (firstChoice.delta && firstChoice.delta.tool_calls) {
+                    yield {
+                      type: 'tool_calls',
+                      tool_calls: firstChoice.delta.tool_calls
+                    };
+                  }
+
                   // 컨텐츠가 있으면 yield
                   if (firstChoice.delta && firstChoice.delta.content) {
                     const content = firstChoice.delta.content;
                     if (typeof content === 'string' && content.length > 0) {
-                      yield content;
+                      yield {
+                        type: 'content',
+                        content: content
+                      };
                       // 작은 지연으로 UI 업데이트를 부드럽게
                       await new Promise(resolve => setTimeout(resolve, 3));
                     }

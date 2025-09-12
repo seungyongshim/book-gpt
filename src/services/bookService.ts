@@ -1,4 +1,4 @@
-import { Book } from './types';
+import { Book, BookPage } from './types';
 import { StorageService } from './storageService';
 
 // 간단한 UUID 생성 함수
@@ -175,6 +175,83 @@ class BookService {
       (book.description && book.description.toLowerCase().includes(lowerQuery)) ||
       book.content.toLowerCase().includes(lowerQuery)
     );
+  }
+
+  // 책 내용을 페이지로 분할
+  parseBookPages(book: Book): BookPage[] {
+    const pages: BookPage[] = [];
+    
+    // ## 으로 시작하는 장 제목을 기준으로 페이지 분할
+    const chapterRegex = /^## (.+)$/gm;
+    const content = book.content;
+    
+    let match;
+    let lastIndex = 0;
+    let pageNumber = 1;
+    
+    // 책 제목 부분 처리 (첫 번째 # 제목)
+    const titleMatch = content.match(/^# (.+)$/m);
+    if (titleMatch) {
+      const titleEnd = content.indexOf('\n', titleMatch.index! + titleMatch[0].length);
+      lastIndex = titleEnd + 1;
+    }
+    
+    while ((match = chapterRegex.exec(content)) !== null) {
+      // 이전 페이지의 내용 추가 (첫 번째 장이 아닌 경우)
+      if (pageNumber > 1) {
+        const pageContent = content.substring(lastIndex, match.index).trim();
+        if (pageContent) {
+          pages[pages.length - 1].content += '\n\n' + pageContent;
+        }
+      }
+      
+      // 새 페이지 생성
+      pages.push({
+        pageNumber,
+        title: match[1],
+        content: match[0] // 장 제목으로 시작
+      });
+      
+      lastIndex = match.index + match[0].length;
+      pageNumber++;
+    }
+    
+    // 마지막 페이지의 나머지 내용 추가
+    if (pages.length > 0 && lastIndex < content.length) {
+      const remainingContent = content.substring(lastIndex).trim();
+      if (remainingContent) {
+        pages[pages.length - 1].content += '\n\n' + remainingContent;
+      }
+    }
+    
+    // 페이지가 없는 경우 전체 내용을 하나의 페이지로 처리
+    if (pages.length === 0) {
+      pages.push({
+        pageNumber: 1,
+        title: book.title,
+        content: book.content
+      });
+    }
+    
+    return pages;
+  }
+
+  // 특정 페이지 내용 가져오기
+  async getBookPage(bookId: string, pageNumber: number): Promise<BookPage | null> {
+    const book = await this.getBookById(bookId);
+    if (!book) return null;
+    
+    const pages = this.parseBookPages(book);
+    return pages.find(page => page.pageNumber === pageNumber) || null;
+  }
+
+  // 책의 총 페이지 수 가져오기
+  async getBookPageCount(bookId: string): Promise<number> {
+    const book = await this.getBookById(bookId);
+    if (!book) return 0;
+    
+    const pages = this.parseBookPages(book);
+    return pages.length;
   }
 }
 

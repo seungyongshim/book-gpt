@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ChatMessage, Session, ModelSettings, UsageInfo, Book } from '../services/types';
+import { ChatMessage, Session, ModelSettings, UsageInfo, Book, BookPage } from '../services/types';
 import { StorageService } from '../services/storageService';
 import { chatService } from '../services/chatService';
 import { bookService } from '../services/bookService';
@@ -53,6 +53,7 @@ export interface ChatState {
   availableBooks: Book[];
   selectedBook: Book | null;
   loadingBooks: boolean;
+  referencedPage: BookPage | null;
 
   // Actions
   initializeApp: () => Promise<void>;
@@ -99,7 +100,8 @@ export interface ChatState {
   // 책 관리
   loadBooks: () => Promise<void>;
   setSelectedBook: (book: Book | null) => void;
-  getBookContext: () => string;
+  getBookContext: (userInput?: string) => Promise<string>;
+  detectPageReference: (input: string) => number | null;
 
   // 유틸리티
   getEffectiveModel: () => string;
@@ -130,6 +132,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   availableBooks: [],
   selectedBook: null,
   loadingBooks: false,
+  referencedPage: null,
 
   // 앱 초기화
   initializeApp: async () => {
@@ -380,7 +383,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       
       // 선택된 책이 있으면 컨텍스트 추가
       let messagesWithContext = [...state.messages, userMessage];
-      const bookContext = get().getBookContext();
+      const bookContext = await get().getBookContext(state.userInput.trim());
       if (bookContext) {
         // 시스템 메시지에 책 컨텍스트 추가
         const contextMessage: ChatMessage = { 
@@ -816,14 +819,44 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   // 선택된 책 설정
   setSelectedBook: (book: Book | null) => {
-    set({ selectedBook: book });
+    set({ selectedBook: book, referencedPage: null });
   },
 
-  // 책 컨텍스트 반환
-  getBookContext: () => {
+  // 페이지 참조 감지 (#1, #2 등)
+  detectPageReference: (input: string) => {
+    const match = input.match(/#(\d+)/);
+    return match ? parseInt(match[1], 10) : null;
+  },
+
+  // 책 컨텍스트 반환 (페이지 참조 지원)
+  getBookContext: async (userInput?: string) => {
     const state = get();
     if (!state.selectedBook) return '';
     
-    return `제목: ${state.selectedBook.title}\n저자: ${state.selectedBook.author}\n\n${state.selectedBook.content}`;
+    // 사용자 입력에서 페이지 참조 확인
+    const pageRef = userInput ? get().detectPageReference(userInput) : null;
+    
+    if (pageRef) {
+      // 특정 페이지 참조
+      try {
+        const page = await bookService.getBookPage(state.selectedBook.id, pageRef);
+        if (page) {
+          set({ referencedPage: page });
+          return `제목: ${state.selectedBook.title}\n저자: ${state.selectedBook.author}\n\n[페이지 ${page.pageNumber}: ${page.title}]\n\n${page.content}`;
+        } else {
+          // 페이지가 없는 경우 전체 내용 반환
+          set({ referencedPage: null });
+          return `제목: ${state.selectedBook.title}\n저자: ${state.selectedBook.author}\n\n전체 내용:\n\n${state.selectedBook.content}`;
+        }
+      } catch (error) {
+        console.error('Failed to get book page:', error);
+        set({ referencedPage: null });
+        return `제목: ${state.selectedBook.title}\n저자: ${state.selectedBook.author}\n\n${state.selectedBook.content}`;
+      }
+    } else {
+      // 페이지 참조 없음 - 전체 내용 반환
+      set({ referencedPage: null });
+      return `제목: ${state.selectedBook.title}\n저자: ${state.selectedBook.author}\n\n${state.selectedBook.content}`;
+    }
   }
 }));

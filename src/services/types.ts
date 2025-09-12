@@ -41,6 +41,12 @@ export interface Book {
   updatedAt: Date;
 }
 
+export interface BookPage {
+  pageNumber: number;
+  title: string;
+  content: string;
+}
+
 export interface BookDto {
   id: string;
   title: string;

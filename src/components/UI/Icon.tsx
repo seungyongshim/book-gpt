@@ -23,7 +23,8 @@ import {
   Book,
   BookOpen,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Info
 } from 'lucide-react';
 import { IconName } from './Icon.types';
 
@@ -50,7 +51,8 @@ const ICON_MAP: Record<IconName, React.ComponentType<any>> = {
   book: Book,
   'book-open': BookOpen,
   'chevron-up': ChevronUp,
-  'chevron-down': ChevronDown
+  'chevron-down': ChevronDown,
+  info: Info
 };
 
 export interface IconProps extends Omit<React.SVGProps<SVGSVGElement>, 'name'> {

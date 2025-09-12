@@ -30,3 +30,46 @@ export interface UsageInfo {
   totalPremiumRequests?: number;
   premiumRequestsUsed?: number;
 }
+
+// Book-related types
+export interface BookChapter {
+  id: string;
+  title: string;
+  content: string;
+  wordCount: number;
+  order: number;
+  lastUpdated: Date;
+}
+
+export interface BookProject {
+  id: string;
+  title: string;
+  description?: string;
+  author?: string;
+  genre?: string;
+  targetWordCount?: number;
+  chapters: BookChapter[];
+  lastUpdated: Date;
+  currentChapterId?: string | null; // 변경: null도 허용
+}
+
+export interface BookProjectDto {
+  id: string;
+  title: string;
+  description?: string;
+  author?: string;
+  genre?: string;
+  targetWordCount?: number;
+  chapters: {
+    id: string;
+    title: string;
+    content: string;
+    wordCount: number;
+    order: number;
+    lastUpdated: string;
+  }[];
+  lastUpdated: string;
+  currentChapterId?: string | null; // 변경: null도 허용
+}
+
+export type AppMode = 'chat' | 'book';

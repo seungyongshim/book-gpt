@@ -18,7 +18,15 @@ import {
   Trash2,
   Waves,
   X,
-  CircleSlash
+  CircleSlash,
+  // 새로운 아이콘들
+  Book,
+  MessageSquare,
+  Edit,
+  Sparkles,
+  FileText,
+  BarChart,
+  Zap
 } from 'lucide-react';
 import { IconName } from './Icon.types';
 
@@ -40,7 +48,17 @@ const ICON_MAP: Record<IconName, React.ComponentType<any>> = {
   stop: Square,
   pencil: Pencil,
   clipboard: Clipboard,
-  reload: RotateCcw
+  reload: RotateCcw,
+  // 새로운 아이콘들
+  book: Book,
+  'message-square': MessageSquare,
+  edit: Edit,
+  square: Square,
+  'refresh-cw': RefreshCw,
+  sparkles: Sparkles,
+  'file-text': FileText,
+  'bar-chart': BarChart,
+  zap: Zap
 };
 
 export interface IconProps extends Omit<React.SVGProps<SVGSVGElement>, 'name'> {

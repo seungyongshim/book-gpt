@@ -1,9 +1,9 @@
-import { Session, SessionDto } from './types';
+import { Session, SessionDto, BookProject, BookProjectDto } from './types';
 
 // IndexedDB를 사용한 채팅 데이터 저장소
 class ChatStorage {
   private dbName = 'ChatAppDB';
-  private version = 1;
+  private version = 2; // 버전 업데이트 (책 저장소 추가)
   private db: IDBDatabase | null = null;
   private isInitialized = false;
 
@@ -45,6 +45,14 @@ class ChatStorage {
         if (!db.objectStoreNames.contains('settings')) {
           console.log('Creating settings object store...');
           db.createObjectStore('settings', { keyPath: 'key' });
+        }
+        
+        // 책 프로젝트 스토어 생성
+        if (!db.objectStoreNames.contains('bookProjects')) {
+          console.log('Creating bookProjects object store...');
+          const bookStore = db.createObjectStore('bookProjects', { keyPath: 'id' });
+          bookStore.createIndex('title', 'title', { unique: false });
+          bookStore.createIndex('lastUpdated', 'lastUpdated', { unique: false });
         }
         
         console.log('IndexedDB upgrade completed');
@@ -211,6 +219,68 @@ class ChatStorage {
       return false;
     }
   }
+
+  // Book project methods
+  async saveBookProjects(books: BookProjectDto[]): Promise<void> {
+    if (!this.db) await this.init();
+    
+    const transaction = this.db!.transaction(['bookProjects'], 'readwrite');
+    const store = transaction.objectStore('bookProjects');
+    
+    // 기존 책들 삭제
+    await new Promise<void>((resolve, reject) => {
+      const clearRequest = store.clear();
+      clearRequest.onsuccess = () => resolve();
+      clearRequest.onerror = () => reject(clearRequest.error);
+    });
+    
+    // 새 책들 저장
+    for (const book of books) {
+      console.log('Saving book to IndexedDB:', book);
+      
+      if (!book.id) {
+        console.error('Invalid book data: missing id', book);
+        throw new Error('Book must have a valid id');
+      }
+      
+      await new Promise<void>((resolve, reject) => {
+        const request = store.add(book);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    }
+    
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => {
+        console.log('Books saved to IndexedDB successfully');
+        resolve();
+      };
+      transaction.onerror = () => {
+        console.error('Error saving books to IndexedDB:', transaction.error);
+        reject(transaction.error);
+      };
+    });
+  }
+
+  async loadBookProjects(): Promise<BookProjectDto[]> {
+    if (!this.db) await this.init();
+    
+    const transaction = this.db!.transaction(['bookProjects'], 'readonly');
+    const store = transaction.objectStore('bookProjects');
+    const request = store.getAll();
+    
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        const books = request.result;
+        console.log('Loaded books from IndexedDB:', books);
+        resolve(books || []);
+      };
+      request.onerror = () => {
+        console.error('Error loading books from IndexedDB:', request.error);
+        reject(request.error);
+      };
+    });
+  }
 }
 
 // 전역 인스턴스 생성
@@ -340,5 +410,106 @@ export class StorageService {
       console.error('Error clearing storage:', error);
       return false;
     }
+  }
+
+  // 책 프로젝트 저장 (IndexedDB 우선, localStorage 폴백)
+  static async saveBookProjects(books: BookProject[]): Promise<void> {
+    const bookDtos: BookProjectDto[] = books.map(book => ({
+      id: book.id,
+      title: book.title,
+      description: book.description,
+      author: book.author,
+      genre: book.genre,
+      targetWordCount: book.targetWordCount,
+      chapters: book.chapters.map(chapter => ({
+        id: chapter.id,
+        title: chapter.title,
+        content: chapter.content,
+        wordCount: chapter.wordCount,
+        order: chapter.order,
+        lastUpdated: chapter.lastUpdated.toISOString()
+      })),
+      lastUpdated: book.lastUpdated.toISOString(),
+      currentChapterId: book.currentChapterId
+    }));
+    
+    console.log(`Attempting to save ${bookDtos.length} books to IndexedDB...`);
+    
+    try {
+      await chatStorage.saveBookProjects(bookDtos);
+      console.log('Books saved to IndexedDB successfully');
+    } catch (error) {
+      console.log(`Error saving books to IndexedDB: ${error}. Falling back to localStorage`);
+      // localStorage 폴백
+      const json = JSON.stringify(bookDtos);
+      localStorage.setItem('BOOK_PROJECTS', json);
+      console.log('Books saved to localStorage as fallback');
+    }
+  }
+
+  // 책 프로젝트 로드 (IndexedDB 우선, localStorage 폴백)
+  static async loadBookProjects(): Promise<BookProject[]> {
+    try {
+      console.log('Attempting to load books from IndexedDB...');
+      const bookDtos = await chatStorage.loadBookProjects();
+      console.log(`Loaded ${bookDtos?.length ?? 0} books from IndexedDB`);
+      
+      if (bookDtos && bookDtos.length > 0) {
+        return bookDtos.map(dto => ({
+          id: dto.id,
+          title: dto.title,
+          description: dto.description,
+          author: dto.author,
+          genre: dto.genre,
+          targetWordCount: dto.targetWordCount,
+          chapters: dto.chapters.map(chapter => ({
+            id: chapter.id,
+            title: chapter.title,
+            content: chapter.content,
+            wordCount: chapter.wordCount,
+            order: chapter.order,
+            lastUpdated: new Date(chapter.lastUpdated)
+          })),
+          lastUpdated: new Date(dto.lastUpdated),
+          currentChapterId: dto.currentChapterId
+        }));
+      }
+    } catch (error) {
+      console.error(`Error loading books from IndexedDB: ${error}`);
+    }
+
+    // localStorage 폴백
+    console.log('Falling back to localStorage for books...');
+    const json = localStorage.getItem('BOOK_PROJECTS');
+    if (json) {
+      try {
+        const parsed: BookProjectDto[] = JSON.parse(json);
+        if (parsed) {
+          console.log(`Loaded ${parsed.length} books from localStorage fallback`);
+          return parsed.map(dto => ({
+            id: dto.id,
+            title: dto.title,
+            description: dto.description,
+            author: dto.author,
+            genre: dto.genre,
+            targetWordCount: dto.targetWordCount,
+            chapters: dto.chapters.map(chapter => ({
+              id: chapter.id,
+              title: chapter.title,
+              content: chapter.content,
+              wordCount: chapter.wordCount,
+              order: chapter.order,
+              lastUpdated: new Date(chapter.lastUpdated)
+            })),
+            lastUpdated: new Date(dto.lastUpdated),
+            currentChapterId: dto.currentChapterId
+          }));
+        }
+      } catch (parseError) {
+        console.error('Error parsing localStorage books:', parseError);
+      }
+    }
+
+    return [];
   }
 }

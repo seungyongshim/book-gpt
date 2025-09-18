@@ -17,7 +17,8 @@ const DB_NAME = 'chat_input_history_db';
 const DB_VERSION = 1;
 const STORE = 'chat_input_history';
 
-let dbPromise: Promise<IDBPDatabase> | null = null;
+// When IndexedDB not available, we resolve to null; cache promise to avoid multiple open attempts.
+let dbPromise: Promise<IDBPDatabase | null> | null = null;
 let idbAvailable: boolean | null = null;
 
 function detectIndexedDB(): boolean {
@@ -33,8 +34,8 @@ function detectIndexedDB(): boolean {
 export function getDB(): Promise<IDBPDatabase | null> {
   if (!detectIndexedDB()) return Promise.resolve(null);
   if (!dbPromise) {
-    dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+    dbPromise = openDB<IDBPDatabase>(DB_NAME, DB_VERSION, {
+      upgrade(db: IDBPDatabase) {
         if (!db.objectStoreNames.contains(STORE)) {
           const store = db.createObjectStore(STORE, {
             keyPath: 'id',
@@ -43,12 +44,13 @@ export function getDB(): Promise<IDBPDatabase | null> {
           store.createIndex('createdAt', 'createdAt', { unique: false });
         }
       }
-    }).catch(err => {
+    }).catch((err: unknown) => {
       console.warn('[historyDB] open failed, fallback to memory', err);
       return null as any;
     });
   }
-  return dbPromise;
+  // dbPromise는 여기서 항상 설정되었거나 기존 캐시이므로 non-null 보장
+  return dbPromise as Promise<IDBPDatabase | null>;
 }
 
 // Fallback in-memory store (session scoped)
@@ -72,7 +74,10 @@ export async function addHistory(content: string): Promise<void> {
   try {
     let cursor = await store.index('createdAt').openCursor(null, 'prev');
     if (cursor) lastRecent = cursor.value as InputHistoryRecord;
-  } catch {}
+  } catch {
+    // Swallow cursor errors (best-effort duplicate suppression).
+    void 0; // explicit no-op to satisfy no-empty rule
+  }
   if (lastRecent && lastRecent.content === trimmed) {
     await tx.done; return;
   }

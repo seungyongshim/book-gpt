@@ -17,90 +17,57 @@ const DB_NAME = 'chat_input_history_db';
 const DB_VERSION = 1;
 const STORE = 'chat_input_history';
 
-// When IndexedDB not available, we resolve to null; cache promise to avoid multiple open attempts.
+// DB 핸들 캐시
 let dbPromise: Promise<IDBPDatabase | null> | null = null;
-let idbAvailable: boolean | null = null;
-
-function detectIndexedDB(): boolean {
-  if (idbAvailable !== null) return idbAvailable;
-  try {
-    idbAvailable = typeof indexedDB !== 'undefined';
-  } catch {
-    idbAvailable = false;
-  }
-  return idbAvailable;
-}
+const hasIDB = () => typeof indexedDB !== 'undefined';
 
 export function getDB(): Promise<IDBPDatabase | null> {
-  if (!detectIndexedDB()) return Promise.resolve(null);
-  if (!dbPromise) {
-    dbPromise = openDB<IDBPDatabase>(DB_NAME, DB_VERSION, {
-      upgrade(db: IDBPDatabase) {
-        if (!db.objectStoreNames.contains(STORE)) {
-          const store = db.createObjectStore(STORE, {
-            keyPath: 'id',
-            autoIncrement: true
-          });
-          store.createIndex('createdAt', 'createdAt', { unique: false });
-        }
+  if (!hasIDB()) return Promise.resolve(null);
+  return (dbPromise ??= openDB(DB_NAME, DB_VERSION, {
+    upgrade(db: any) {
+      if (!db.objectStoreNames.contains(STORE)) {
+        const store = db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
+        store.createIndex('createdAt', 'createdAt');
       }
-    }).catch((err: unknown) => {
-      console.warn('[historyDB] open failed, fallback to memory', err);
-      return null as any;
-    });
-  }
-  // dbPromise는 여기서 항상 설정되었거나 기존 캐시이므로 non-null 보장
-  return dbPromise as Promise<IDBPDatabase | null>;
+    }
+  }).catch(err => {
+    console.warn('[historyDB] open failed, fallback to memory', err);
+    return null as any;
+  }));
 }
 
 // Fallback in-memory store (session scoped)
 const memoryStore: InputHistoryRecord[] = [];
 
 export async function addHistory(content: string): Promise<void> {
-  const trimmed = content.trim();
-  if (trimmed.length < 1) return;
+  const value = content.trim();
+  if (!value) return;
   const db = await getDB();
   if (!db) {
-    // skip duplicate immediate
-    if (memoryStore[0]?.content === trimmed) return;
-    memoryStore.unshift({ content: trimmed, createdAt: Date.now() });
+    if (memoryStore[0]?.content === value) return; // 즉시 중복 억제
+    memoryStore.unshift({ content: value, createdAt: Date.now() });
     return;
   }
   const tx = db.transaction(STORE, 'readwrite');
   const store = tx.objectStore(STORE);
-  // fetch last recent (highest id) quickly by opening a cursor on autoIncrement descending not directly supported,
-  // so we use createdAt index descending cursor
-  let lastRecent: InputHistoryRecord | undefined;
   try {
-    let cursor = await store.index('createdAt').openCursor(null, 'prev');
-    if (cursor) lastRecent = cursor.value as InputHistoryRecord;
-  } catch {
-    // Swallow cursor errors (best-effort duplicate suppression).
-    void 0; // explicit no-op to satisfy no-empty rule
-  }
-  if (lastRecent && lastRecent.content === trimmed) {
-    await tx.done; return;
-  }
-  await store.add({ content: trimmed, createdAt: Date.now() });
+    const cur = await store.index('createdAt').openCursor(null, 'prev');
+    if (cur && (cur.value as InputHistoryRecord).content === value) { await tx.done; return; }
+  } catch {/* noop */}
+  await store.add({ content: value, createdAt: Date.now() });
   await tx.done;
 }
 
 export async function getRecent(limit: number): Promise<InputHistoryRecord[]> {
   const db = await getDB();
-  if (!db) {
-    return memoryStore.slice(0, limit);
-  }
+  if (!db) return memoryStore.slice(0, limit);
   const tx = db.transaction(STORE, 'readonly');
-  const store = tx.objectStore(STORE);
-  const idx = store.index('createdAt');
-  const result: InputHistoryRecord[] = [];
-  let cursor = await idx.openCursor(null, 'prev');
-  while (cursor && result.length < limit) {
-    result.push(cursor.value as InputHistoryRecord);
-    cursor = await cursor.continue();
+  const idx = tx.objectStore(STORE).index('createdAt');
+  const out: InputHistoryRecord[] = [];
+  for (let cur = await idx.openCursor(null, 'prev'); cur && out.length < limit; cur = await cur.continue()) {
+    out.push(cur.value as InputHistoryRecord);
   }
-  await tx.done;
-  return result;
+  await tx.done; return out;
 }
 
 export async function countAll(): Promise<number> {
@@ -112,23 +79,14 @@ export async function countAll(): Promise<number> {
 export async function pruneOld(max: number): Promise<void> {
   if (max <= 0) return;
   const db = await getDB();
-  if (!db) {
-    if (memoryStore.length > max) memoryStore.splice(max);
-    return;
-  }
+  if (!db) { if (memoryStore.length > max) memoryStore.splice(max); return; }
   const total = await db.count(STORE);
   if (total <= max) return;
-  const toDelete = total - max;
   const tx = db.transaction(STORE, 'readwrite');
-  const store = tx.objectStore(STORE);
-  const idx = store.index('createdAt');
-  // oldest first (ascending)
-  let cursor = await idx.openCursor();
-  let removed = 0;
-  while (cursor && removed < toDelete) {
-    await cursor.delete();
-    removed++;
-    cursor = await cursor.continue();
+  const idx = tx.objectStore(STORE).index('createdAt');
+  let cur = await idx.openCursor();
+  for (let removed = 0, need = total - max; cur && removed < need; removed++, cur = await cur.continue()) {
+    await cur.delete();
   }
   await tx.done;
 }

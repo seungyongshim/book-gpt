@@ -2,6 +2,7 @@ import { ChatMessage, UsageInfo } from './types';
 
 // 내부 사용: Chat Completion API 바디 타입 (부분 정의)
 interface ChatCompletionRequestBody {
+  thinking?: { type: string; budget_tokens: number };
   verbosity?: string;
   reasoning_effort?: string;
   model: string;
@@ -98,6 +99,13 @@ export class ChatService {
       temperature,
       stream: true
     };
+
+    if (/thought/i.test(model)) {
+      body.thinking = {
+        type: 'enabled',
+        budget_tokens: 10000
+      }
+    }
 
     if (/gpt-5/i.test(model)) {
       body.reasoning_effort = 'high'

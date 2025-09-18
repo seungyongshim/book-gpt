@@ -2,12 +2,12 @@ import { ChatMessage, UsageInfo } from './types';
 
 // 내부 사용: Chat Completion API 바디 타입 (부분 정의)
 interface ChatCompletionRequestBody {
+  verbosity?: string;
+  reasoning_effort?: string;
   model: string;
   messages: { role: string; content: string }[];
   temperature?: number;
   stream?: boolean;
-  reasoning?: { effort: 'high' | 'medium' | 'low' };
-  text?: {verbosity: 'high' | 'medium' | 'low' }; 
 }
 
 export interface ChatServiceConfig {
@@ -100,8 +100,8 @@ export class ChatService {
     };
 
     if (/gpt-5/i.test(model)) {
-      body.reasoning = { effort: 'high' };
-      body.text = { verbosity: 'high' }; 
+      body.reasoning_effort = 'high'
+      body.verbosity = 'high'; 
     }
 
     const controller = new AbortController();

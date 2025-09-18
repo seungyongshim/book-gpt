@@ -3,7 +3,6 @@ import { useChatStore } from '../chatStore';
 
 // Zustand store 상태 초기화를 위한 헬퍼
 const resetStore = () => {
-  const initial = useChatStore.getState();
   // sessions 비우고 기본 세션 하나 생성
   useChatStore.setState({
     sessions: [],

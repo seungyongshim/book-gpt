@@ -19,7 +19,7 @@ npm run preview
 
 1. Repository Settings > Pages > Build and deployment > Source 를 `GitHub Actions` 로 선택합니다.
 2. 워크플로 실행 후 `Deploy to GitHub Pages` job 이 성공하면 Pages URL 이 environment 출력에 표시됩니다.
-3. `public/.nojekyll` 파일을 추가해 Jekyll 파이프라인이 불필요하게 SCSS 로딩 경로(`/docs`)를 요구하지 않도록 했습니다.
+3. (선택) `public/.nojekyll` 파일을 추가하면 Jekyll 처리(파일명에 언더스코어 등)가 필요치 않음을 명시할 수 있으나, 현재 Actions 기반 `dist` 업로드만 사용하므로 필수는 아닙니다.
 
 ### `base` 경로
 
@@ -39,9 +39,9 @@ const ghBase = process.env.GITHUB_REPOSITORY
 Pages 가 예전 설정(정적 Jekyll 빌드) 혹은 별도 워크플로(`actions/jekyll-build-pages`)를 트리거하면서 `_config.yml` 또는 `docs` 디렉터리를 찾으려 했으나 SPA 구조에는 존재하지 않아 실패했습니다. 현재는 전용 Node 빌드 워크플로만 유지하면 됩니다.
 
 해결 조치:
-- `.github/workflows/deploy.yml` 만 유지
-- `public/.nojekyll` 추가 (완료)
-- Settings > Pages > Source 확인
+- `.github/workflows/deploy.yml` 에 `actions/configure-pages` + `upload-pages-artifact` + `deploy-pages` 구성 사용
+- Settings > Pages > Source 가 `GitHub Actions` 인지 확인
+- 중복되던 Jekyll 빌드(기본 `docs/` 경로 기대)를 유발하는 다른 워크플로/설정 제거
 - 과거 Pages 빌드용 브랜치(`gh-pages`)가 있다면 정리(선택 사항)
 
 ### 추가 개선 아이디어

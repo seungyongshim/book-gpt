@@ -1,5 +1,15 @@
 import { ChatMessage, UsageInfo } from './types';
 
+// 내부 사용: Chat Completion API 바디 타입 (부분 정의)
+interface ChatCompletionRequestBody {
+  model: string;
+  messages: { role: string; content: string }[];
+  temperature?: number;
+  stream?: boolean;
+  reasoning?: { effort: 'high' | 'medium' | 'low' };
+  text?: {verbosity: 'high' | 'medium' | 'low' }; 
+}
+
 export interface ChatServiceConfig {
   baseUrl?: string;
   timeout?: number;
@@ -82,12 +92,17 @@ export class ChatService {
 
     messages.push({ role: 'assistant', content: '응답하겠습니다.' });
 
-    const body: any = {
+    const body: ChatCompletionRequestBody = {
       model,
       messages,
       temperature,
       stream: true
     };
+
+    if (/gpt-5/i.test(model)) {
+      body.reasoning = { effort: 'high' };
+      body.text = { verbosity: 'high' }; 
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
@@ -100,7 +115,6 @@ export class ChatService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'anthropic-beta': 'output-128k-2025-02-19'
         },
         body: JSON.stringify(body),
         signal: combinedSignal

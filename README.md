@@ -2,6 +2,8 @@
 
 GitHub Pages 배포는 GitHub Actions 워크플로(`.github/workflows/deploy.yml`)를 통해 자동으로 이루어집니다.
 
+> 참고: 레거시 Jekyll 빌드가 트리거되어 실패하던 이슈를 방지하기 위해 `public/.nojekyll` 파일과 placeholder `docs/` 디렉터리가 추가되었습니다. Pages Source 를 `GitHub Actions` 로 설정하면 Jekyll 파이프라인은 사용되지 않으므로 추후 `docs/` 삭제 가능.
+
 ### 주요 명령
 
 ````bash
@@ -19,7 +21,7 @@ npm run preview
 
 1. Repository Settings > Pages > Build and deployment > Source 를 `GitHub Actions` 로 선택합니다.
 2. 워크플로 실행 후 `Deploy to GitHub Pages` job 이 성공하면 Pages URL 이 environment 출력에 표시됩니다.
-3. (선택) `public/.nojekyll` 파일을 추가하면 Jekyll 처리(파일명에 언더스코어 등)가 필요치 않음을 명시할 수 있으나, 현재 Actions 기반 `dist` 업로드만 사용하므로 필수는 아닙니다.
+3. `public/.nojekyll` 이 존재하여 Jekyll 파이프라인을 우회합니다 (SPA 폴더 구조 유지). 제거해도 동작은 하나, 레거시 Pages 설정이 남아있는 경우 안전장치가 됩니다.
 
 ### `base` 경로
 
@@ -43,6 +45,7 @@ Pages 가 예전 설정(정적 Jekyll 빌드) 혹은 별도 워크플로(`action
 - Settings > Pages > Source 가 `GitHub Actions` 인지 확인
 - 중복되던 Jekyll 빌드(기본 `docs/` 경로 기대)를 유발하는 다른 워크플로/설정 제거
 - 과거 Pages 빌드용 브랜치(`gh-pages`)가 있다면 정리(선택 사항)
+- (임시 안전장치) 빈 `docs/` 디렉터리 & `public/.nojekyll` 추가
 
 ### 추가 개선 아이디어
 

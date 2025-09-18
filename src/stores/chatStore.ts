@@ -12,6 +12,11 @@ const generateId = (): string => {
   });
 };
 
+// 최근 수정 시간(lastUpdated) 기준 내림차순 정렬
+const sortSessionsByRecent = (sessions: Session[]): Session[] => {
+  return [...sessions].sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime());
+};
+
 export interface ChatState {
   // 세션 관리
   sessions: Session[];
@@ -179,7 +184,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     // 세션 로드
-    const loadedSessions = await StorageService.loadSessions();
+  let loadedSessions = await StorageService.loadSessions();
+  loadedSessions = sortSessionsByRecent(loadedSessions);
 
     if (loadedSessions.length === 0) {
       // 시스템 메시지 로드
@@ -236,7 +242,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       systemMessage: state.systemMessage
     };
 
-    const newSessions = [newSession, ...state.sessions];
+  const newSessions = sortSessionsByRecent([newSession, ...state.sessions]);
     set({
       sessions: newSessions,
       currentSessionId: sessionId,
@@ -250,7 +256,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // 세션 전환
   switchSession: (id: string) => {
     const state = get();
-    const session = state.sessions.find(s => s.id === id);
+      const session = state.sessions.find((s: Session) => s.id === id);
     if (session) {
       set({
         currentSessionId: id,
@@ -304,8 +310,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
         : firstUserMessage.text;
 
       const updatedSession = { ...state.currentSession, title, lastUpdated: new Date() };
-      const updatedSessions = state.sessions.map(s =>
-        s.id === state.currentSessionId ? updatedSession : s
+      const updatedSessions = sortSessionsByRecent(
+        state.sessions.map(s => s.id === state.currentSessionId ? updatedSession : s)
       );
 
       set({
@@ -395,8 +401,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           lastUpdated: new Date()
         };
 
-        const updatedSessions = state.sessions.map(s =>
-          s.id === state.currentSessionId ? updatedSession : s
+        const updatedSessions = sortSessionsByRecent(
+          state.sessions.map(s => s.id === state.currentSessionId ? updatedSession : s)
         );
 
         set({
@@ -478,8 +484,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
             lastUpdated: new Date()
           };
 
-          const updatedSessions = state.sessions.map(s =>
-            s.id === state.currentSessionId ? updatedSession : s
+          const updatedSessions = sortSessionsByRecent(
+            state.sessions.map(s => s.id === state.currentSessionId ? updatedSession : s)
           );
 
           set({
@@ -494,9 +500,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           history: updatedMessages,
           lastUpdated: new Date()
         };
-
-        const updatedSessions = state.sessions.map(s =>
-          s.id === state.currentSessionId ? updatedSession : s
+        const updatedSessions = sortSessionsByRecent(
+          state.sessions.map(s => s.id === state.currentSessionId ? updatedSession : s)
         );
 
         set({
@@ -543,8 +548,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           lastUpdated: new Date()
         };
 
-        const updatedSessions = state.sessions.map(s =>
-          s.id === state.currentSessionId ? updatedSession : s
+        const updatedSessions = sortSessionsByRecent(
+          state.sessions.map(s => s.id === state.currentSessionId ? updatedSession : s)
         );
 
         set({
@@ -571,8 +576,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           lastUpdated: new Date()
         };
 
-        const updatedSessions = state.sessions.map(s =>
-          s.id === state.currentSessionId ? updatedSession : s
+        const updatedSessions = sortSessionsByRecent(
+          state.sessions.map(s => s.id === state.currentSessionId ? updatedSession : s)
         );
 
         set({
@@ -690,8 +695,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       updatedSession.history = updatedMessages;
 
-      const updatedSessions = state.sessions.map(s =>
-        s.id === state.currentSessionId ? updatedSession : s
+      const updatedSessions = sortSessionsByRecent(
+        state.sessions.map(s => s.id === state.currentSessionId ? updatedSession : s)
       );
 
       set({

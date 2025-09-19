@@ -5,6 +5,7 @@ import { useChatStore } from '../../stores/chatStore';
 import { ChatMessage } from '../../services/types';
 import Icon from '../UI/Icon';
 import MessageActionButtons from './MessageActionButtons';
+import ToolCallDetails from './ToolCallDetails';
 
 interface MessageItemProps {
   message: ChatMessage;
@@ -227,6 +228,12 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
               showStop={isStreamingThis}
               onStop={cancelStreaming}
             />
+            {/* 툴 호출 JSON 토글 */}
+            {message.toolCalls && message.toolCalls.length > 0 && (
+              <div className="mt-3">
+                <ToolCallDetails toolCalls={message.toolCalls} />
+              </div>
+            )}
           </div>
         )}
       </div>

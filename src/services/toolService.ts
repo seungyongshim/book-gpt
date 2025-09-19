@@ -29,6 +29,23 @@ const localTools: LocalToolDefinition[] = [
     execute: () => new Date().toISOString()
   },
   {
+    name: 'echo',
+    description: 'text 필드를 그대로 반환합니다.',
+    parameters: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', description: '반환할 문자열' }
+      },
+      required: ['text']
+    },
+    execute: (args: any) => {
+      if (!args || typeof args.text !== 'string' || args.text.length === 0) {
+        return 'Invalid: expected non-empty string field "text"';
+      }
+      return args.text;
+    }
+  },
+  {
     name: 'directing',
     description: '소설/영화 장면을 연출합니다. 장소, 등장인물, 상황, 소품 등을 설명합니다.',
     parameters: {

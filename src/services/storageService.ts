@@ -318,7 +318,9 @@ export class StorageService {
     } catch (error) {
       // localStorage 폴백
       if (typeof localStorage !== 'undefined') {
-        try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch {
+          // ignore write error (quota exceeded or unavailable)
+        }
       }
     }
   }

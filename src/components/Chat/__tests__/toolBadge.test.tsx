@@ -17,7 +17,8 @@ describe('MessageItem toolCalls badge', () => {
     ];
     initStore(msgs);
   const html = ReactDOMServer.renderToString(<MessageItem message={msgs[1]} messageIndex={1} />);
-  expect(html).toMatch(/aria-label=\"이 메시지에는 1개의 도구 호출이 포함됩니다\./);
+  // 따옴표 이스케이프가 필요 없어 no-useless-escape 규칙 위반 해결
+  expect(html).toMatch(/aria-label="이 메시지에는 1개의 도구 호출이 포함됩니다\./);
   });
 
   it('does not render badge when no toolCalls', () => {

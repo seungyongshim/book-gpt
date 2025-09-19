@@ -98,77 +98,77 @@ export class ChatService {
     const combinedSignal = signal ? this.combineSignals([signal, controller.signal]) : controller.signal;
 
     try {
-  const aggregateToolCalls: { id?: string; name: string; arguments: string }[] = [];
-  for (let iteration = 0; iteration < ChatService.MAX_TOOL_ITERATIONS; iteration++) {
-        if (combinedSignal.aborted) throw new Error('Request was cancelled');
+      const aggregateToolCalls: { id?: string; name: string; arguments: string }[] = [];
+      for (let iteration = 0; iteration < ChatService.MAX_TOOL_ITERATIONS; iteration++) {
+            if (combinedSignal.aborted) throw new Error('Request was cancelled');
 
-        const chatStream = await this.client.chat.completions.create({
-          model,
-            temperature,
-          messages: toApiMessages(workingMessages) as any,
-          stream: true,
-          tools: getRegisteredTools(),
-          tool_choice: 'auto'
-        });
-
-  let assistantAccum = '';
-  let toolCallsMeta: ToolCallMeta[] = [];
-
-        for await (const part of chatStream) {
-          if (combinedSignal.aborted) throw new Error('Request was cancelled');
-          const choice = part.choices?.[0];
-          if (!choice) continue;
-          const delta = choice.delta;
-          if (delta?.content) {
-            const piece = delta.content;
-            assistantAccum += piece;
-            yield piece;
-            await this.sleep(3);
-          }
-          if (delta?.tool_calls) {
-            toolCallsMeta = accumulateToolCalls(toolCallsMeta, delta.tool_calls as any, iteration);
-          }
-          const finish = choice.finish_reason;
-          if (finish) {
-            break;
-          }
-        }
-
-        if (toolCallsMeta.length > 0) {
-          toolCallsMeta = finalizeToolCalls(toolCallsMeta, iteration);
-          const finalized = toolCallsMeta.map(tc => ({ id: tc.id, name: tc.name, arguments: tc.args }));
-          aggregateToolCalls.push(...finalized);
-          // 콜백으로 즉시 알림 (UI에서 배지 표시 업데이트 가능)
-          callbacks?.onToolCalls?.(aggregateToolCalls);
-          workingMessages.push({ role: 'assistant', text: assistantAccum, toolCalls: finalized });
-
-          for (const meta of toolCallsMeta) {
-            const execution = await executeTool(meta.name, meta.args);
-            const toolResultText = formatToolResultForAssistant(meta.name, meta.id, execution);
-            workingMessages.push({
-              role: 'tool',
-              text: toolResultText,
-              toolName: meta.name,
-              toolCallId: meta.id,
-              toolArgumentsJson: meta.args
+            const chatStream = await this.client.chat.completions.create({
+              model,
+                temperature,
+              messages: toApiMessages(workingMessages) as any,
+              stream: true,
+              tools: getRegisteredTools(),
+              tool_choice: 'auto'
             });
+
+      let assistantAccum = '';
+      let toolCallsMeta: ToolCallMeta[] = [];
+
+            for await (const part of chatStream) {
+              if (combinedSignal.aborted) throw new Error('Request was cancelled');
+              const choice = part.choices?.[0];
+              if (!choice) continue;
+              const delta = choice.delta;
+              if (delta?.content) {
+                const piece = delta.content;
+                assistantAccum += piece;
+                yield piece;
+                await this.sleep(3);
+              }
+              if (delta?.tool_calls) {
+                toolCallsMeta = accumulateToolCalls(toolCallsMeta, delta.tool_calls as any, iteration);
+              }
+              const finish = choice.finish_reason;
+              if (finish) {
+                break;
+              }
+            }
+
+            if (toolCallsMeta.length > 0) {
+              toolCallsMeta = finalizeToolCalls(toolCallsMeta, iteration);
+              const finalized = toolCallsMeta.map(tc => ({ id: tc.id, name: tc.name, arguments: tc.args }));
+              aggregateToolCalls.push(...finalized);
+              // 콜백으로 즉시 알림 (UI에서 배지 표시 업데이트 가능)
+              callbacks?.onToolCalls?.(aggregateToolCalls);
+              workingMessages.push({ role: 'assistant', text: assistantAccum , toolCalls: finalized });
+
+              for (const meta of toolCallsMeta) {
+                const execution = await executeTool(meta.name, meta.args);
+                const toolResultText = formatToolResultForAssistant(meta.name, meta.id, execution);
+                workingMessages.push({
+                  role: 'tool',
+                  text: toolResultText,
+                  toolName: meta.name,
+                  toolCallId: meta.id,
+                  toolArgumentsJson: meta.args
+                });
+              }
+              continue; // next loop
+            }
+            if (assistantAccum.trim().length > 0) {
+              workingMessages.push({ role: 'assistant', text: assistantAccum });
+            }
+            return;
           }
-          continue; // next loop
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') {
+            throw new Error('Request was cancelled');
+          }
+          throw error;
+        } finally {
+          clearTimeout(timeoutId);
         }
-        if (assistantAccum.trim().length > 0) {
-          workingMessages.push({ role: 'assistant', text: assistantAccum });
-        }
-        return;
       }
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request was cancelled');
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
 
   async getUsage(): Promise<UsageInfo | null> {
     if (!this.baseUrl) return null;

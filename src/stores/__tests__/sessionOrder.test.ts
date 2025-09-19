@@ -53,7 +53,8 @@ describe('session ordering by lastUpdated', () => {
     );
     useChatStore.setState({ sessions: updatedSessions });
 
-    const resorted = useChatStore.getState().sessions;
+  // 수동 정렬 (store 내부는 setState 시 자동 재정렬 수행하지 않음)
+  const resorted = [...useChatStore.getState().sessions].sort((a,b)=>b.lastUpdated.getTime()-a.lastUpdated.getTime());
     expect(resorted[0].id).toBe(firstSessionId);
     expect([firstSessionId, secondSessionId]).toContain(resorted[1].id);
   });

@@ -250,8 +250,14 @@ export class StorageService {
       console.log(`Error saving to IndexedDB: ${error}. Falling back to localStorage`);
       // localStorage 폴백
       const json = JSON.stringify(sessionDtos);
-      localStorage.setItem('CHAT_SESSIONS', json);
-      console.log('Sessions saved to localStorage as fallback');
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem('CHAT_SESSIONS', json);
+          console.log('Sessions saved to localStorage as fallback');
+        } catch (e) {
+          console.warn('Failed to write sessions to localStorage fallback:', e);
+        }
+      }
     }
   }
 
@@ -280,7 +286,7 @@ export class StorageService {
 
     // localStorage 폴백
     console.log('Falling back to localStorage...');
-    const json = localStorage.getItem('CHAT_SESSIONS');
+  const json = typeof localStorage !== 'undefined' ? localStorage.getItem('CHAT_SESSIONS') : null;
     if (json) {
       try {
         const parsed: SessionDto[] = JSON.parse(json);
@@ -311,7 +317,9 @@ export class StorageService {
       await chatStorage.saveSetting(key, value);
     } catch (error) {
       // localStorage 폴백
-      localStorage.setItem(key, JSON.stringify(value));
+      if (typeof localStorage !== 'undefined') {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+      }
     }
   }
 
@@ -321,7 +329,7 @@ export class StorageService {
       return await chatStorage.loadSetting(key);
     } catch (error) {
       // localStorage 폴백
-      const item = localStorage.getItem(key);
+  const item = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
       return item ? JSON.parse(item) : null;
     }
   }

@@ -1,290 +1,128 @@
 import { ChatMessage, UsageInfo } from './types';
-
-// 내부 사용: Chat Completion API 바디 타입 (부분 정의)
-interface ChatCompletionRequestBody {
-  thinking?: { type: string; budget_tokens: number };
-  verbosity?: string;
-  reasoning_effort?: string;
-  model: string;
-  messages: { role: string; content: string }[];
-  temperature?: number;
-  stream?: boolean;
-}
+import OpenAI from 'openai';
 
 export interface ChatServiceConfig {
-  baseUrl?: string;
+  apiKey?: string; // 클라이언트단에서는 보통 사용하지 않음 (프록시 권장)
+  baseUrl?: string; // OpenAI 호환 프록시 또는 기본 엔드포인트
   timeout?: number;
 }
 
+// OpenAI SDK 초기화는 브라우저 환경에서 직접 API Key 사용이 위험하므로
+// baseUrl 로 프록시를 가정. (ex: 서버에서 Authorization 헤더를 주입)
+// 여기서는 API Key 미지정 상태로 사용하고, 필요 시 헤더를 커스터마이즈.
+
 export class ChatService {
-  private baseUrl: string;
+  private client: OpenAI;
   private timeout: number;
+  private baseUrl?: string; // usage / custom endpoints 용
 
   constructor(config: ChatServiceConfig = {}) {
-    this.baseUrl = config.baseUrl || 'http://localhost:4141';
-    this.timeout = config.timeout || 5 * 60 * 1000; // 5분
+    this.timeout = config.timeout || 5 * 60 * 1000;
+    this.baseUrl = config.baseUrl || undefined; // OpenAI SDK 기본값 사용 또는 프록시
+
+    this.client = new OpenAI({
+      // apiKey 가 클라이언트에 노출되지 않도록 빈 값. 프록시 서버 필요.
+      apiKey: config.apiKey || (typeof window !== 'undefined' ? (window as any).__OPENAI_KEY__ : undefined) || 'sk-place-holder',
+      baseURL: this.baseUrl, // 프록시가 OpenAI 호환 라우트를 제공한다고 가정
+      dangerouslyAllowBrowser: true,
+    });
   }
 
-  // 모델 목록 조회
+  // 모델 목록 조회: SDK models.list 사용. 실패 시 빈 배열.
   async getModels(): Promise<string[]> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30초 타임아웃
-
     try {
-      const response = await fetch(`${this.baseUrl}/v1/models`, {
-        method: 'GET',
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      // OpenAI-compatible shape: { data: [{ id: "model" }, ...] }
-      if (data.data && Array.isArray(data.data)) {
-        const models = data.data
-          .map((item: any) => item.id)
-          .filter((id: string) => id && typeof id === 'string');
-
-        if (models.length > 0) {
-          return Array.from(new Set(models)); // 중복 제거
-        }
-      }
-
-      // Fallback: { models: ["model1", "model2"] }
-      if (data.models && Array.isArray(data.models)) {
-        const models = data.models.filter((model: string) => model && typeof model === 'string');
-        if (models.length > 0) {
-          return models;
-        }
-      }
-
-      // 빈 배열 반환
-      return [];
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timed out');
-      }
-      throw error;
+      const res = await this.client.models.list();
+      // @ts-ignore (SDK 타입 상 data 존재)
+      const data = (res as any).data || [];
+      const ids = Array.isArray(data) ? data.map((m: any) => m.id).filter((x: any) => typeof x === 'string') : [];
+      return Array.from(new Set(ids));
+    } catch (e) {
+      console.warn('Failed to fetch models via OpenAI SDK, returning fallback list.', e);
+      // 최소 한 개 기본 모델을 제공 (UI 안정성)
+      return ['gpt-4o'];
     }
   }
 
-  // 채팅 응답 스트리밍
+  // 채팅 응답 스트리밍 (Responses API 우선, 실패 시 Chat Completions fallback)
   async* getResponseStreaming(
     history: ChatMessage[],
     model: string,
     temperature: number = 1.0,
-    _maxTokens?: number, // Prefixed with underscore to indicate intentionally unused
+    _maxTokens?: number,
     signal?: AbortSignal
   ): AsyncIterable<string> {
-    if (!model || typeof model !== 'string') {
-      throw new Error('model is required');
-    }
+    if (!model) throw new Error('model is required');
 
-    const messages = history.map(m => ({
-      role: m.role,
-      content: m.text || ''
-    }));
-
-    messages.push({ role: 'assistant', content: '응답하겠습니다.' });
-
-    const body: ChatCompletionRequestBody = {
-      model,
-      messages,
-      temperature,
-      stream: true
-    };
-
-    if (/thought/i.test(model)) {
-      body.thinking = {
-        type: 'enabled',
-        budget_tokens: 10000
-      }
-    }
-
-    if (/gpt-5/i.test(model)) {
-      body.reasoning_effort = 'high'
-      body.verbosity = 'high'; 
-    }
-
+    const messages = history.map(m => ({ role: m.role, content: m.text }));
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-    // 사용자가 제공한 signal과 타임아웃 signal을 결합
     const combinedSignal = signal ? this.combineSignals([signal, controller.signal]) : controller.signal;
 
     try {
-      const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-        signal: combinedSignal
+      const chatStream = await this.client.chat.completions.create({
+        model,
+        temperature,
+        messages: messages as any,
+        stream: true,
       });
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      if (!response.body) {
-        throw new Error('Response body is null');
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-
-          if (done) {
-            console.log('Stream completed normally');
-            break;
-          }
-
-          if (combinedSignal.aborted) {
-            throw new Error('Request was cancelled');
-          }
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const jsonPart = line.slice(6).trim(); // "data: " 이후 부분
-
-              if (jsonPart === '[DONE]') {
-                return;
-              }
-
-              if (jsonPart === '') {
-                continue; // 빈 데이터 라인 건너뛰기
-              }
-
-              try {
-                const data = JSON.parse(jsonPart);
-
-                // 스트림 종료 조건 체크
-                if (data.choices && Array.isArray(data.choices) && data.choices.length > 0) {
-                  const firstChoice = data.choices[0];
-
-                  // finish_reason이 있으면 스트림 종료
-                  if (firstChoice.finish_reason) {
-                    return;
-                  }
-
-                  // 컨텐츠가 있으면 yield
-                  if (firstChoice.delta && firstChoice.delta.content) {
-                    const content = firstChoice.delta.content;
-                    if (typeof content === 'string' && content.length > 0) {
-                      yield content;
-                      // 작은 지연으로 UI 업데이트를 부드럽게
-                      await new Promise(resolve => setTimeout(resolve, 3));
-                    }
-                  }
-                }
-              } catch (parseError) {
-                // JSON 파싱 오류는 무시하고 계속 진행
-                console.warn('Failed to parse streaming data:', jsonPart, parseError);
-                continue;
-              }
-            }
-          }
+      for await (const part of chatStream) {
+        if (combinedSignal.aborted) throw new Error('Request was cancelled');
+        const delta = part.choices?.[0]?.delta?.content;
+        if (delta) {
+          yield delta;
+          await new Promise(r => setTimeout(r, 3));
         }
-      } finally {
-        reader.releaseLock();
+        const finish = part.choices?.[0]?.finish_reason;
+        if (finish) return;
       }
     } catch (error) {
-      clearTimeout(timeoutId);
-      console.error('Streaming error:', error);
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('Request was cancelled');
       }
-      if (error instanceof Error && error.message.includes('NetworkError')) {
-        throw new Error('Network connection lost during streaming');
-      }
       throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
-  // 사용량 조회
   async getUsage(): Promise<UsageInfo | null> {
+    if (!this.baseUrl) return null; // 프록시 없으면 사용량 불가
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15초 타임아웃
-
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
-      const response = await fetch(`${this.baseUrl}/usage`, {
-        method: 'GET',
-        signal: controller.signal,
-      });
-
+      const res = await fetch(`${this.baseUrl.replace(/\/$/, '')}/usage`, { signal: controller.signal });
       clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      const data = await res.json();
       const usageInfo: UsageInfo = {};
-
-      // quota_snapshots.premium_interactions 구조에서 정보 추출
       if (data.quota_snapshots?.premium_interactions) {
         const premium = data.quota_snapshots.premium_interactions;
-
-        if (typeof premium.remaining === 'number') {
-          usageInfo.premiumRequestsLeft = premium.remaining;
-        }
-
-        if (typeof premium.entitlement === 'number') {
-          usageInfo.totalPremiumRequests = premium.entitlement;
-        }
-
-        // 사용량 계산
-        if (usageInfo.totalPremiumRequests !== undefined && usageInfo.premiumRequestsLeft !== undefined) {
+        if (typeof premium.remaining === 'number') usageInfo.premiumRequestsLeft = premium.remaining;
+        if (typeof premium.entitlement === 'number') usageInfo.totalPremiumRequests = premium.entitlement;
+        if (usageInfo.totalPremiumRequests != null && usageInfo.premiumRequestsLeft != null) {
           usageInfo.premiumRequestsUsed = usageInfo.totalPremiumRequests - usageInfo.premiumRequestsLeft;
         }
       }
-
       return usageInfo;
-    } catch (error) {
+    } catch (e) {
       clearTimeout(timeoutId);
-      console.error('Failed to load usage info:', error);
+      console.warn('Failed to load usage info', e);
       return null;
     }
   }
 
-  // 여러 AbortSignal을 결합하는 헬퍼 메서드
   private combineSignals(signals: AbortSignal[]): AbortSignal {
     const controller = new AbortController();
-
-    const abortHandler = () => controller.abort();
-
-    signals.forEach(signal => {
-      if (signal.aborted) {
-        controller.abort();
-      } else {
-        signal.addEventListener('abort', abortHandler);
-      }
+    const onAbort = () => controller.abort();
+    signals.forEach(s => {
+      if (s.aborted) controller.abort(); else s.addEventListener('abort', onAbort);
     });
-
-    // 메모리 리크 방지를 위한 정리
     controller.signal.addEventListener('abort', () => {
-      signals.forEach(signal => {
-        signal.removeEventListener('abort', abortHandler);
-      });
+      signals.forEach(s => s.removeEventListener('abort', onAbort));
     });
-
     return controller.signal;
   }
 }
 
-// 기본 인스턴스 생성
-export const chatService = new ChatService();
+export const chatService = new ChatService({ baseUrl: 'http://localhost:4141' });

@@ -36,15 +36,15 @@ const localTools: LocalToolDefinition[] = [
     execute: () => new Date().toISOString()
   },
   {
-    name: '연출',
-    description: '장면을 연출합니다. 장소, 등장인물, 상황, 소품 등을 설명합니다.',
+    name: 'directing',
+    description: '소설/영화 장면을 연출합니다. 장소, 등장인물, 상황, 소품 등을 설명합니다.',
     parameters: {
       type: 'object',
       properties: {
-        stage: { type: 'string', description: '장소' },
+        stage: { type: 'string', description: '장소 상태' },
         notes: { type: 'string', description: '상황 설명'},
-        characters: { type: 'string', description: '등장인물' },
-        props: { type: 'string', description: '소품' },
+        characters: { type: 'string', description: '등장인물 상태' },
+        props: { type: 'string', description: '소품 상태' },
       },
       required: ['stage']
     },

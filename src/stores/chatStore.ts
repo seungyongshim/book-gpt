@@ -380,7 +380,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         newMessages,
         model,
         state.temperature,
-        state.maxTokens ?? undefined,
+        undefined,
         signal
       );
 

@@ -11,7 +11,8 @@ const MessageList = ({ endRef }: MessageListProps) => {
 
   // 시스템 메시지를 먼저 렌더링하고, 나머지 메시지들을 순서대로 렌더링
   const systemMessage = messages.find(m => m.role === 'system');
-  const otherMessages = messages.filter(m => m.role !== 'system');
+  // tool 메시지는 사용자에게 직접 노출하지 않음 (중간 함수 호출 결과)
+  const otherMessages = messages.filter(m => m.role !== 'system' && m.role !== 'tool');
 
   return (
     <div

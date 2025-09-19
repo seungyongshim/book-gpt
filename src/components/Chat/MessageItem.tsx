@@ -125,6 +125,7 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
       case 'user': return '사용자';
       case 'assistant': return '어시스턴트';
       case 'system': return '시스템';
+      case 'tool': return '도구';
       default: return role;
     }
   };
@@ -135,6 +136,7 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
       case 'user': return base + ' chat-bubble-user self-end';
       case 'assistant': return base + ' chat-bubble-assistant';
       case 'system': return base + ' chat-bubble-system';
+      case 'tool': return base + ' chat-bubble-system opacity-70';
       default: return base;
     }
   };

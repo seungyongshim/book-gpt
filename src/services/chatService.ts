@@ -1,5 +1,7 @@
 import { ChatMessage, UsageInfo } from './types';
 import OpenAI from 'openai';
+import { executeTool, formatToolResultForAssistant, getRegisteredTools } from './toolService';
+import { accumulateToolCalls, finalizeToolCalls, ToolCallMeta } from './toolCallAccumulator';
 
 export interface ChatServiceConfig {
   apiKey?: string; // 클라이언트단에서는 보통 사용하지 않음 (프록시 권장)
@@ -53,28 +55,96 @@ export class ChatService {
   ): AsyncIterable<string> {
     if (!model) throw new Error('model is required');
 
-    const messages = history.map(m => ({ role: m.role, content: m.text }));
+    // ChatMessage -> OpenAI message 변환
+    const toApiMessages = (msgs: ChatMessage[]) => msgs.map(m => {
+      if (m.role === 'tool') {
+        // tool 메시지는 반드시 직전에 assistant 가 tool_calls 를 포함한 뒤에 위치해야 함
+        return {
+          role: 'tool',
+          content: m.text,
+          tool_call_id: m.toolCallId,
+        } as any;
+      }
+      if (m.role === 'assistant') {
+        if (m.toolCalls && m.toolCalls.length > 0) {
+          return {
+            role: 'assistant',
+            content: m.text || null,
+            tool_calls: m.toolCalls.map(tc => ({
+              id: tc.id,
+              type: 'function',
+              function: { name: tc.name, arguments: tc.arguments }
+            }))
+          } as any;
+        }
+      }
+      return { role: m.role, content: m.text } as any;
+    });
+
+    let workingMessages = [...history];
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
     const combinedSignal = signal ? this.combineSignals([signal, controller.signal]) : controller.signal;
 
     try {
-      const chatStream = await this.client.chat.completions.create({
-        model,
-        temperature,
-        messages: messages as any,
-        stream: true,
-      });
-
-      for await (const part of chatStream) {
+      // 최대 5회 tool-call 루프 방지
+      for (let iteration = 0; iteration < 5; iteration++) {
         if (combinedSignal.aborted) throw new Error('Request was cancelled');
-        const delta = part.choices?.[0]?.delta?.content;
-        if (delta) {
-          yield delta;
-          await new Promise(r => setTimeout(r, 3));
+
+        const chatStream = await this.client.chat.completions.create({
+          model,
+            temperature,
+          messages: toApiMessages(workingMessages) as any,
+          stream: true,
+          tools: getRegisteredTools(),
+          tool_choice: 'auto'
+        });
+
+  let assistantAccum = '';
+  let toolCallsMeta: ToolCallMeta[] = [];
+
+        for await (const part of chatStream) {
+          if (combinedSignal.aborted) throw new Error('Request was cancelled');
+          const choice = part.choices?.[0];
+          if (!choice) continue;
+          const delta = choice.delta;
+          if (delta?.content) {
+            assistantAccum += delta.content;
+            yield delta.content;
+            await new Promise(r => setTimeout(r, 3));
+          }
+          // tool_calls delta 수집
+          if (delta?.tool_calls) {
+            toolCallsMeta = accumulateToolCalls(toolCallsMeta, delta.tool_calls as any, iteration);
+          }
+          const finish = choice.finish_reason;
+          if (finish) {
+            break;
+          }
         }
-        const finish = part.choices?.[0]?.finish_reason;
-        if (finish) return;
+
+        if (toolCallsMeta.length > 0) {
+          toolCallsMeta = finalizeToolCalls(toolCallsMeta, iteration);
+          workingMessages.push({ role: 'assistant', text: assistantAccum, toolCalls: toolCallsMeta.map(tc => ({ id: tc.id, name: tc.name, arguments: tc.args })) });
+
+          for (const meta of toolCallsMeta) {
+            const execution = await executeTool(meta.name, meta.args);
+            const toolResultText = formatToolResultForAssistant(meta.name, meta.id, execution);
+            workingMessages.push({
+              role: 'tool',
+              text: toolResultText,
+              toolName: meta.name,
+              toolCallId: meta.id,
+              toolArgumentsJson: meta.args
+            });
+          }
+          continue; // next loop
+        }
+        // no tool calls: finalize
+        if (assistantAccum.trim().length > 0) {
+          workingMessages.push({ role: 'assistant', text: assistantAccum });
+        }
+        return;
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {

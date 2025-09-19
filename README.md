@@ -59,6 +59,43 @@ MIT License.
 
 ---
 
+### 함수 호출(툴) 기능
+
+모델이 대화 중 특정 작업이 필요하다고 판단하면 로컬에 등록된 "툴"(함수)을 호출하여 결과를 다시 컨텍스트로 주입한 뒤 후속 응답을 생성합니다. 현재 데모용으로 두 가지 툴이 제공됩니다.
+
+- `get_current_time`: 현재 UTC 시간을 ISO 문자열로 반환
+- `echo`: 전달된 `text` 값을 그대로 반환
+
+구현 개요:
+1. `src/services/toolService.ts` 에 로컬 툴 정의 (`LocalToolDefinition[]`).
+2. `chatService.getResponseStreaming` 이 OpenAI Chat Completions API 호출 시 `tools` 배열을 포함.
+3. 모델이 tool call 을 생성하면 JSON arguments 스트리밍을 조립한 뒤 각 툴을 실행하고 `role: 'tool'` 메시지를 내부 히스토리에 추가.
+4. UI 렌더링에서는 `role: 'tool'` 메시지를 숨겨 사용자는 자연스러운 어시스턴트 응답만 확인.
+
+확장 방법:
+```ts
+// toolService.ts 내 localTools 배열에 항목 추가
+{
+  name: 'get_weather',
+  description: '주어진 도시의 현재 날씨를 조회',
+  parameters: {
+    type: 'object',
+    properties: { city: { type: 'string', description: '도시명 (예: Seoul)' } },
+    required: ['city']
+  },
+  execute: async ({ city }) => {
+    // 실제 API 연동 또는 mock
+    return { city, tempC: 23, condition: 'Sunny' };
+  }
+}
+```
+
+추가한 뒤 재빌드하면 모델이 필요 시 `get_weather` 를 호출할 수 있습니다 (프롬프트에서 사용자가 날씨를 묻고, 모델이 스키마를 인식해야 호출 가능 — 모델 특성상 항상 100% 호출 보장은 아님).
+
+테스트: `src/services/__tests__/toolService.test.ts` 에 기본 동작 검증 포함.
+
+---
+
 ### 입력 히스토리 (ArrowUp 지원)
 
 채팅 입력창이 비어있을 때 키보드 `ArrowUp / ArrowDown` 으로 과거에 전송한 사용자 입력을 순환 탐색할 수 있습니다.

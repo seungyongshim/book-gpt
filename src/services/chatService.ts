@@ -14,7 +14,7 @@ export class ChatService {
   private timeout: number;
   private baseUrl?: string;
 
-  private static readonly MAX_TOOL_ITERATIONS = 5;
+  private static readonly MAX_TOOL_ITERATIONS = 100;
 
   constructor(config: ChatServiceConfig = {}) {
     this.timeout = config.timeout || 5 * 60 * 1000;
@@ -49,10 +49,6 @@ export class ChatService {
   ): AsyncIterable<string> {
     if (!model) throw new Error('model is required');
 
-    // --- 사전 정합성 검사 ---------------------------------------------------------
-    // (1) 과거 세션 저장물에 잘못된 assistant.toolCalls(응답 없는 tool_call_id) 가 남아
-    //     OpenAI API 400 (tool_calls must be followed...) 을 유발하는 경우가 있어
-    //     전처리로 제거한다.
     const sanitizeHistory = (msgs: ChatMessage[]): ChatMessage[] => {
       const toolIds = new Set<string>();
       msgs.forEach(m => { if (m.role === 'tool' && m.toolCallId) toolIds.add(m.toolCallId); });

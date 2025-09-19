@@ -49,7 +49,7 @@ const localTools: LocalToolDefinition[] = [
       required: ['stage']
     },
     execute: (args: any) => {
-      return 'thought';
+      return 'directinged';
     }
   },
   {

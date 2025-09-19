@@ -20,8 +20,6 @@ interface ThoughtMeta {
   purpose?: string;
   length: number;
 }
-const _thoughtHistory: ThoughtMeta[] = [];
-const _THOUGHT_HISTORY_LIMIT = 5; // 최근 5개만 유지
 
 // 데모용 간단한 도구 2개 (시간 조회, 에코) + Claude "think" tool 컨셉을 참고한 scratchpad 도구
 const localTools: LocalToolDefinition[] = [

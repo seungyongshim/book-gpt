@@ -160,11 +160,6 @@ export class ChatService {
           continue; // next loop
         }
         if (assistantAccum.trim().length > 0) {
-          // 주의: 이전 iteration에서 실행이 끝난 tool_calls를 재첨부하면
-          // "An assistant message with 'tool_calls' must be followed by tool messages..." 400 오류 발생.
-          // OpenAI 규격상 assistant 메시지에 포함된 tool_calls 각각 바로 뒤에 대응하는 tool 메시지가 존재해야 하므로
-          // 이미 실행‧응답이 완료된 과거 tool_calls를 최종 답변 assistant 메시지에 재사용하면 안 된다.
-          // 따라서 여기서는 단순 텍스트 메시지만 push 한다.
           workingMessages.push({ role: 'assistant', text: assistantAccum });
         }
         return;

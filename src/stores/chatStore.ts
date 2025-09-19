@@ -381,13 +381,35 @@ export const useChatStore = create<ChatState>((set, get) => ({
         model,
         state.temperature,
         undefined,
-        signal
+        signal,
+        {
+          onToolCalls: (toolCalls) => {
+            // 스트리밍 도중 툴콜이 감지되면 현재 assistant 메시지(마지막)를 업데이트
+            const cur = get().messages;
+            if (cur.length === 0) return;
+            const last = cur[cur.length - 1];
+            if (last.role === 'assistant') {
+              const updated = [...cur];
+              updated[updated.length - 1] = { ...last, toolCalls };
+              set({ messages: updated });
+            }
+          }
+        }
       );
 
       for await (const chunk of stream) {
         responseText += chunk;
-        const updatedMessages = [...newMessages, { role: 'assistant' as const, text: responseText }];
-        set({ messages: updatedMessages });
+        const cur = get().messages;
+        if (cur.length === 0) continue;
+        const last = cur[cur.length - 1];
+        if (last.role === 'assistant') {
+            const updated = [...cur];
+            updated[updated.length - 1] = { ...last, text: responseText };
+            set({ messages: updated });
+        } else {
+          // 방어적: 없으면 추가
+          set({ messages: [...cur, { role: 'assistant', text: responseText }] });
+        }
       }
 
       // 세션 업데이트

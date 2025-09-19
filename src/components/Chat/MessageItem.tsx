@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { useChatStore } from '../../stores/chatStore';
 import { ChatMessage } from '../../services/types';
+import Icon from '../UI/Icon';
 import MessageActionButtons from './MessageActionButtons';
 
 interface MessageItemProps {
@@ -151,8 +152,18 @@ const MessageItem = ({ message, messageIndex }: MessageItemProps) => {
   return (
     <div className={getRoleClass(message.role)}>
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
-          {getRoleDisplayName(message.role)}
+        <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
+          <span>{getRoleDisplayName(message.role)}</span>
+          {message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0 && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200"
+              title={`도구 호출 ${message.toolCalls.length}개`}
+              aria-label={`이 메시지에는 ${message.toolCalls.length}개의 도구 호출이 포함됩니다.`}
+            >
+              <Icon name="list" size={12} />
+              tool {message.toolCalls.length}
+            </span>
+          )}
         </div>
         <MessageActionButtons
           isEditing={isEditing}

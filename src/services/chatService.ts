@@ -44,7 +44,8 @@ export class ChatService {
     model: string,
     temperature: number = 1.0,
     _maxTokens?: number,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    callbacks?: { onToolCalls?: (toolCalls: { id?: string; name: string; arguments: string }[]) => void }
   ): AsyncIterable<string> {
     if (!model) throw new Error('model is required');
 
@@ -72,7 +73,8 @@ export class ChatService {
     const combinedSignal = signal ? this.combineSignals([signal, controller.signal]) : controller.signal;
 
     try {
-      for (let iteration = 0; iteration < ChatService.MAX_TOOL_ITERATIONS; iteration++) {
+  const aggregateToolCalls: { id?: string; name: string; arguments: string }[] = [];
+  for (let iteration = 0; iteration < ChatService.MAX_TOOL_ITERATIONS; iteration++) {
         if (combinedSignal.aborted) throw new Error('Request was cancelled');
 
         const chatStream = await this.client.chat.completions.create({
@@ -109,7 +111,11 @@ export class ChatService {
 
         if (toolCallsMeta.length > 0) {
           toolCallsMeta = finalizeToolCalls(toolCallsMeta, iteration);
-          workingMessages.push({ role: 'assistant', text: assistantAccum, toolCalls: toolCallsMeta.map(tc => ({ id: tc.id, name: tc.name, arguments: tc.args })) });
+          const finalized = toolCallsMeta.map(tc => ({ id: tc.id, name: tc.name, arguments: tc.args }));
+          aggregateToolCalls.push(...finalized);
+          // 콜백으로 즉시 알림 (UI에서 배지 표시 업데이트 가능)
+          callbacks?.onToolCalls?.(aggregateToolCalls);
+          workingMessages.push({ role: 'assistant', text: assistantAccum, toolCalls: finalized });
 
           for (const meta of toolCallsMeta) {
             const execution = await executeTool(meta.name, meta.args);
@@ -125,7 +131,12 @@ export class ChatService {
           continue; // next loop
         }
         if (assistantAccum.trim().length > 0) {
-          workingMessages.push({ role: 'assistant', text: assistantAccum });
+          // 전체 툴 호출이 있었다면 aggregate를 부착하여 최종 assistant 메시지에도 반영
+          if (aggregateToolCalls.length > 0) {
+            workingMessages.push({ role: 'assistant', text: assistantAccum, toolCalls: aggregateToolCalls });
+          } else {
+            workingMessages.push({ role: 'assistant', text: assistantAccum });
+          }
         }
         return;
       }

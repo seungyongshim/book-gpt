@@ -10,6 +10,7 @@
     "preview": "vite build && vite preview",
     "stylelint": "stylelint \"src/**/*.{css,scss}\" --ignore-disables",
     "format": "prettier --write .",
+    "test": "vitest run",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:unit:ui": "vitest --ui",

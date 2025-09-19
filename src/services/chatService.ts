@@ -49,6 +49,35 @@ export class ChatService {
   ): AsyncIterable<string> {
     if (!model) throw new Error('model is required');
 
+    // --- 사전 정합성 검사 ---------------------------------------------------------
+    // (1) 과거 세션 저장물에 잘못된 assistant.toolCalls(응답 없는 tool_call_id) 가 남아
+    //     OpenAI API 400 (tool_calls must be followed...) 을 유발하는 경우가 있어
+    //     전처리로 제거한다.
+    const sanitizeHistory = (msgs: ChatMessage[]): ChatMessage[] => {
+      const toolIds = new Set<string>();
+      msgs.forEach(m => { if (m.role === 'tool' && m.toolCallId) toolIds.add(m.toolCallId); });
+      const cleaned = msgs.map(m => {
+        if (m.role === 'assistant' && m.toolCalls?.length) {
+          const filtered = m.toolCalls.filter(tc => tc.id && toolIds.has(tc.id));
+          if (filtered.length !== m.toolCalls.length) {
+            console.warn('[chatService] Stripped orphan tool_calls from assistant message:', {
+              original: m.toolCalls.map(tc => tc.id),
+              kept: filtered.map(tc => tc.id)
+            });
+          }
+          if (!filtered.length) {
+            const { toolCalls, ...rest } = m as any;
+            return { ...rest } as ChatMessage; // toolCalls 제거
+          }
+          return { ...m, toolCalls: filtered };
+        }
+        return m;
+      });
+      return cleaned;
+    };
+
+    history = sanitizeHistory(history);
+
     const toApiMessages = (msgs: ChatMessage[]) => msgs.map(m => {
       if (m.role === 'tool') {
         return { role: 'tool', content: m.text, tool_call_id: m.toolCallId } as any;
@@ -67,7 +96,7 @@ export class ChatService {
       return { role: m.role, content: m.text } as any;
     });
 
-    let workingMessages = [...history];
+  let workingMessages = [...history];
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
     const combinedSignal = signal ? this.combineSignals([signal, controller.signal]) : controller.signal;
@@ -131,12 +160,12 @@ export class ChatService {
           continue; // next loop
         }
         if (assistantAccum.trim().length > 0) {
-          // 전체 툴 호출이 있었다면 aggregate를 부착하여 최종 assistant 메시지에도 반영
-          if (aggregateToolCalls.length > 0) {
-            workingMessages.push({ role: 'assistant', text: assistantAccum, toolCalls: aggregateToolCalls });
-          } else {
-            workingMessages.push({ role: 'assistant', text: assistantAccum });
-          }
+          // 주의: 이전 iteration에서 실행이 끝난 tool_calls를 재첨부하면
+          // "An assistant message with 'tool_calls' must be followed by tool messages..." 400 오류 발생.
+          // OpenAI 규격상 assistant 메시지에 포함된 tool_calls 각각 바로 뒤에 대응하는 tool 메시지가 존재해야 하므로
+          // 이미 실행‧응답이 완료된 과거 tool_calls를 최종 답변 assistant 메시지에 재사용하면 안 된다.
+          // 따라서 여기서는 단순 텍스트 메시지만 push 한다.
+          workingMessages.push({ role: 'assistant', text: assistantAccum });
         }
         return;
       }

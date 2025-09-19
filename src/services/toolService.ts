@@ -14,7 +14,16 @@ export interface LocalToolDefinition {
 }
 
 // 1. 로컬 도구 정의 ------------------------------------------------------------------
-// 데모용 간단한 도구 2개 (시간 조회, 에코)
+// 내부 보존 가능한 간단한 사고(추론) 메모 기록 (선택적으로 유지)
+interface ThoughtMeta {
+  timestamp: string;
+  purpose?: string;
+  length: number;
+}
+const _thoughtHistory: ThoughtMeta[] = [];
+const _THOUGHT_HISTORY_LIMIT = 5; // 최근 5개만 유지
+
+// 데모용 간단한 도구 2개 (시간 조회, 에코) + Claude "think" tool 컨셉을 참고한 scratchpad 도구
 const localTools: LocalToolDefinition[] = [
   {
     name: 'get_current_time',
@@ -27,20 +36,34 @@ const localTools: LocalToolDefinition[] = [
     execute: () => new Date().toISOString()
   },
   {
-    name: 'echo',
-    description: '전달된 문자열을 그대로 다시 반환합니다.',
+    name: '연출',
+    description: '장면을 연출합니다. 장소, 등장인물, 상황, 소품 등을 설명합니다.',
     parameters: {
       type: 'object',
       properties: {
-        text: { type: 'string', description: '반환할 문자열' }
+        stage: { type: 'string', description: '장소' },
+        notes: { type: 'string', description: '상황 설명'},
+        characters: { type: 'string', description: '등장인물' },
+        props: { type: 'string', description: '소품' },
       },
-      required: ['text']
+      required: ['stage']
     },
     execute: (args: any) => {
-      if (!args || typeof args.text !== 'string') {
-        return 'Invalid arguments: expected { text: string }';
-      }
-      return args.text;
+      return 'thought';
+    }
+  },
+  {
+    name: 'think',
+    description: 'Use the tool to think about something. It will not obtain new information or change the database, but just append the thought to the log. Use it when complex reasoning or some cache memory is needed.',
+    parameters: {
+      type: 'object',
+      properties: {
+        thought: { type: 'string', description: 'A thought to think about.' },
+      },
+      required: ['notes']
+    },
+    execute: (args: any) => {
+      return 'thought';
     }
   }
 ];

@@ -14,12 +14,7 @@ export interface LocalToolDefinition {
 }
 
 // 1. 로컬 도구 정의 ------------------------------------------------------------------
-// 내부 보존 가능한 간단한 사고(추론) 메모 기록 (선택적으로 유지)
-interface ThoughtMeta {
-  timestamp: string;
-  purpose?: string;
-  length: number;
-}
+// (불필요한 미사용 타입 제거: ThoughtMeta)
 
 // 데모용 간단한 도구 2개 (시간 조회, 에코) + Claude "think" tool 컨셉을 참고한 scratchpad 도구
 const localTools: LocalToolDefinition[] = [
@@ -46,7 +41,7 @@ const localTools: LocalToolDefinition[] = [
       },
       required: ['stage']
     },
-    execute: (args: any) => {
+    execute: (_args: any) => {
       return 'directinged';
     }
   },
@@ -58,9 +53,10 @@ const localTools: LocalToolDefinition[] = [
       properties: {
         thought: { type: 'string', description: 'A thought to think about.' },
       },
-      required: ['notes']
+      // required 필드가 존재하지 않는 키를 참조하고 있어 'thought'로 수정
+      required: ['thought']
     },
-    execute: (args: any) => {
+    execute: (_args: any) => {
       return 'thought';
     }
   }

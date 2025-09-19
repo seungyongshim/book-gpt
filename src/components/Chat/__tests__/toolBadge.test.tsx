@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import MessageItem from '../MessageItem';
 import { ChatMessage } from '../../../services/types';

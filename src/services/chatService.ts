@@ -125,7 +125,7 @@ export class ChatService {
           temperature,
           messages: toApiMessages(workingMessages) as any,
           stream: true,
-          tools: getRegisteredTools(),
+          tools: await getRegisteredTools(),
           tool_choice: 'auto'
         });
 

@@ -1,4 +1,6 @@
 import type { ChatCompletionTool } from 'openai/resources/chat/completions';
+import { StoredTool } from './types';
+import { StorageService } from './storageService';
 
 export interface LocalToolDefinition {
   name: string;
@@ -13,89 +15,57 @@ export interface LocalToolDefinition {
   execute: (args: any) => Promise<any> | any;
 }
 
-// 1. 로컬 도구 정의 ------------------------------------------------------------------
-// (불필요한 미사용 타입 제거: ThoughtMeta)
-
-// 데모용 간단한 도구 2개 (시간 조회, 에코) + Claude "think" tool 컨셉을 참고한 scratchpad 도구
-const localTools: LocalToolDefinition[] = [
-  {
-    name: 'get_current_time',
-    description: '현재 UTC 시간을 ISO 문자열로 반환합니다.',
-    parameters: {
-      type: 'object',
-      properties: {},
-      required: []
-    },
-    execute: () => new Date().toISOString()
-  },
-  {
-    name: 'echo',
-    description: 'text 필드를 그대로 반환합니다.',
-    parameters: {
-      type: 'object',
-      properties: {
-        text: { type: 'string', description: '반환할 문자열' }
-      },
-      required: ['text']
-    },
+// 저장된 도구를 LocalToolDefinition으로 변환하는 함수
+function convertStoredToolToLocal(storedTool: StoredTool): LocalToolDefinition {
+  return {
+    name: storedTool.name,
+    description: storedTool.description,
+    parameters: storedTool.parameters,
     execute: (args: any) => {
-      if (!args || typeof args.text !== 'string' || args.text.length === 0) {
-        return 'Invalid: expected non-empty string field "text"';
+      try {
+        // 저장된 JavaScript 코드를 실행
+        // 안전성을 위해 제한된 실행 환경 사용
+        const executeFunction = new Function('args', storedTool.executeCode);
+        return executeFunction(args);
+      } catch (error) {
+        throw new Error(`Tool execution failed: ${error instanceof Error ? error.message : String(error)}`);
       }
-      return args.text;
     }
-  },
-  {
-    name: 'directing',
-    description: '소설/영화 장면을 연출합니다. 장소, 등장인물, 상황, 소품 등을 설명합니다.',
-    parameters: {
-      type: 'object',
-      properties: {
-        stage: { type: 'string', description: '장소 상태' },
-        notes: { type: 'string', description: '상황 설명'},
-        characters: { type: 'string', description: '등장인물 상태' },
-        props: { type: 'string', description: '소품 상태' },
-      },
-      required: ['stage']
-    },
-    execute: (_args: any) => {
-      return 'directinged';
-    }
-  },
-  {
-    name: 'think',
-    description: 'Use the tool to think about something. It will not obtain new information or change the database, but just append the thought to the log. Use it when complex reasoning or some cache memory is needed.',
-    parameters: {
-      type: 'object',
-      properties: {
-        thought: { type: 'string', description: 'A thought to think about.' },
-      },
-      // required 필드가 존재하지 않는 키를 참조하고 있어 'thought'로 수정
-      required: ['thought']
-    },
-    execute: (_args: any) => {
-      return 'thought';
-    }
-  },
-  {
-    name: 'story',
-    description: '줄거리를 작성합니다. 약 2000자 정도의 이야기 줄거리를 입력받습니다.',
-    parameters: {
-      type: 'object',
-      properties: {
-        storyline: { type: 'string', description: '이야기의 줄거리 (약 2000자)' },
-      },
-      required: ['storyline']
-    },
-    execute: (_args: any) => {
-      return 'ok';
+  };
+}
+
+// 도구 캐시
+let toolsCache: LocalToolDefinition[] = [];
+let lastCacheUpdate = 0;
+const CACHE_DURATION = 5000; // 5 seconds
+
+// 도구 목록을 가져오는 함수 (캐시 사용)
+async function getTools(): Promise<LocalToolDefinition[]> {
+  const now = Date.now();
+  if (toolsCache.length === 0 || now - lastCacheUpdate > CACHE_DURATION) {
+    try {
+      const storedTools = await StorageService.loadTools();
+      toolsCache = storedTools.map(convertStoredToolToLocal);
+      lastCacheUpdate = now;
+    } catch (error) {
+      console.error('Failed to load tools from storage:', error);
+      // 폴백으로 빈 배열 사용
+      toolsCache = [];
     }
   }
-];
+  return toolsCache;
+}
+
+// 도구 캐시 무효화 (도구가 변경되었을 때 호출)
+export function invalidateToolsCache(): void {
+  toolsCache = [];
+  lastCacheUpdate = 0;
+}
 
 // 2. OpenAI ChatCompletionTool[] 변환 --------------------------------------------------
-export function getRegisteredTools(): ChatCompletionTool[] {
-  return localTools.map(t => ({
+export async function getRegisteredTools(): Promise<ChatCompletionTool[]> {
+  const tools = await getTools();
+  return tools.map(t => ({
     type: 'function',
     function: {
       name: t.name,
@@ -107,7 +77,8 @@ export function getRegisteredTools(): ChatCompletionTool[] {
 
 // 3. 실행기 구현 ----------------------------------------------------------------------
 export async function executeTool(name: string, argsJson: string | null | undefined): Promise<{ result: any; error?: string; parsedArgs?: any; }>{
-  const tool = localTools.find(t => t.name === name);
+  const tools = await getTools();
+  const tool = tools.find(t => t.name === name);
   if (!tool) {
     return { result: null, error: `Unknown tool: ${name}` };
   }

@@ -47,11 +47,59 @@ Pages 가 예전 설정(정적 Jekyll 빌드) 혹은 별도 워크플로(`action
 - 과거 Pages 빌드용 브랜치(`gh-pages`)가 있다면 정리(선택 사항)
 - (임시 안전장치) 빈 `docs/` 디렉터리 & `public/.nojekyll` 추가
 
+### PR 미리보기 배포
+
+Pull Request가 생성되거나 업데이트될 때 자동으로 미리보기 배포가 생성됩니다.
+
+#### 🎯 GitHub Pages 직접 배포 (추천)
+
+**워크플로**: `.github/workflows/pr-preview-pages.yml`
+
+- **미리보기 URL**: `https://seungyongshim.github.io/book-gpt/pr-{PR번호}/`
+- **전체 목록**: `https://seungyongshim.github.io/book-gpt/previews.html`
+- **자동 정리**: PR이 닫히면 해당 preview가 Pages에서 제거됩니다
+
+**작동 방식:**
+1. PR 생성/업데이트 시 PR-specific base path로 빌드
+2. 메인 사이트와 PR preview를 합쳐서 GitHub Pages에 배포
+3. 실제 GitHub Pages URL로 즉시 접근 가능
+4. PR 종료 시 해당 preview 자동 정리
+
+#### 🔧 외부 서비스 배포 (대안)
+
+**워크플로**: `.github/workflows/pr-preview.yml`
+
+- **배포 방식**: Netlify, Vercel 등 외부 서비스
+- **아티팩트**: GitHub Actions에서 다운로드 가능
+- **설정 필요**: 해당 서비스의 credentials 추가
+
+#### PR 미리보기 작동 방식
+
+1. PR 생성/업데이트 시 워크플로가 트리거됩니다
+2. `vite.config.ts`에서 `GITHUB_HEAD_REF`와 `PR_NUMBER` 환경변수를 감지하여 PR 전용 base 경로(`/book-gpt/pr-123/`)를 설정합니다
+3. **GitHub Pages 방식**: 메인 사이트와 PR preview를 결합하여 Pages에 직접 배포
+4. **외부 서비스 방식**: 빌드 아티팩트 생성 또는 외부 서비스에 배포
+5. 봇이 PR에 실제 미리보기 URL이 포함된 댓글을 자동으로 작성합니다
+6. PR이 닫히면 정리 작업이 수행됩니다
+
+#### 장단점 비교
+
+**GitHub Pages 직접 배포:**
+- ✅ 외부 서비스 설정 불필요
+- ✅ 즉시 접근 가능한 실제 URL
+- ✅ 메인 사이트와 동일한 도메인
+- ⚠️ 복수 PR 동시 지원 시 복잡성 증가
+
+**외부 서비스 배포:**
+- ✅ 각 PR별 독립적인 환경
+- ✅ 더 많은 기능 지원 (댓글, 분석 등)
+- ⚠️ 외부 서비스 설정 필요
+- ⚠️ 별도 도메인 사용
+
 ### 추가 개선 아이디어
 
 - Lighthouse 검사 자동화 (actions/workflow 추가)
 - Cache 무효화를 위한 빌드 파일 이름 hash 유지 (기본 Vite 출력 사용 중)
-- PR 미리보기: `actions/deploy-pages` 를 PR 환경에 연결하거나 `vercel`/`netlify` 병행
 
 ---
 

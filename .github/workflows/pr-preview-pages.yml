@@ -1,0 +1,275 @@
+name: PR Preview with GitHub Pages Integration
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: pr-preview-pages-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  cleanup-pr-preview:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build main site
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Create updated pages structure without PR
+        run: |
+          mkdir -p pages-site
+          
+          # Copy main site
+          cp -r dist/* pages-site/
+          
+          # Create/update PR index
+          cat > pages-site/previews.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="ko">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>PR Previews - Book GPT</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; background: #f8f9fa; }
+              .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              h1 { color: #2d3748; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
+              .pr-list { list-style: none; padding: 0; }
+              .pr-item { margin: 15px 0; padding: 20px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f7fafc; }
+              .pr-link { text-decoration: none; color: #3182ce; font-weight: 600; font-size: 1.1em; }
+              .pr-link:hover { color: #2c5aa0; }
+              .pr-info { color: #718096; font-size: 0.9em; margin-top: 8px; }
+              .pr-status { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+              .status-closed { background: #fed7d7; color: #c53030; }
+              .back-link { display: inline-block; margin-top: 20px; padding: 10px 15px; background: #4299e1; color: white; text-decoration: none; border-radius: 5px; }
+              .back-link:hover { background: #3182ce; }
+              .empty-state { text-align: center; padding: 40px; color: #718096; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>📖 Book GPT - PR Previews</h1>
+              <div class="empty-state">
+                <p>PR #${{ github.event.number }} preview has been removed.</p>
+                <p>Currently no active PR previews available.</p>
+              </div>
+              <a href="../" class="back-link">← Back to Main Site</a>
+            </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload updated pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-site
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+
+      - name: Comment on closed PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.number;
+            const body = `## 🧹 Preview Cleaned Up
+            
+            PR #${prNumber} preview has been removed from GitHub Pages.
+            
+            **🏠 Main Site:** https://seungyongshim.github.io/book-gpt/
+            **📋 Preview Index:** https://seungyongshim.github.io/book-gpt/previews.html`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: body
+            });
+
+  deploy-pr-preview:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Checkout main for base site
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-branch
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies (PR)
+        run: npm ci
+
+      - name: Install dependencies (main)
+        run: cd main-branch && npm ci
+
+      - name: Build PR with specific base path
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: npm run build
+
+      - name: Build main site
+        run: cd main-branch && npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Create combined pages structure
+        run: |
+          mkdir -p pages-site
+          
+          # Copy main site
+          cp -r main-branch/dist/* pages-site/
+          
+          # Create PR preview directory
+          mkdir -p pages-site/pr-${{ github.event.number }}
+          cp -r dist/* pages-site/pr-${{ github.event.number }}/
+          
+          # Create/update previews index
+          cat > pages-site/previews.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="ko">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>PR Previews - Book GPT</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; background: #f8f9fa; }
+              .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              h1 { color: #2d3748; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
+              .pr-list { list-style: none; padding: 0; }
+              .pr-item { margin: 15px 0; padding: 20px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f7fafc; }
+              .pr-link { text-decoration: none; color: #3182ce; font-weight: 600; font-size: 1.1em; }
+              .pr-link:hover { color: #2c5aa0; }
+              .pr-info { color: #718096; font-size: 0.9em; margin-top: 8px; }
+              .pr-status { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+              .status-open { background: #c6f6d5; color: #22543d; }
+              .back-link { display: inline-block; margin-top: 20px; padding: 10px 15px; background: #4299e1; color: white; text-decoration: none; border-radius: 5px; }
+              .back-link:hover { background: #3182ce; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>📖 Book GPT - PR Previews</h1>
+              <ul class="pr-list">
+                <li class="pr-item">
+                  <a href="./pr-${{ github.event.number }}/" class="pr-link">PR #${{ github.event.number }}: ${{ github.event.pull_request.title }}</a>
+                  <span class="pr-status status-open">OPEN</span>
+                  <div class="pr-info">
+                    <div>Commit: ${{ github.event.pull_request.head.sha }}</div>
+                    <div>Branch: ${{ github.head_ref }}</div>
+                    <div>Author: ${{ github.event.pull_request.user.login }}</div>
+                  </div>
+                </li>
+              </ul>
+              <a href="../" class="back-link">← Back to Main Site</a>
+            </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload combined pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Comment on PR with live preview
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.number;
+            const commitSha = context.payload.pull_request.head.sha.substring(0, 7);
+            const previewUrl = `https://seungyongshim.github.io/book-gpt/pr-${prNumber}/`;
+            const indexUrl = `https://seungyongshim.github.io/book-gpt/previews.html`;
+            
+            const body = `## 🚀 GitHub Pages Preview Live!
+            
+            Your PR is now live on GitHub Pages with PR-specific routing!
+            
+            **📖 Live Preview:** ${previewUrl}
+            **📋 All Previews:** ${indexUrl}
+            **🏠 Main Site:** https://seungyongshim.github.io/book-gpt/
+            
+            **📝 PR Number:** #${prNumber}
+            **🔗 Commit:** \`${commitSha}\`
+            **🛠️ Base Path:** \`/book-gpt/pr-${prNumber}/\`
+            
+            > **✨ This is a live GitHub Pages deployment!**
+            > - Updates automatically when you push changes
+            > - Uses the same infrastructure as the main site
+            > - No external services required
+            
+            ### Quick Access:
+            - 🔗 [Open Preview](${previewUrl})
+            - 📋 [All PR Previews](${indexUrl})
+            - 🏠 [Main Site](https://seungyongshim.github.io/book-gpt/)`;
+            
+            // Check if we already commented
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('🚀 GitHub Pages Preview')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }

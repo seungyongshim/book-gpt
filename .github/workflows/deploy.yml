@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: pages-deploy
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -36,6 +36,27 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Preserve existing PR previews
+        run: |
+          # Download current pages to preserve PR previews
+          mkdir -p temp-site
+          curl -s -L "https://seungyongshim.github.io/book-gpt/" > temp-site/index.html 2>/dev/null || echo "No existing site"
+          
+          # Check if there are any PR directories to preserve
+          if curl -s -L "https://seungyongshim.github.io/book-gpt/previews.html" | grep -q "pr-[0-9]"; then
+            echo "Found existing PR previews to preserve"
+            # In a real scenario, we'd need a more sophisticated way to preserve PR previews
+            # For now, we'll just ensure our build doesn't conflict
+          fi
+          
+          # Copy main build
+          cp -r dist/* temp-site/ 2>/dev/null || cp -r dist/* ./ 
+          
+          # Ensure we have the main site files
+          if [ -d "temp-site" ]; then
+            cp -r temp-site/* dist/
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

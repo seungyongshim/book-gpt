@@ -10,6 +10,7 @@ describe('toolService', () => {
   const names = tools.map(t => (t as any).function?.name);
     expect(names).toContain('get_current_time');
     expect(names).toContain('echo');
+    expect(names).toContain('story');
   });
 
   it('should execute echo tool', async () => {
@@ -28,5 +29,14 @@ describe('toolService', () => {
   it('should return error for unknown tool', async () => {
     const result = await executeTool('unknown_tool', '{}');
     expect(result.error).toMatch(/Unknown tool/);
+  });
+
+  it('should execute story tool', async () => {
+    const storyline = '이것은 테스트용 줄거리입니다. ' + '가'.repeat(1950); // ~2000 characters
+    const args = JSON.stringify({ storyline });
+    const result = await executeTool('story', args);
+    expect(result.result).toBe('ok');
+    const formatted = formatToolResultForAssistant('story', 'call_1', result);
+    expect(formatted).toBe('ok');
   });
 });

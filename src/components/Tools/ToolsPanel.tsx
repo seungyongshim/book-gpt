@@ -12,12 +12,20 @@ const ToolsPanel: React.FC = () => {
     isEditing,
     startCreating,
     startEditing,
-    deleteTool
+    deleteTool,
+    toggleTool
   } = useToolStore();
 
   const handleDelete = async (id: string, name: string) => {
     if (window.confirm(`도구 "${name}"을 삭제하시겠습니까?`)) {
       await deleteTool(id);
+    }
+  };
+
+  const handleToggle = async (id: string, name: string, currentEnabled: boolean) => {
+    const action = currentEnabled ? '비활성화' : '활성화';
+    if (window.confirm(`도구 "${name}"을 ${action}하시겠습니까?`)) {
+      await toggleTool(id);
     }
   };
 
@@ -63,16 +71,38 @@ const ToolsPanel: React.FC = () => {
               tools.map((tool) => (
                 <div
                   key={tool.id}
-                  className="border border-border/60 rounded-lg p-4 bg-surface hover:shadow-md transition-shadow"
+                  className={`border border-border/60 rounded-lg p-4 bg-surface hover:shadow-md transition-all ${
+                    !tool.enabled ? 'opacity-60 bg-neutral-50 dark:bg-neutral-800/50' : ''
+                  }`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-lg mb-1">{tool.name}</h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-medium text-lg">{tool.name}</h3>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          tool.enabled 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+                        }`}>
+                          {tool.enabled ? '활성' : '비활성'}
+                        </span>
+                      </div>
                       <p className="text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed">
                         {tool.description}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
+                      <button
+                        onClick={() => handleToggle(tool.id, tool.name, tool.enabled)}
+                        className={`p-2 rounded-md transition-colors ${
+                          tool.enabled
+                            ? 'text-neutral-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                            : 'text-neutral-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
+                        }`}
+                        title={tool.enabled ? '비활성화' : '활성화'}
+                      >
+                        <Icon name={tool.enabled ? 'x' : 'check'} size={16} />
+                      </button>
                       <button
                         onClick={() => startEditing(tool)}
                         className="p-2 text-neutral-500 hover:text-primary hover:bg-primary/10 rounded-md transition-colors"

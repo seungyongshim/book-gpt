@@ -48,6 +48,7 @@ export interface StoredTool {
     required?: string[];
   };
   executeCode: string; // JavaScript code as string that will be evaluated
+  enabled: boolean; // Whether the tool is enabled/active
   createdAt: string;
   updatedAt: string;
 }

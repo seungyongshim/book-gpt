@@ -23,7 +23,8 @@ const ToolForm: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    executeCode: ''
+    executeCode: '',
+    enabled: true
   });
 
   const [parameters, setParameters] = useState<ParameterField[]>([]);
@@ -35,7 +36,8 @@ const ToolForm: React.FC = () => {
       setFormData({
         name: editingTool.name,
         description: editingTool.description,
-        executeCode: editingTool.executeCode
+        executeCode: editingTool.executeCode,
+        enabled: editingTool.enabled
       });
 
       // 매개변수 로드
@@ -50,7 +52,7 @@ const ToolForm: React.FC = () => {
       }
     } else {
       // 새 도구 생성 모드
-      setFormData({ name: '', description: '', executeCode: '' });
+      setFormData({ name: '', description: '', executeCode: '', enabled: true });
       setParameters([]);
     }
     setErrors({});
@@ -299,6 +301,22 @@ const ToolForm: React.FC = () => {
               placeholder="return args.text;"
             />
             {errors.executeCode && <p className="text-red-500 text-sm mt-1">{errors.executeCode}</p>}
+          </div>
+
+          {/* 도구 활성화 상태 */}
+          <div>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.enabled}
+                onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
+                className="rounded border-border/60"
+              />
+              <span className="text-sm font-medium">도구 활성화</span>
+            </label>
+            <p className="text-xs text-neutral-500 mt-1">
+              비활성화된 도구는 AI가 사용할 수 없습니다.
+            </p>
           </div>
 
           {/* 액션 버튼 */}

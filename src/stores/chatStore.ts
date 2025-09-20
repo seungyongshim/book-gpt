@@ -41,6 +41,7 @@ export interface ChatState {
   showMobileHistory: boolean;
   showSettingsOverlay: boolean;
   isDarkMode: boolean;
+  currentTab: 'chat' | 'tools'; // Add tab state
 
   // 메시지 편집
   editingMessageIndex: number | null;
@@ -91,6 +92,7 @@ export interface ChatState {
   toggleSettingsOverlay: () => void;
   closeSettingsOverlay: () => void;
   toggleTheme: () => Promise<void>;
+  setCurrentTab: (tab: 'chat' | 'tools') => void;
 
   // 사용량
   loadUsage: () => Promise<void>;
@@ -116,6 +118,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   showMobileHistory: false,
   showSettingsOverlay: false,
   isDarkMode: false,
+  currentTab: 'chat', // Default to chat tab
   editingMessageIndex: null,
   editingText: '',
   systemMessage: 'You are a helpful assistant.',
@@ -749,6 +752,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // 설정 오버레이 닫기
   closeSettingsOverlay: () => {
     set({ showSettingsOverlay: false });
+  },
+
+  // 탭 전환
+  setCurrentTab: (tab: 'chat' | 'tools') => {
+    set({ currentTab: tab });
   },
 
   // 테마 토글

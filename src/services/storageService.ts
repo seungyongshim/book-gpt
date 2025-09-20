@@ -1,9 +1,9 @@
-import { Session, SessionDto } from './types';
+import { Session, SessionDto, StoredTool } from './types';
 
 // IndexedDB를 사용한 채팅 데이터 저장소
 class ChatStorage {
   private dbName = 'ChatAppDB';
-  private version = 1;
+  private version = 2; // Increment version for tools support
   private db: IDBDatabase | null = null;
   private isInitialized = false;
 
@@ -45,6 +45,15 @@ class ChatStorage {
         if (!db.objectStoreNames.contains('settings')) {
           console.log('Creating settings object store...');
           db.createObjectStore('settings', { keyPath: 'key' });
+        }
+        
+        // 도구 스토어 생성
+        if (!db.objectStoreNames.contains('tools')) {
+          console.log('Creating tools object store...');
+          const toolStore = db.createObjectStore('tools', { keyPath: 'id' });
+          toolStore.createIndex('name', 'name', { unique: true });
+          toolStore.createIndex('createdAt', 'createdAt', { unique: false });
+          toolStore.createIndex('updatedAt', 'updatedAt', { unique: false });
         }
         
         console.log('IndexedDB upgrade completed');
@@ -211,6 +220,71 @@ class ChatStorage {
       return false;
     }
   }
+
+  // Tools storage methods
+  async saveTools(tools: StoredTool[]): Promise<void> {
+    if (!this.db) await this.init();
+    
+    const transaction = this.db!.transaction(['tools'], 'readwrite');
+    const store = transaction.objectStore('tools');
+    
+    // Clear existing tools
+    await new Promise<void>((resolve, reject) => {
+      const clearRequest = store.clear();
+      clearRequest.onsuccess = () => resolve();
+      clearRequest.onerror = () => reject(clearRequest.error);
+    });
+    
+    // Save new tools
+    for (const tool of tools) {
+      await new Promise<void>((resolve, reject) => {
+        const request = store.put(tool);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    }
+  }
+
+  async loadTools(): Promise<StoredTool[]> {
+    if (!this.db) await this.init();
+    
+    const transaction = this.db!.transaction(['tools'], 'readonly');
+    const store = transaction.objectStore('tools');
+    
+    return new Promise<StoredTool[]>((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => {
+        resolve(request.result || []);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async saveTool(tool: StoredTool): Promise<void> {
+    if (!this.db) await this.init();
+    
+    const transaction = this.db!.transaction(['tools'], 'readwrite');
+    const store = transaction.objectStore('tools');
+    
+    await new Promise<void>((resolve, reject) => {
+      const request = store.put(tool);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async deleteTool(id: string): Promise<void> {
+    if (!this.db) await this.init();
+    
+    const transaction = this.db!.transaction(['tools'], 'readwrite');
+    const store = transaction.objectStore('tools');
+    
+    await new Promise<void>((resolve, reject) => {
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
 }
 
 // 전역 인스턴스 생성
@@ -349,6 +423,66 @@ export class StorageService {
     } catch (error) {
       console.error('Error clearing storage:', error);
       return false;
+    }
+  }
+
+  // 도구 저장
+  static async saveTools(tools: StoredTool[]): Promise<void> {
+    try {
+      await chatStorage.saveTools(tools);
+    } catch (error) {
+      console.error('Error saving tools to IndexedDB:', error);
+      // localStorage 폴백
+      if (typeof localStorage !== 'undefined') {
+        try { 
+          localStorage.setItem('CHAT_TOOLS', JSON.stringify(tools)); 
+        } catch {
+          // ignore write error (quota exceeded or unavailable)
+        }
+      }
+    }
+  }
+
+  // 도구 로드
+  static async loadTools(): Promise<StoredTool[]> {
+    try {
+      return await chatStorage.loadTools();
+    } catch (error) {
+      console.error('Error loading tools from IndexedDB:', error);
+      // localStorage 폴백
+      const item = typeof localStorage !== 'undefined' ? localStorage.getItem('CHAT_TOOLS') : null;
+      return item ? JSON.parse(item) : [];
+    }
+  }
+
+  // 단일 도구 저장
+  static async saveTool(tool: StoredTool): Promise<void> {
+    try {
+      await chatStorage.saveTool(tool);
+    } catch (error) {
+      console.error('Error saving tool to IndexedDB:', error);
+      // 폴백: 전체 도구 목록을 다시 로드해서 업데이트
+      const tools = await this.loadTools();
+      const existingIndex = tools.findIndex(t => t.id === tool.id);
+      if (existingIndex >= 0) {
+        tools[existingIndex] = tool;
+      } else {
+        tools.push(tool);
+      }
+      await this.saveTools(tools);
+    }
+  }
+
+  // 도구 삭제
+  static async deleteTool(id: string): Promise<void> {
+    try {
+      await chatStorage.deleteTool(id);
+    } catch (error) {
+      console.error('Error deleting tool from IndexedDB:', error);
+      // 폴백: 전체 도구 목록을 다시 로드해서 업데이트
+      const tools = await this.loadTools();
+      const filtered = tools.filter(t => t.id !== id);
+      await this.saveTools(filtered);
     }
   }
 }

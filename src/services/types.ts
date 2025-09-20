@@ -36,3 +36,18 @@ export interface UsageInfo {
   totalPremiumRequests?: number;
   premiumRequestsUsed?: number;
 }
+
+// Tool management types
+export interface StoredTool {
+  id: string;
+  name: string;
+  description: string;
+  parameters?: {
+    type: 'object';
+    properties?: Record<string, any>;
+    required?: string[];
+  };
+  executeCode: string; // JavaScript code as string that will be evaluated
+  createdAt: string;
+  updatedAt: string;
+}

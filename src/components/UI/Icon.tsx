@@ -2,9 +2,11 @@ import React from 'react';
 import {
   AlertTriangle,
   ArrowRight,
+  ArrowLeft,
   Check,
   Clipboard,
   Download,
+  Edit,
   List,
   Mic,
   Moon,
@@ -17,6 +19,7 @@ import {
   Sun,
   Trash2,
   Waves,
+  Wrench,
   X,
   CircleSlash
 } from 'lucide-react';
@@ -26,6 +29,7 @@ const ICON_MAP: Record<IconName, React.ComponentType<any>> = {
   warning: AlertTriangle,
   x: X,
   'arrow-right': ArrowRight,
+  'arrow-left': ArrowLeft,
   list: List,
   plus: Plus,
   trash: Trash2,
@@ -39,6 +43,8 @@ const ICON_MAP: Record<IconName, React.ComponentType<any>> = {
   wave: Waves,
   stop: Square,
   pencil: Pencil,
+  edit: Edit,
+  wrench: Wrench,
   clipboard: Clipboard,
   reload: RotateCcw
 };

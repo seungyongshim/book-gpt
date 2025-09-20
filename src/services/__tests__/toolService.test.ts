@@ -4,10 +4,10 @@ import { executeTool, getRegisteredTools, formatToolResultForAssistant } from '.
 // 간단한 단위 테스트: 등록된 도구, 실행 결과, 에러 처리
 
 describe('toolService', () => {
-  it('should expose at least two registered tools', () => {
-    const tools = getRegisteredTools();
+  it('should expose at least two registered tools', async () => {
+    const tools = await getRegisteredTools();
     expect(tools.length).toBeGreaterThanOrEqual(2);
-  const names = tools.map(t => (t as any).function?.name);
+    const names = tools.map(t => (t as any).function?.name);
     expect(names).toContain('get_current_time');
     expect(names).toContain('echo');
     expect(names).toContain('story');

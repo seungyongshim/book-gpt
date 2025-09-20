@@ -76,6 +76,20 @@ const localTools: LocalToolDefinition[] = [
     execute: (_args: any) => {
       return 'thought';
     }
+  },
+  {
+    name: 'story',
+    description: '줄거리를 작성합니다. 약 2000자 정도의 이야기 줄거리를 입력받습니다.',
+    parameters: {
+      type: 'object',
+      properties: {
+        storyline: { type: 'string', description: '이야기의 줄거리 (약 2000자)' },
+      },
+      required: ['storyline']
+    },
+    execute: (_args: any) => {
+      return 'ok';
+    }
   }
 ];
 

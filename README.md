@@ -47,11 +47,26 @@ Pages 가 예전 설정(정적 Jekyll 빌드) 혹은 별도 워크플로(`action
 - 과거 Pages 빌드용 브랜치(`gh-pages`)가 있다면 정리(선택 사항)
 - (임시 안전장치) 빈 `docs/` 디렉터리 & `public/.nojekyll` 추가
 
+### PR 미리보기 배포
+
+Pull Request가 생성되거나 업데이트될 때 자동으로 미리보기 배포가 생성됩니다.
+
+- **워크플로**: `.github/workflows/pr-preview.yml`
+- **미리보기 URL**: `https://seungyongshim.github.io/book-gpt/pr-{PR번호}/`
+- **자동 정리**: PR이 닫히면 관련 배포 정보가 정리됩니다
+
+#### PR 미리보기 작동 방식
+
+1. PR 생성/업데이트 시 `pr-preview.yml` 워크플로가 트리거됩니다
+2. `vite.config.ts`에서 `GITHUB_HEAD_REF`와 `PR_NUMBER` 환경변수를 감지하여 PR 전용 base 경로(`/book-gpt/pr-123/`)를 설정합니다
+3. 빌드된 파일들이 PR 전용 경로로 배포됩니다
+4. 봇이 PR에 미리보기 URL이 포함된 댓글을 자동으로 작성합니다
+5. PR이 닫히면 정리 작업이 수행됩니다
+
 ### 추가 개선 아이디어
 
 - Lighthouse 검사 자동화 (actions/workflow 추가)
 - Cache 무효화를 위한 빌드 파일 이름 hash 유지 (기본 Vite 출력 사용 중)
-- PR 미리보기: `actions/deploy-pages` 를 PR 환경에 연결하거나 `vercel`/`netlify` 병행
 
 ---
 

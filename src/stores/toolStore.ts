@@ -26,6 +26,7 @@ const getDefaultTools = (): StoredTool[] => {
         required: []
       },
       executeCode: 'return new Date().toISOString();',
+      enabled: true,
       createdAt: now,
       updatedAt: now
     },
@@ -46,6 +47,7 @@ if (!args || typeof args.text !== 'string' || args.text.length === 0) {
 }
 return args.text;
       `.trim(),
+      enabled: true,
       createdAt: now,
       updatedAt: now
     },
@@ -61,6 +63,7 @@ return args.text;
         required: ['stage']
       },
       executeCode: 'return "directinged";',
+      enabled: true,
       createdAt: now,
       updatedAt: now
     },
@@ -76,6 +79,7 @@ return args.text;
         required: ['thought']
       },
       executeCode: 'return "thought";',
+      enabled: true,
       createdAt: now,
       updatedAt: now
     },
@@ -91,6 +95,7 @@ return args.text;
         required: ['storyline']
       },
       executeCode: 'return "ok";',
+      enabled: true,
       createdAt: now,
       updatedAt: now
     }
@@ -113,6 +118,7 @@ export interface ToolState {
   saveTool: (tool: Omit<StoredTool, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateTool: (tool: StoredTool) => Promise<void>;
   deleteTool: (id: string) => Promise<void>;
+  toggleTool: (id: string) => Promise<void>;
   
   // UI 액션
   startCreating: () => void;
@@ -151,6 +157,7 @@ export const useToolStore = create<ToolState>((set, get) => ({
       const tool: StoredTool = {
         ...toolData,
         id: generateId(),
+        enabled: toolData.enabled ?? true, // Default to enabled
         createdAt: now,
         updatedAt: now
       };
@@ -210,6 +217,33 @@ export const useToolStore = create<ToolState>((set, get) => ({
       invalidateToolsCache();
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Failed to delete tool', isLoading: false });
+    }
+  },
+
+  // 도구 활성화/비활성화 토글
+  toggleTool: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      const currentTools = get().tools;
+      const tool = currentTools.find(t => t.id === id);
+      if (!tool) {
+        throw new Error('Tool not found');
+      }
+
+      const updatedTool = {
+        ...tool,
+        enabled: !tool.enabled,
+        updatedAt: new Date().toISOString()
+      };
+      
+      await StorageService.saveTool(updatedTool);
+      const updatedTools = currentTools.map(t => t.id === id ? updatedTool : t);
+      set({ tools: updatedTools, isLoading: false });
+      
+      // 도구 캐시 무효화
+      invalidateToolsCache();
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to toggle tool', isLoading: false });
     }
   },
 

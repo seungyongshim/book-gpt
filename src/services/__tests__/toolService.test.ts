@@ -15,6 +15,7 @@ const testTools: StoredTool[] = [
       required: []
     },
     executeCode: 'return new Date().toISOString();',
+    enabled: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -35,6 +36,7 @@ if (!args || typeof args.text !== 'string' || args.text.length === 0) {
 }
 return args.text;
     `.trim(),
+    enabled: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
@@ -50,6 +52,7 @@ return args.text;
       required: ['storyline']
     },
     executeCode: 'return "ok";',
+    enabled: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }

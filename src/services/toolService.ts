@@ -11,6 +11,7 @@ export interface LocalToolDefinition {
     properties?: Record<string, any>;
     required?: string[];
   };
+  enabled: boolean;
   // 실행 함수
   execute: (args: any) => Promise<any> | any;
 }
@@ -21,6 +22,7 @@ function convertStoredToolToLocal(storedTool: StoredTool): LocalToolDefinition {
     name: storedTool.name,
     description: storedTool.description,
     parameters: storedTool.parameters,
+    enabled: storedTool.enabled,
     execute: (args: any) => {
       try {
         // 저장된 JavaScript 코드를 실행
@@ -65,7 +67,9 @@ export function invalidateToolsCache(): void {
 // 2. OpenAI ChatCompletionTool[] 변환 --------------------------------------------------
 export async function getRegisteredTools(): Promise<ChatCompletionTool[]> {
   const tools = await getTools();
-  return tools.map(t => ({
+  // Only include enabled tools
+  const enabledTools = tools.filter(t => t.enabled);
+  return enabledTools.map(t => ({
     type: 'function',
     function: {
       name: t.name,
@@ -81,6 +85,9 @@ export async function executeTool(name: string, argsJson: string | null | undefi
   const tool = tools.find(t => t.name === name);
   if (!tool) {
     return { result: null, error: `Unknown tool: ${name}` };
+  }
+  if (!tool.enabled) {
+    return { result: null, error: `Tool '${name}' is disabled` };
   }
   let parsed: any = {};
   if (argsJson) {

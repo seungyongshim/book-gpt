@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { executeTool, getRegisteredTools, formatToolResultForAssistant } from '../toolService';
 import { StorageService } from '../storageService';
 import { StoredTool } from '../types';
+// fake-indexeddb 제공
+import 'fake-indexeddb/auto';
 
 // Mock test tools for testing
 const testTools: StoredTool[] = [

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { ChatMessage, Session, ModelSettings, UsageInfo } from '../services/types';
 import { StorageService } from '../services/storageService';
 import { chatService } from '../services/chatService';
+import { initializeMcpSamplingTools } from '../services/toolService';
 
 // 간단한 UUID 생성 함수
 const generateId = (): string => {
@@ -140,6 +141,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // 스토리지 초기화
     await StorageService.initializeStorage();
+    
+    // MCP 샘플링 도구 초기화
+    await initializeMcpSamplingTools();
 
     // 테마 로드
     const savedTheme = localStorage.getItem('THEME_PREFERENCE');

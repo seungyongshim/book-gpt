@@ -1,6 +1,7 @@
 import type { ChatCompletionTool } from 'openai/resources/chat/completions';
 import { StoredTool } from './types';
 import { StorageService } from './storageService';
+import { mcpSamplingTools } from './mcpSamplingTools';
 
 export interface LocalToolDefinition {
   name: string;
@@ -114,4 +115,32 @@ export function formatToolResultForAssistant(name: string, _callId: string | und
   return typeof execution.result === 'string'
     ? execution.result
     : JSON.stringify(execution.result);
+}
+
+// 5. MCP 샘플링 도구 초기화 ------------------------------------------------------------
+export async function initializeMcpSamplingTools(): Promise<void> {
+  try {
+    // 기존 도구 로드
+    const existingTools = await StorageService.loadTools();
+    
+    // MCP 샘플링 도구가 이미 있는지 확인
+    const mcpToolNames = mcpSamplingTools.map(tool => tool.name);
+    const existingMcpTools = existingTools.filter(tool => mcpToolNames.includes(tool.name));
+    
+    // 새로운 도구만 추가
+    const newTools = mcpSamplingTools.filter(mcpTool => 
+      !existingMcpTools.some(existing => existing.name === mcpTool.name)
+    );
+    
+    if (newTools.length > 0) {
+      const allTools = [...existingTools, ...newTools];
+      await StorageService.saveTools(allTools);
+      invalidateToolsCache();
+      console.log(`MCP 샘플링 도구 ${newTools.length}개가 추가되었습니다:`, newTools.map(t => t.name));
+    } else {
+      console.log('MCP 샘플링 도구가 이미 등록되어 있습니다.');
+    }
+  } catch (error) {
+    console.error('MCP 샘플링 도구 초기화 중 오류:', error);
+  }
 }

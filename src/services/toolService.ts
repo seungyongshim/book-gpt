@@ -19,8 +19,8 @@ export interface LocalToolDefinition {
 // GPT 호출을 위한 인터페이스
 export interface GPTCallOptions {
   // 새로운 간편한 방식: 시스템 프롬프트와 유저 프롬프트 직접 입력
-  systemPrompt?: string;
-  userPrompt?: string;
+  system?: string;
+  user?: string;
   
   // 기존 방식: 메시지 배열 (이전 호환성 유지)
   messages?: ChatMessage[];
@@ -60,20 +60,20 @@ async function callGPT(options: GPTCallOptions): Promise<GPTCallResult> {
   // 메시지 배열 구성: 새로운 간편한 방식 또는 기존 방식 지원
   let messages: ChatMessage[];
   
-  if (options.systemPrompt || options.userPrompt) {
-    // 새로운 간편한 방식: systemPrompt, userPrompt 사용
+  if (options.system || options.user) {
+    // 새로운 간편한 방식: system, user 사용
     messages = [];
     
-    if (options.systemPrompt) {
-      messages.push({ role: 'system', text: options.systemPrompt });
+    if (options.system) {
+      messages.push({ role: 'system', text: options.system });
     }
     
-    if (options.userPrompt) {
-      messages.push({ role: 'user', text: options.userPrompt });
+    if (options.user) {
+      messages.push({ role: 'user', text: options.user });
     }
     
     if (messages.length === 0) {
-      throw new Error('Either systemPrompt/userPrompt or messages array must be provided');
+      throw new Error('Either system/user or messages array must be provided');
     }
   } else if (options.messages && options.messages.length > 0) {
     // 기존 방식: messages 배열 사용

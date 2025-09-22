@@ -20,6 +20,7 @@
     "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "clsx": "^2.0.0",
     "highlight.js": "^11.11.1",
     "idb": "^8.0.0",

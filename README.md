@@ -83,8 +83,8 @@ MIT License.
 ```js
 // 도구 executeCode 예시: 텍스트를 요약하는 도구
 const result = await callGPT({
-  systemPrompt: 'You are a helpful assistant that summarizes text concisely.',
-  userPrompt: 'Please summarize this text: ' + args.text,
+  system: 'You are a helpful assistant that summarizes text concisely.',
+  user: 'Please summarize this text: ' + args.text,
   model: 'gpt-4o',
   temperature: 0.3
 });
@@ -112,7 +112,7 @@ return result.content;
 ```
 
 사용 가능한 `callGPT` 옵션:
-- **간편한 방식**: `systemPrompt`, `userPrompt` 직접 입력
+- **간편한 방식**: `system`, `user` 직접 입력
 - **고급 방식**: `messages` 배열로 복잡한 대화 흐름 구성
 - `model`: 사용할 모델 (기본값: 'gpt-4o')
 - `temperature`: 창의성 수준 (기본값: 0.7)
@@ -151,8 +151,8 @@ return result.content;
   },
   executeCode: `
     const result = await callGPT({
-      systemPrompt: 'You are a professional translator.',
-      userPrompt: \`Translate the following text to \${args.target_language}: \${args.text}\`,
+      system: 'You are a professional translator.',
+      user: \`Translate the following text to \${args.target_language}: \${args.text}\`,
       model: 'gpt-4o',
       temperature: 0.3
     });

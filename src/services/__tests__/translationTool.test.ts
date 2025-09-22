@@ -25,13 +25,9 @@ const translationTool: StoredTool = {
     required: ['text', 'target_language']
   },
   executeCode: `
-const messages = [
-  { role: 'system', text: 'You are a professional translator. Provide accurate and natural translations.' },
-  { role: 'user', text: \`Translate the following text to \${args.target_language}: "\${args.text}"\` }
-];
-
 const result = await callGPT({
-  messages: messages,
+  systemPrompt: 'You are a professional translator. Provide accurate and natural translations.',
+  userPrompt: \`Translate the following text to \${args.target_language}: "\${args.text}"\`,
   model: 'gpt-4o',
   temperature: 0.3
 });

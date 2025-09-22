@@ -18,7 +18,14 @@ export interface LocalToolDefinition {
 
 // GPT 호출을 위한 인터페이스
 export interface GPTCallOptions {
-  messages: ChatMessage[];
+  // 새로운 간편한 방식: 시스템 프롬프트와 유저 프롬프트 직접 입력
+  systemPrompt?: string;
+  userPrompt?: string;
+  
+  // 기존 방식: 메시지 배열 (이전 호환성 유지)
+  messages?: ChatMessage[];
+  
+  // 기타 옵션들
   model?: string;
   temperature?: number;
   maxTokens?: number;
@@ -48,7 +55,32 @@ async function callGPT(options: GPTCallOptions): Promise<GPTCallResult> {
     throw new Error('ChatService not available - GPT calling is not initialized');
   }
 
-  const { messages, model = 'gpt-4o', temperature = 0.7, maxTokens } = options;
+  const { model = 'gpt-4o', temperature = 0.7, maxTokens } = options;
+  
+  // 메시지 배열 구성: 새로운 간편한 방식 또는 기존 방식 지원
+  let messages: ChatMessage[];
+  
+  if (options.systemPrompt || options.userPrompt) {
+    // 새로운 간편한 방식: systemPrompt, userPrompt 사용
+    messages = [];
+    
+    if (options.systemPrompt) {
+      messages.push({ role: 'system', text: options.systemPrompt });
+    }
+    
+    if (options.userPrompt) {
+      messages.push({ role: 'user', text: options.userPrompt });
+    }
+    
+    if (messages.length === 0) {
+      throw new Error('Either systemPrompt/userPrompt or messages array must be provided');
+    }
+  } else if (options.messages && options.messages.length > 0) {
+    // 기존 방식: messages 배열 사용
+    messages = options.messages;
+  } else {
+    throw new Error('Either systemPrompt/userPrompt or messages array must be provided');
+  }
   
   try {
     let fullResponse = '';

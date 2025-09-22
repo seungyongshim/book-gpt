@@ -11,7 +11,7 @@ const mockChatService = {
   getResponseStreaming: vi.fn()
 };
 
-// Mock test tool that uses GPT calling
+// Mock test tool that uses GPT calling (old message array approach)
 const gptCallingTool: StoredTool = {
   id: 'test-gpt-caller',
   name: 'gpt_summarizer',
@@ -42,6 +42,33 @@ return 'Summary: ' + result.content;
   updatedAt: new Date().toISOString()
 };
 
+// Mock test tool that uses the new simplified GPT calling API
+const simplifiedGptTool: StoredTool = {
+  id: 'test-simplified-gpt',
+  name: 'gpt_analyzer',
+  description: 'Analyzes text using simplified GPT API',
+  parameters: {
+    type: 'object',
+    properties: {
+      text: { type: 'string', description: 'Text to analyze' }
+    },
+    required: ['text']
+  },
+  executeCode: `
+const result = await callGPT({
+  systemPrompt: 'You are a helpful assistant that analyzes text thoroughly.',
+  userPrompt: 'Please analyze this text: ' + args.text,
+  model: 'gpt-4o',
+  temperature: 0.5
+});
+
+return 'Analysis: ' + result.content;
+  `.trim(),
+  enabled: true,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString()
+};
+
 describe('GPT calling from tools', () => {
   beforeEach(async () => {
     // Setup mock chat service
@@ -57,8 +84,8 @@ describe('GPT calling from tools', () => {
     // Set the mock chat service
     setChatServiceInstance(mockChatService);
     
-    // Setup test tool
-    await StorageService.saveTools([gptCallingTool]);
+    // Setup test tools
+    await StorageService.saveTools([gptCallingTool, simplifiedGptTool]);
   });
 
   it('should allow tools to call GPT', async () => {
@@ -80,6 +107,35 @@ describe('GPT calling from tools', () => {
     expect(messages[1].text).toContain('Please summarize this text:');
     expect(model).toBe('gpt-4o');
     expect(temperature).toBe(0.3);
+  });
+
+  it('should allow tools to call GPT with simplified API (systemPrompt + userPrompt)', async () => {
+    const args = JSON.stringify({ text: 'This is a complex document that needs detailed analysis for business purposes.' });
+    
+    // Mock the streaming response
+    const mockStream = (async function* () {
+      yield 'This document provides comprehensive business analysis with key insights.';
+    })();
+    
+    mockChatService.getResponseStreaming.mockReturnValue(mockStream);
+    
+    const result = await executeTool('gpt_analyzer', args);
+    
+    expect(result.error).toBeUndefined();
+    expect(result.result).toContain('Analysis:');
+    expect(result.result).toContain('comprehensive business analysis');
+    
+    // Verify that the chat service was called with correct parameters
+    expect(mockChatService.getResponseStreaming).toHaveBeenCalledTimes(1);
+    
+    const [messages, model, temperature] = mockChatService.getResponseStreaming.mock.calls[0];
+    expect(messages).toHaveLength(2);
+    expect(messages[0].role).toBe('system');
+    expect(messages[0].text).toContain('analyzes text thoroughly');
+    expect(messages[1].role).toBe('user');
+    expect(messages[1].text).toContain('Please analyze this text:');
+    expect(model).toBe('gpt-4o');
+    expect(temperature).toBe(0.5);
   });
 
   it('should handle GPT call errors gracefully', async () => {

@@ -79,11 +79,27 @@ MIT License.
 
 **NEW**: 도구에서 GPT를 호출할 수 있습니다! 도구 실행 환경에서 `callGPT` 함수를 사용하여 다른 GPT 요청을 할 수 있습니다.
 
+**간편한 방식** (권장):
 ```js
 // 도구 executeCode 예시: 텍스트를 요약하는 도구
+const result = await callGPT({
+  systemPrompt: 'You are a helpful assistant that summarizes text concisely.',
+  userPrompt: 'Please summarize this text: ' + args.text,
+  model: 'gpt-4o',
+  temperature: 0.3
+});
+
+return 'Summary: ' + result.content;
+```
+
+**고급 방식** (메시지 배열 사용):
+```js
+// 더 복잡한 대화 흐름이 필요한 경우
 const messages = [
-  { role: 'system', text: 'You are a helpful assistant that summarizes text concisely.' },
-  { role: 'user', text: 'Please summarize this text: ' + args.text }
+  { role: 'system', text: 'You are a helpful assistant.' },
+  { role: 'user', text: 'First question: ' + args.question1 },
+  { role: 'assistant', text: 'First answer...' },
+  { role: 'user', text: 'Follow-up: ' + args.question2 }
 ];
 
 const result = await callGPT({
@@ -92,11 +108,12 @@ const result = await callGPT({
   temperature: 0.3
 });
 
-return 'Summary: ' + result.content;
+return result.content;
 ```
 
 사용 가능한 `callGPT` 옵션:
-- `messages`: 채팅 메시지 배열 (필수)
+- **간편한 방식**: `systemPrompt`, `userPrompt` 직접 입력
+- **고급 방식**: `messages` 배열로 복잡한 대화 흐름 구성
 - `model`: 사용할 모델 (기본값: 'gpt-4o')
 - `temperature`: 창의성 수준 (기본값: 0.7)
 - `maxTokens`: 최대 토큰 수 (선택사항)
@@ -133,13 +150,9 @@ return 'Summary: ' + result.content;
     required: ['text', 'target_language']
   },
   executeCode: `
-    const messages = [
-      { role: 'system', text: 'You are a professional translator.' },
-      { role: 'user', text: \`Translate the following text to \${args.target_language}: \${args.text}\` }
-    ];
-    
     const result = await callGPT({
-      messages: messages,
+      systemPrompt: 'You are a professional translator.',
+      userPrompt: \`Translate the following text to \${args.target_language}: \${args.text}\`,
       model: 'gpt-4o',
       temperature: 0.3
     });

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useToolStore } from '../../stores/toolStore';
 import Icon from '../UI/Icon';
 import { StoredTool } from '../../services/types';
+import Editor from '@monaco-editor/react';
 
 interface ParameterField {
   name: string;
@@ -291,15 +292,99 @@ const ToolForm: React.FC = () => {
             </label>
             <div className="text-xs text-neutral-500 mb-2">
               JavaScript 코드를 작성하세요. 매개변수는 <code className="bg-neutral-100 dark:bg-neutral-800 px-1 rounded">args</code> 객체로 접근할 수 있습니다.
+              <br />
+              <span className="text-blue-600 dark:text-blue-400">callGPT(&#123;system, user, model, temperature&#125;)</span> 함수로 GPT를 호출할 수 있습니다.
             </div>
-            <textarea
-              id="executeCode"
-              value={formData.executeCode}
-              onChange={(e) => setFormData({ ...formData, executeCode: e.target.value })}
-              rows={10}
-              className="w-full px-3 py-2 border border-border/60 rounded-md bg-surface focus:ring-2 focus:ring-primary/50 focus:border-primary font-mono text-sm"
-              placeholder="return args.text;"
-            />
+            <div className="border border-border/60 rounded-md overflow-hidden">
+              <Editor
+                height="300px"
+                language="javascript"
+                theme="vs-dark"
+                value={formData.executeCode}
+                onChange={(value) => setFormData({ ...formData, executeCode: value || '' })}
+                onMount={(_, monaco) => {
+                  // Add type definitions for available functions
+                  monaco.languages.typescript.javascriptDefaults.addExtraLib(`
+                    /**
+                     * GPT를 호출하여 AI 기반 작업을 수행합니다.
+                     * @param options GPT 호출 옵션
+                     */
+                    declare function callGPT(options: {
+                      /** 시스템 프롬프트 (AI의 역할 정의) */
+                      system?: string;
+                      /** 사용자 프롬프트 (실제 요청) */
+                      user?: string;
+                      /** 메시지 배열 (복잡한 대화 흐름용) */
+                      messages?: Array<{role: 'system' | 'user' | 'assistant', text: string}>;
+                      /** 사용할 모델 (기본값: 'gpt-4o') */
+                      model?: string;
+                      /** 창의성 수준 0.0-2.0 (기본값: 0.7) */
+                      temperature?: number;
+                      /** 최대 토큰 수 */
+                      maxTokens?: number;
+                    }): Promise<{
+                      /** GPT 응답 내용 */
+                      content: string;
+                      /** 사용량 정보 */
+                      usage?: {
+                        promptTokens?: number;
+                        completionTokens?: number;
+                        totalTokens?: number;
+                      };
+                    }>;
+
+                    /**
+                     * 도구에 전달된 매개변수
+                     */
+                    declare const args: any;
+
+                    /**
+                     * 콘솔 출력 (디버깅용)
+                     */
+                    declare const console: {
+                      log(...args: any[]): void;
+                      error(...args: any[]): void;
+                      warn(...args: any[]): void;
+                    };
+                  `, 'toolGlobals.d.ts');
+
+                  // Configure TypeScript compiler options
+                  monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+                    target: monaco.languages.typescript.ScriptTarget.ES2020,
+                    allowNonTsExtensions: true,
+                    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+                    module: monaco.languages.typescript.ModuleKind.CommonJS,
+                    noEmit: true,
+                    esModuleInterop: true,
+                    jsx: monaco.languages.typescript.JsxEmit.React,
+                    reactNamespace: 'React',
+                    allowJs: true,
+                    typeRoots: ['node_modules/@types']
+                  });
+                }}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 13,
+                  lineNumbers: 'on',
+                  roundedSelection: false,
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  tabSize: 2,
+                  wordWrap: 'on',
+                  suggest: {
+                    insertMode: 'replace'
+                  },
+                  quickSuggestions: {
+                    other: true,
+                    comments: true,
+                    strings: true
+                  },
+                  suggestOnTriggerCharacters: true,
+                  acceptSuggestionOnEnter: 'on',
+                  acceptSuggestionOnCommitCharacter: true
+                }}
+              />
+            </div>
             {errors.executeCode && <p className="text-red-500 text-sm mt-1">{errors.executeCode}</p>}
           </div>
 

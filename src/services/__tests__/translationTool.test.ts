@@ -26,8 +26,8 @@ const translationTool: StoredTool = {
   },
   executeCode: `
 const result = await callGPT({
-  systemPrompt: 'You are a professional translator. Provide accurate and natural translations.',
-  userPrompt: \`Translate the following text to \${args.target_language}: "\${args.text}"\`,
+  system: 'You are a professional translator. Provide accurate and natural translations.',
+  user: \`Translate the following text to \${args.target_language}: "\${args.text}"\`,
   model: 'gpt-4o',
   temperature: 0.3
 });

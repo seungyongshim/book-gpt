@@ -56,8 +56,8 @@ const simplifiedGptTool: StoredTool = {
   },
   executeCode: `
 const result = await callGPT({
-  systemPrompt: 'You are a helpful assistant that analyzes text thoroughly.',
-  userPrompt: 'Please analyze this text: ' + args.text,
+  system: 'You are a helpful assistant that analyzes text thoroughly.',
+  user: 'Please analyze this text: ' + args.text,
   model: 'gpt-4o',
   temperature: 0.5
 });

@@ -98,6 +98,36 @@ return args.text;
       enabled: true,
       createdAt: now,
       updatedAt: now
+    },
+    {
+      id: generateId(),
+      name: 'translate_text',
+      description: '텍스트를 다른 언어로 번역합니다. GPT를 사용하여 정확한 번역을 제공합니다.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: '번역할 텍스트' },
+          target_language: { type: 'string', description: '대상 언어 (예: English, 한국어, 日本語, Français)' }
+        },
+        required: ['text', 'target_language']
+      },
+      executeCode: `
+const messages = [
+  { role: 'system', text: 'You are a professional translator. Provide accurate and natural translations.' },
+  { role: 'user', text: \`Translate the following text to \${args.target_language}: "\${args.text}"\` }
+];
+
+const result = await callGPT({
+  messages: messages,
+  model: 'gpt-4o',
+  temperature: 0.3
+});
+
+return result.content;
+      `.trim(),
+      enabled: true,
+      createdAt: now,
+      updatedAt: now
     }
   ];
 };

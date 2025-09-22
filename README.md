@@ -61,16 +61,45 @@ MIT License.
 
 ### 함수 호출(툴) 기능
 
-모델이 대화 중 특정 작업이 필요하다고 판단하면 로컬에 등록된 "툴"(함수)을 호출하여 결과를 다시 컨텍스트로 주입한 뒤 후속 응답을 생성합니다. 현재 데모용으로 두 가지 툴이 제공됩니다.
+모델이 대화 중 특정 작업이 필요하다고 판단하면 로컬에 등록된 "툴"(함수)을 호출하여 결과를 다시 컨텍스트로 주입한 뒤 후속 응답을 생성합니다. 현재 데모용으로 여러 툴이 제공됩니다.
 
 - `get_current_time`: 현재 UTC 시간을 ISO 문자열로 반환
 - `echo`: 전달된 `text` 값을 그대로 반환
+- `story`: 이야기 줄거리 작성 
+- `directing`: 소설/영화 장면 연출
+- `think`: 복잡한 추론이나 캐시 메모리가 필요할 때 사용
 
 구현 개요:
 1. `src/services/toolService.ts` 에 로컬 툴 정의 (`LocalToolDefinition[]`).
 2. `chatService.getResponseStreaming` 이 OpenAI Chat Completions API 호출 시 `tools` 배열을 포함.
 3. 모델이 tool call 을 생성하면 JSON arguments 스트리밍을 조립한 뒤 각 툴을 실행하고 `role: 'tool'` 메시지를 내부 히스토리에 추가.
 4. UI 렌더링에서는 `role: 'tool'` 메시지를 숨겨 사용자는 자연스러운 어시스턴트 응답만 확인.
+
+#### GPT 호출 기능
+
+**NEW**: 도구에서 GPT를 호출할 수 있습니다! 도구 실행 환경에서 `callGPT` 함수를 사용하여 다른 GPT 요청을 할 수 있습니다.
+
+```js
+// 도구 executeCode 예시: 텍스트를 요약하는 도구
+const messages = [
+  { role: 'system', text: 'You are a helpful assistant that summarizes text concisely.' },
+  { role: 'user', text: 'Please summarize this text: ' + args.text }
+];
+
+const result = await callGPT({
+  messages: messages,
+  model: 'gpt-4o',
+  temperature: 0.3
+});
+
+return 'Summary: ' + result.content;
+```
+
+사용 가능한 `callGPT` 옵션:
+- `messages`: 채팅 메시지 배열 (필수)
+- `model`: 사용할 모델 (기본값: 'gpt-4o')
+- `temperature`: 창의성 수준 (기본값: 0.7)
+- `maxTokens`: 최대 토큰 수 (선택사항)
 
 확장 방법:
 ```ts
@@ -90,9 +119,39 @@ MIT License.
 }
 ```
 
-추가한 뒤 재빌드하면 모델이 필요 시 `get_weather` 를 호출할 수 있습니다 (프롬프트에서 사용자가 날씨를 묻고, 모델이 스키마를 인식해야 호출 가능 — 모델 특성상 항상 100% 호출 보장은 아님).
+또는 GPT를 호출하는 도구:
+```ts
+{
+  name: 'translate_text',
+  description: '텍스트를 다른 언어로 번역',
+  parameters: {
+    type: 'object',
+    properties: { 
+      text: { type: 'string', description: '번역할 텍스트' },
+      target_language: { type: 'string', description: '대상 언어 (예: English, 한국어)' }
+    },
+    required: ['text', 'target_language']
+  },
+  executeCode: `
+    const messages = [
+      { role: 'system', text: 'You are a professional translator.' },
+      { role: 'user', text: \`Translate the following text to \${args.target_language}: \${args.text}\` }
+    ];
+    
+    const result = await callGPT({
+      messages: messages,
+      model: 'gpt-4o',
+      temperature: 0.3
+    });
+    
+    return result.content;
+  `
+}
+```
 
-테스트: `src/services/__tests__/toolService.test.ts` 에 기본 동작 검증 포함.
+추가한 뒤 재빌드하면 모델이 필요 시 해당 툴을 호출할 수 있습니다 (프롬프트에서 사용자가 해당 기능을 요청하고, 모델이 스키마를 인식해야 호출 가능 — 모델 특성상 항상 100% 호출 보장은 아님).
+
+테스트: `src/services/__tests__/toolService.test.ts` 와 `src/services/__tests__/toolService.gptCalling.test.ts` 에 기본 동작 검증 포함.
 
 ---
 

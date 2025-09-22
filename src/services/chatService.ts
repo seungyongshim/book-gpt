@@ -1,6 +1,6 @@
 import { ChatMessage, UsageInfo } from './types';
 import OpenAI from 'openai';
-import { executeTool, formatToolResultForAssistant, getRegisteredTools } from './toolService';
+import { executeTool, formatToolResultForAssistant, getRegisteredTools, setChatServiceInstance } from './toolService';
 import { accumulateToolCalls, finalizeToolCalls, ToolCallMeta } from './toolCallAccumulator';
 
 export interface ChatServiceConfig {
@@ -25,6 +25,9 @@ export class ChatService {
       baseURL: this.baseUrl,
       dangerouslyAllowBrowser: true,
     });
+
+    // Register this instance for tool use
+    setChatServiceInstance(this);
   }
 
   async getModels(): Promise<string[]> {

@@ -30,6 +30,8 @@ const ToolForm: React.FC = () => {
 
   const [parameters, setParameters] = useState<ParameterField[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [useMonaco, setUseMonaco] = useState(true);
+  const [monacoFailed, setMonacoFailed] = useState(false);
 
   // 편집 모드에서 기존 도구 데이터 로드
   useEffect(() => {
@@ -287,103 +289,154 @@ const ToolForm: React.FC = () => {
 
           {/* 실행 코드 */}
           <div>
-            <label htmlFor="executeCode" className="block text-sm font-medium mb-2">
-              실행 코드 *
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="executeCode" className="block text-sm font-medium">
+                실행 코드 *
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUseMonaco(!useMonaco)}
+                  className="text-xs px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                >
+                  {useMonaco ? '텍스트 모드' : 'Monaco 모드'}
+                </button>
+              </div>
+            </div>
             <div className="text-xs text-neutral-500 mb-2">
               JavaScript 코드를 작성하세요. 매개변수는 <code className="bg-neutral-100 dark:bg-neutral-800 px-1 rounded">args</code> 객체로 접근할 수 있습니다.
               <br />
               <span className="text-blue-600 dark:text-blue-400">callGPT(&#123;system, user, model, temperature&#125;)</span> 함수로 GPT를 호출할 수 있습니다.
             </div>
             <div className="border border-border/60 rounded-md overflow-hidden">
-              <Editor
-                height="300px"
-                language="javascript"
-                theme="vs-dark"
-                value={formData.executeCode}
-                onChange={(value) => setFormData({ ...formData, executeCode: value || '' })}
-                onMount={(_, monaco) => {
-                  // Add type definitions for available functions
-                  monaco.languages.typescript.javascriptDefaults.addExtraLib(`
-                    /**
-                     * GPT를 호출하여 AI 기반 작업을 수행합니다.
-                     * @param options GPT 호출 옵션
-                     */
-                    declare function callGPT(options: {
-                      /** 시스템 프롬프트 (AI의 역할 정의) */
-                      system?: string;
-                      /** 사용자 프롬프트 (실제 요청) */
-                      user?: string;
-                      /** 메시지 배열 (복잡한 대화 흐름용) */
-                      messages?: Array<{role: 'system' | 'user' | 'assistant', text: string}>;
-                      /** 사용할 모델 (기본값: 'gpt-4o') */
-                      model?: string;
-                      /** 창의성 수준 0.0-2.0 (기본값: 0.7) */
-                      temperature?: number;
-                      /** 최대 토큰 수 */
-                      maxTokens?: number;
-                    }): Promise<{
-                      /** GPT 응답 내용 */
-                      content: string;
-                      /** 사용량 정보 */
-                      usage?: {
-                        promptTokens?: number;
-                        completionTokens?: number;
-                        totalTokens?: number;
-                      };
-                    }>;
+              {useMonaco && !monacoFailed ? (
+                <Editor
+                  height="300px"
+                  language="javascript"
+                  theme="vs-dark"
+                  value={formData.executeCode}
+                  onChange={(value) => setFormData({ ...formData, executeCode: value || '' })}
+                  loading={
+                    <div className="flex flex-col items-center justify-center h-[300px] text-neutral-500">
+                      <div>Monaco Editor 로딩 중...</div>
+                      <button
+                        type="button"
+                        onClick={() => setMonacoFailed(true)}
+                        className="mt-2 text-xs text-blue-500 hover:underline"
+                      >
+                        텍스트 모드로 전환
+                      </button>
+                    </div>
+                  }
+                  onMount={(_, monaco) => {
+                    try {
+                      // Add type definitions for available functions
+                      monaco.languages.typescript.javascriptDefaults.addExtraLib(`
+                        /**
+                         * GPT를 호출하여 AI 기반 작업을 수행합니다.
+                         * @param options GPT 호출 옵션
+                         */
+                        declare function callGPT(options: {
+                          /** 시스템 프롬프트 (AI의 역할 정의) */
+                          system?: string;
+                          /** 사용자 프롬프트 (실제 요청) */
+                          user?: string;
+                          /** 메시지 배열 (복잡한 대화 흐름용) */
+                          messages?: Array<{role: 'system' | 'user' | 'assistant', text: string}>;
+                          /** 사용할 모델 (기본값: 'gpt-4o') */
+                          model?: string;
+                          /** 창의성 수준 0.0-2.0 (기본값: 0.7) */
+                          temperature?: number;
+                          /** 최대 토큰 수 */
+                          maxTokens?: number;
+                        }): Promise<{
+                          /** GPT 응답 내용 */
+                          content: string;
+                          /** 사용량 정보 */
+                          usage?: {
+                            promptTokens?: number;
+                            completionTokens?: number;
+                            totalTokens?: number;
+                          };
+                        }>;
 
-                    /**
-                     * 도구에 전달된 매개변수
-                     */
-                    declare const args: any;
+                        /**
+                         * 도구에 전달된 매개변수
+                         */
+                        declare const args: any;
 
-                    /**
-                     * 콘솔 출력 (디버깅용)
-                     */
-                    declare const console: {
-                      log(...args: any[]): void;
-                      error(...args: any[]): void;
-                      warn(...args: any[]): void;
-                    };
-                  `, 'toolGlobals.d.ts');
+                        /**
+                         * 콘솔 출력 (디버깅용)
+                         */
+                        declare const console: {
+                          log(...args: any[]): void;
+                          error(...args: any[]): void;
+                          warn(...args: any[]): void;
+                        };
+                      `, 'toolGlobals.d.ts');
 
-                  // Configure TypeScript compiler options
-                  monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
-                    target: monaco.languages.typescript.ScriptTarget.ES2020,
-                    allowNonTsExtensions: true,
-                    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-                    module: monaco.languages.typescript.ModuleKind.CommonJS,
-                    noEmit: true,
-                    esModuleInterop: true,
-                    jsx: monaco.languages.typescript.JsxEmit.React,
-                    reactNamespace: 'React',
-                    allowJs: true,
-                    typeRoots: ['node_modules/@types']
-                  });
-                }}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 13,
-                  lineNumbers: 'on',
-                  roundedSelection: false,
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                  tabSize: 2,
-                  wordWrap: 'on',
-                  suggest: {
-                    insertMode: 'replace'
-                  },
-                  quickSuggestions: {
-                    other: true,
-                    comments: true,
-                    strings: true
-                  },
-                  suggestOnTriggerCharacters: true,
-                  acceptSuggestionOnEnter: 'on',
-                  acceptSuggestionOnCommitCharacter: true
-                }}
-              />
+                      // Configure TypeScript compiler options
+                      monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+                        target: monaco.languages.typescript.ScriptTarget.ES2020,
+                        allowNonTsExtensions: true,
+                        moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+                        module: monaco.languages.typescript.ModuleKind.CommonJS,
+                        noEmit: true,
+                        esModuleInterop: true,
+                        jsx: monaco.languages.typescript.JsxEmit.React,
+                        reactNamespace: 'React',
+                        allowJs: true,
+                        typeRoots: ['node_modules/@types']
+                      });
+                    } catch (error) {
+                      console.warn('Monaco Editor setup failed:', error);
+                      setMonacoFailed(true);
+                    }
+                  }}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 13,
+                    lineNumbers: 'on',
+                    roundedSelection: false,
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    tabSize: 2,
+                    wordWrap: 'on',
+                    suggest: {
+                      insertMode: 'replace'
+                    },
+                    quickSuggestions: {
+                      other: true,
+                      comments: true,
+                      strings: true
+                    },
+                    suggestOnTriggerCharacters: true,
+                    acceptSuggestionOnEnter: 'on',
+                    acceptSuggestionOnCommitCharacter: true
+                  }}
+                />
+              ) : (
+                // Fallback textarea
+                <div className="relative">
+                  <div className="absolute top-2 right-2 text-xs text-neutral-400 bg-neutral-800 px-2 py-1 rounded z-10">
+                    텍스트 모드
+                  </div>
+                  <textarea
+                    id="executeCode"
+                    value={formData.executeCode}
+                    onChange={(e) => setFormData({ ...formData, executeCode: e.target.value })}
+                    rows={15}
+                    className="w-full px-3 py-2 bg-gray-900 text-green-400 font-mono text-sm border-0 focus:ring-2 focus:ring-primary/50 resize-none"
+                    placeholder="// 예시:
+const result = await callGPT({
+  system: 'You are a helpful assistant.',
+  user: 'Process this: ' + args.input
+});
+return result.content;"
+                    style={{ fontFamily: 'Consolas, Monaco, "Courier New", monospace' }}
+                  />
+                </div>
+              )}
             </div>
             {errors.executeCode && <p className="text-red-500 text-sm mt-1">{errors.executeCode}</p>}
           </div>

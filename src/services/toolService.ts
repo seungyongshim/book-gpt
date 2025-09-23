@@ -118,6 +118,29 @@ function convertStoredToolToLocal(storedTool: StoredTool): LocalToolDefinition {
     enabled: storedTool.enabled,
     execute: async (args: any) => {
       try {
+        // 상수들을 args에 병합
+        const mergedArgs = { ...args };
+        if (storedTool.parameters?.properties) {
+          Object.entries(storedTool.parameters.properties).forEach(([name, param]) => {
+            if (param.isConstant && param.constantValue !== undefined) {
+              // 타입에 따라 상수값을 적절히 변환
+              let convertedValue = param.constantValue;
+              if (param.type === 'number') {
+                convertedValue = Number(param.constantValue);
+              } else if (param.type === 'boolean') {
+                convertedValue = param.constantValue === 'true';
+              } else if (param.type === 'array' || param.type === 'object') {
+                try {
+                  convertedValue = JSON.parse(param.constantValue);
+                } catch {
+                  // JSON 파싱 실패시 문자열로 유지
+                }
+              }
+              mergedArgs[name] = convertedValue;
+            }
+          });
+        }
+        
         // 저장된 JavaScript 코드를 실행
         // GPT 호출 기능과 기타 유틸리티를 컨텍스트에 제공
         // async function으로 래핑하여 await 사용 가능하게 함
@@ -127,7 +150,7 @@ function convertStoredToolToLocal(storedTool: StoredTool): LocalToolDefinition {
           'console',
           `return (async () => { ${storedTool.executeCode} })()`
         );
-        const result = asyncExecuteFunction(args, callGPT, console);
+        const result = asyncExecuteFunction(mergedArgs, callGPT, console);
         
         // Promise 또는 일반 값 모두 처리
         return await Promise.resolve(result);
@@ -171,14 +194,42 @@ export async function getRegisteredTools(): Promise<ChatCompletionTool[]> {
   const tools = await getTools();
   // Only include enabled tools
   const enabledTools = tools.filter(t => t.enabled);
-  return enabledTools.map(t => ({
-    type: 'function',
-    function: {
-      name: t.name,
-      description: t.description,
-      parameters: t.parameters || { type: 'object', properties: {} }
+  return enabledTools.map(t => {
+    // 상수들을 제외한 매개변수만 AI에게 전달
+    let filteredParameters = t.parameters || { type: 'object', properties: {} };
+    if (t.parameters?.properties) {
+      const filteredProperties: Record<string, any> = {};
+      const filteredRequired: string[] = [];
+      
+      Object.entries(t.parameters.properties).forEach(([name, param]) => {
+        if (!param.isConstant) {
+          // 상수가 아닌 매개변수만 포함
+          filteredProperties[name] = {
+            type: param.type,
+            description: param.description
+          };
+          if (t.parameters?.required?.includes(name)) {
+            filteredRequired.push(name);
+          }
+        }
+      });
+      
+      filteredParameters = {
+        type: 'object',
+        properties: filteredProperties,
+        required: filteredRequired
+      };
     }
-  }));
+    
+    return {
+      type: 'function',
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: filteredParameters
+      }
+    };
+  });
 }
 
 // 3. 실행기 구현 ----------------------------------------------------------------------

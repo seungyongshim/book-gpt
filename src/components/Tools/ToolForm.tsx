@@ -9,6 +9,8 @@ interface ParameterField {
   type: string;
   description: string;
   required: boolean;
+  isConstant?: boolean; // true if this is a constant value, false/undefined for parameters
+  constantValue?: string; // the fixed value for constants
 }
 
 const ToolForm: React.FC = () => {
@@ -49,7 +51,9 @@ const ToolForm: React.FC = () => {
           name,
           type: param.type || 'string',
           description: param.description || '',
-          required: editingTool.parameters?.required?.includes(name) || false
+          required: editingTool.parameters?.required?.includes(name) || false,
+          isConstant: param.isConstant || false,
+          constantValue: param.constantValue || ''
         }));
         setParameters(paramFields);
       }
@@ -78,12 +82,17 @@ const ToolForm: React.FC = () => {
       newErrors.executeCode = '실행 코드는 필수입니다.';
     }
 
-    // 매개변수 검증
+    // 매개변수 및 상수 검증
     parameters.forEach((param, index) => {
       if (!param.name.trim()) {
-        newErrors[`param_name_${index}`] = '매개변수 이름은 필수입니다.';
+        newErrors[`param_name_${index}`] = param.isConstant ? '상수 이름은 필수입니다.' : '매개변수 이름은 필수입니다.';
       } else if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(param.name)) {
-        newErrors[`param_name_${index}`] = '매개변수 이름은 영문자, 숫자, 언더스코어만 사용할 수 있습니다.';
+        newErrors[`param_name_${index}`] = param.isConstant ? '상수 이름은 영문자, 숫자, 언더스코어만 사용할 수 있습니다.' : '매개변수 이름은 영문자, 숫자, 언더스코어만 사용할 수 있습니다.';
+      }
+      
+      // 상수인 경우 고정값 검증
+      if (param.isConstant && !param.constantValue?.trim()) {
+        newErrors[`param_value_${index}`] = '상수의 고정값은 필수입니다.';
       }
     });
 
@@ -104,11 +113,15 @@ const ToolForm: React.FC = () => {
       properties: parameters.reduce((acc, param) => {
         acc[param.name] = {
           type: param.type,
-          description: param.description
+          description: param.description,
+          ...(param.isConstant ? { 
+            isConstant: true, 
+            constantValue: param.constantValue 
+          } : {})
         };
         return acc;
       }, {} as Record<string, any>),
-      required: parameters.filter(p => p.required).map(p => p.name)
+      required: parameters.filter(p => p.required && !p.isConstant).map(p => p.name)
     } : undefined;
 
     try {
@@ -131,7 +144,11 @@ const ToolForm: React.FC = () => {
   };
 
   const addParameter = () => {
-    setParameters([...parameters, { name: '', type: 'string', description: '', required: false }]);
+    setParameters([...parameters, { name: '', type: 'string', description: '', required: false, isConstant: false }]);
+  };
+
+  const addConstant = () => {
+    setParameters([...parameters, { name: '', type: 'string', description: '', required: false, isConstant: true, constantValue: '' }]);
   };
 
   const removeParameter = (index: number) => {
@@ -200,25 +217,42 @@ const ToolForm: React.FC = () => {
           {/* 매개변수 설정 */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">매개변수</h3>
-              <button
-                type="button"
-                onClick={addParameter}
-                className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-              >
-                <Icon name="plus" size={14} />
-                매개변수 추가
-              </button>
+              <h3 className="text-lg font-medium">매개변수 & 상수</h3>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={addParameter}
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+                >
+                  <Icon name="plus" size={14} />
+                  매개변수 추가
+                </button>
+                <button
+                  type="button"
+                  onClick={addConstant}
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-md transition-colors"
+                >
+                  <Icon name="plus" size={14} />
+                  상수 추가
+                </button>
+              </div>
             </div>
 
             {parameters.length === 0 ? (
-              <p className="text-neutral-500 text-sm italic">매개변수가 없습니다.</p>
+              <p className="text-neutral-500 text-sm italic">매개변수 및 상수가 없습니다.</p>
             ) : (
               <div className="space-y-4">
                 {parameters.map((param, index) => (
-                  <div key={index} className="border border-border/60 rounded-md p-4">
+                  <div key={index} className={`border rounded-md p-4 ${param.isConstant ? 'border-blue-300 bg-blue-50/50 dark:bg-blue-900/10' : 'border-border/60'}`}>
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium">매개변수 {index + 1}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">
+                          {param.isConstant ? '상수' : '매개변수'} {index + 1}
+                        </h4>
+                        {param.isConstant && (
+                          <span className="text-xs px-2 py-1 bg-blue-500 text-white rounded">고정값</span>
+                        )}
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeParameter(index)}
@@ -266,21 +300,39 @@ const ToolForm: React.FC = () => {
                         value={param.description}
                         onChange={(e) => updateParameter(index, 'description', e.target.value)}
                         className="w-full px-2 py-1 text-sm border border-border/60 rounded bg-surface focus:ring-1 focus:ring-primary/50 focus:border-primary"
-                        placeholder="이 매개변수에 대한 설명..."
+                        placeholder={param.isConstant ? "이 상수에 대한 설명..." : "이 매개변수에 대한 설명..."}
                       />
                     </div>
 
-                    <div className="mt-3">
-                      <label className="flex items-center gap-2">
+                    {param.isConstant ? (
+                      // 상수인 경우 고정값 입력 필드
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium mb-1">고정값 *</label>
                         <input
-                          type="checkbox"
-                          checked={param.required}
-                          onChange={(e) => updateParameter(index, 'required', e.target.checked)}
-                          className="rounded border-border/60"
+                          type="text"
+                          value={param.constantValue || ''}
+                          onChange={(e) => updateParameter(index, 'constantValue', e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-border/60 rounded bg-surface focus:ring-1 focus:ring-primary/50 focus:border-primary"
+                          placeholder={param.type === 'number' ? "예: 42" : param.type === 'boolean' ? "true 또는 false" : "예: 고정 문자열"}
                         />
-                        <span className="text-sm">필수 매개변수</span>
-                      </label>
-                    </div>
+                        {errors[`param_value_${index}`] && (
+                          <p className="text-red-500 text-xs mt-1">{errors[`param_value_${index}`]}</p>
+                        )}
+                      </div>
+                    ) : (
+                      // 매개변수인 경우 필수 여부 체크박스
+                      <div className="mt-3">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={param.required}
+                            onChange={(e) => updateParameter(index, 'required', e.target.checked)}
+                            className="rounded border-border/60"
+                          />
+                          <span className="text-sm">필수 매개변수</span>
+                        </label>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -304,7 +356,7 @@ const ToolForm: React.FC = () => {
               </div>
             </div>
             <div className="text-xs text-neutral-500 mb-2">
-              JavaScript 코드를 작성하세요. 매개변수는 <code className="bg-neutral-100 dark:bg-neutral-800 px-1 rounded">args</code> 객체로 접근할 수 있습니다.
+              JavaScript 코드를 작성하세요. 매개변수와 상수는 <code className="bg-neutral-100 dark:bg-neutral-800 px-1 rounded">args</code> 객체로 접근할 수 있습니다.
               <br />
               <span className="text-blue-600 dark:text-blue-400">callGPT(&#123;system, user, model, temperature&#125;)</span> 함수로 GPT를 호출할 수 있습니다.
             </div>

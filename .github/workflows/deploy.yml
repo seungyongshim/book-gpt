@@ -37,6 +37,15 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify .nojekyll exists
+        run: |
+          if [ ! -f dist/.nojekyll ]; then
+            echo "ERROR: .nojekyll file is missing in dist/"
+            echo "This will cause Jekyll to process the site, which can lead to errors."
+            exit 1
+          fi
+          echo "✓ .nojekyll file exists in dist/"
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

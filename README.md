@@ -19,7 +19,11 @@ npm run preview
 
 ### GitHub Pages 설정 체크리스트
 
-1. Repository Settings > Pages > Build and deployment > Source 를 `GitHub Actions` 로 선택합니다.
+**⚠️ CI 오류를 방지하려면 반드시 이 설정을 확인하세요:**
+
+1. **Repository Settings > Pages > Build and deployment > Source 를 `GitHub Actions` 로 선택합니다.**
+   - ❌ `Deploy from a branch` 로 설정되어 있으면 Jekyll 빌드 오류가 발생합니다
+   - ✅ `GitHub Actions` 로 설정하면 `.github/workflows/deploy.yml` 워크플로가 정상 작동합니다
 2. 워크플로 실행 후 `Deploy to GitHub Pages` job 이 성공하면 Pages URL 이 environment 출력에 표시됩니다.
 3. `public/.nojekyll` 이 존재하여 Jekyll 파이프라인을 우회합니다 (SPA 폴더 구조 유지). 제거해도 동작은 하나, 레거시 Pages 설정이 남아있는 경우 안전장치가 됩니다.
 
@@ -40,12 +44,16 @@ const ghBase = process.env.GITHUB_REPOSITORY
 
 Pages 가 예전 설정(정적 Jekyll 빌드) 혹은 별도 워크플로(`actions/jekyll-build-pages`)를 트리거하면서 `_config.yml` 또는 특정 디렉터리를 찾으려 했으나 SPA 구조에는 존재하지 않아 실패했습니다. 현재는 전용 Node 빌드 워크플로만 유지하면 됩니다.
 
+**⚠️ 중요: 이 오류는 GitHub Pages 설정 문제입니다. 반드시 아래 단계를 따라주세요:**
+
 해결 조치:
-- `.github/workflows/deploy.yml` 에 `actions/configure-pages` + `upload-pages-artifact` + `deploy-pages` 구성 사용
-- Settings > Pages > Source 가 `GitHub Actions` 인지 확인
-- 중복되던 Jekyll 빌드를 유발하는 다른 워크플로/설정 제거
-- 과거 Pages 빌드용 브랜치(`gh-pages`)가 있다면 정리(선택 사항)
-- `public/.nojekyll` 파일로 Jekyll 파이프라인 우회
+1. **Repository Settings > Pages > Build and deployment > Source 를 `GitHub Actions` 로 변경** (가장 중요!)
+   - 현재 `Deploy from a branch` 로 설정되어 있다면 Jekyll 이 자동으로 실행됩니다
+   - `GitHub Actions` 로 변경하면 `.github/workflows/deploy.yml` 워크플로만 실행됩니다
+2. `.github/workflows/deploy.yml` 에 `actions/configure-pages` + `upload-pages-artifact` + `deploy-pages` 구성 확인
+3. 중복되던 Jekyll 빌드를 유발하는 다른 워크플로/설정 제거
+4. 과거 Pages 빌드용 브랜치(`gh-pages`)가 있다면 정리(선택 사항)
+5. `public/.nojekyll` 파일로 Jekyll 파이프라인 우회 (빌드 시 자동으로 `dist/.nojekyll`에 복사됨)
 
 ### 추가 개선 아이디어
 

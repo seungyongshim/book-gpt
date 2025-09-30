@@ -142,11 +142,26 @@ export class ChatService {
           chatStream = await this.client.chat.completions.create(createParams);
         } catch (error: any) {
           // Catch API errors and provide helpful context
+          const getModelSuggestion = async () => {
+            try {
+              const availableModels = await this.getModels();
+              if (availableModels.length > 0) {
+                const suggestions = availableModels.slice(0, 3).join(', ');
+                return ` Available models: ${suggestions}${availableModels.length > 3 ? ', ...' : ''}`;
+              }
+            } catch {
+              // Fallback if model list fetch fails
+            }
+            return '';
+          };
+
           if (error?.status === 500 || error?.response?.status === 500) {
-            throw new Error(`API returned 500 error. This often means the model name '${model}' is not supported. Please use a valid model name like 'gpt-4o', 'gpt-4', 'gpt-3.5-turbo', etc.`);
+            const suggestion = await getModelSuggestion();
+            throw new Error(`API returned 500 error. This often means the model name '${model}' is not supported.${suggestion}`);
           }
           if (error?.status === 404 || error?.response?.status === 404) {
-            throw new Error(`Model '${model}' not found. Please check the model name and try again with a valid model like 'gpt-4o'.`);
+            const suggestion = await getModelSuggestion();
+            throw new Error(`Model '${model}' not found. Please check the model name and try again.${suggestion}`);
           }
           if (error?.status === 400 || error?.response?.status === 400) {
             const message = error?.message || error?.response?.data?.error?.message || 'Invalid request';

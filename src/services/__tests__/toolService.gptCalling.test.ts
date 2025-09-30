@@ -149,7 +149,6 @@ describe('GPT calling from tools', () => {
     const result = await executeTool('gpt_summarizer', args);
     
     expect(result.error).toBeDefined();
-    expect(result.error).toContain('GPT call failed');
     expect(result.error).toContain('API rate limit exceeded');
     expect(result.result).toBeNull();
   });
@@ -228,5 +227,54 @@ try {
     // Parameters: messages, model, temperature, maxTokens, signal, callbacks, enableTools
     const enableTools = callArgs[6];
     expect(enableTools).toBe(false);
+  });
+
+  it('should preserve helpful error messages from chatService (e.g., invalid model)', async () => {
+    // Mock an error from chatService with a helpful message about invalid model
+    const helpfulError = new Error('API returned 500 error. This often means the model name \'claude-sonnet-4\' is not supported. Available models: gpt-4o, gpt-4, gpt-3.5-turbo');
+    
+    mockChatService.getResponseStreaming.mockImplementation(() => {
+      throw helpfulError;
+    });
+    
+    // Create a tool that calls GPT with an invalid model
+    const invalidModelTool: StoredTool = {
+      id: 'test-invalid-model',
+      name: 'invalid_model_caller',
+      description: 'Tests invalid model error handling',
+      parameters: {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string', description: 'User prompt' }
+        },
+        required: ['prompt']
+      },
+      executeCode: `
+return await callGPT({
+  system: 'You are a helpful assistant.',
+  user: args.prompt,
+  model: 'claude-sonnet-4',
+  temperature: 1.1
+});
+      `.trim(),
+      enabled: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    await StorageService.saveTools([invalidModelTool]);
+    invalidateToolsCache();
+    
+    const args = JSON.stringify({ prompt: '5성급 호텔 로비에 들어서는 순간 손님이 경험하게 되는 것들을 시간 순서대로 말해주세요.' });
+    
+    const result = await executeTool('invalid_model_caller', args);
+    
+    // The error should contain the helpful message from chatService, not a generic wrapper
+    expect(result.error).toBeDefined();
+    expect(result.error).toContain('claude-sonnet-4');
+    expect(result.error).toContain('not supported');
+    expect(result.error).toContain('Available models');
+    // Should not wrap it with generic "GPT call failed" prefix
+    expect(result.error).not.toContain('GPT call failed');
   });
 });

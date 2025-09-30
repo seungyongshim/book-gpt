@@ -82,32 +82,29 @@ async function callGPT(options: GPTCallOptions): Promise<GPTCallResult> {
     throw new Error('Either system/user or messages array must be provided');
   }
   
-  try {
-    let fullResponse = '';
-    const stream = chatServiceInstance.getResponseStreaming(
-      messages,
-      model,
-      temperature,
-      maxTokens,
-      undefined, // signal
-      undefined, // callbacks
-      false      // enableTools - MUST be false to prevent infinite recursion
-    );
+  
+  let fullResponse = '';
+  const stream = chatServiceInstance.getResponseStreaming(
+    messages,
+    model,
+    temperature,
+    maxTokens,
+    undefined, // signal
+    undefined, // callbacks
+    false      // enableTools - MUST be false to prevent infinite recursion
+  );
 
-    for await (const chunk of stream) {
-      fullResponse += chunk;
-    }
-
-    return {
-      content: fullResponse.trim(),
-      usage: {
-        // Note: Usage info would need to be provided by the chatService
-        // This is a simplified implementation
-      }
-    };
-  } catch (error) {
-    throw new Error(`GPT call failed: ${error instanceof Error ? error.message : String(error)}`);
+  for await (const chunk of stream) {
+    fullResponse += chunk;
   }
+
+  return {
+    content: fullResponse.trim(),
+    usage: {
+      // Note: Usage info would need to be provided by the chatService
+      // This is a simplified implementation
+    }
+  };
 }
 
 // 저장된 도구를 LocalToolDefinition으로 변환하는 함수

@@ -137,7 +137,27 @@ export class ChatService {
           (createParams as any).tool_choice = 'auto';
         }
 
-        const chatStream = await this.client.chat.completions.create(createParams);
+        let chatStream;
+        try {
+          chatStream = await this.client.chat.completions.create(createParams);
+        } catch (error: any) {
+          // Catch API errors and provide helpful context
+          if (error?.status === 500 || error?.response?.status === 500) {
+            throw new Error(`API returned 500 error. This often means the model name '${model}' is not supported. Please use a valid model name like 'gpt-4o', 'gpt-4', 'gpt-3.5-turbo', etc.`);
+          }
+          if (error?.status === 404 || error?.response?.status === 404) {
+            throw new Error(`Model '${model}' not found. Please check the model name and try again with a valid model like 'gpt-4o'.`);
+          }
+          if (error?.status === 400 || error?.response?.status === 400) {
+            const message = error?.message || error?.response?.data?.error?.message || 'Invalid request';
+            throw new Error(`Invalid request: ${message}. Model used: '${model}'`);
+          }
+          // Re-throw with additional context if available
+          if (error?.message) {
+            throw new Error(`Failed to create chat completion with model '${model}': ${error.message}`);
+          }
+          throw error;
+        }
 
   let assistantAccum = '';
   let toolCallsMeta: ToolCallMeta[] = [];

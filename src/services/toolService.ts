@@ -90,7 +90,8 @@ async function callGPT(options: GPTCallOptions): Promise<GPTCallResult> {
       temperature,
       maxTokens,
       undefined, // signal
-      undefined  // callbacks
+      undefined, // callbacks
+      false      // enableTools - MUST be false to prevent infinite recursion
     );
 
     for await (const chunk of stream) {

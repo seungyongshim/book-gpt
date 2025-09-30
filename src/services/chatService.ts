@@ -48,7 +48,8 @@ export class ChatService {
     temperature: number = 1.0,
     _maxTokens?: number,
     signal?: AbortSignal,
-    callbacks?: { onToolCalls?: (toolCalls: { id?: string; name: string; arguments: string }[]) => void }
+    callbacks?: { onToolCalls?: (toolCalls: { id?: string; name: string; arguments: string }[]) => void },
+    enableTools: boolean = true
   ): AsyncIterable<string> {
     if (!model) throw new Error('model is required');
 
@@ -123,14 +124,19 @@ export class ChatService {
       for (let iteration = 0; iteration < ChatService.MAX_TOOL_ITERATIONS; iteration++) {
         assertNotAborted();
 
-        const chatStream = await this.client.chat.completions.create({
+        const createParams: any = {
           model,
           temperature,
           messages: toApiMessages(workingMessages) as any,
-          stream: true,
-          tools: await getRegisteredTools(),
-          tool_choice: 'auto'
-        });
+          stream: true
+        };
+
+        if (enableTools) {
+          createParams.tools = await getRegisteredTools();
+          createParams.tool_choice = 'auto';
+        }
+
+        const chatStream = await this.client.chat.completions.create(createParams);
 
   let assistantAccum = '';
   let toolCallsMeta: ToolCallMeta[] = [];

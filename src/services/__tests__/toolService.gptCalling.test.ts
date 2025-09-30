@@ -205,4 +205,28 @@ try {
     expect(result.result).not.toContain('systemPrompt');
     expect(result.result).not.toContain('userPrompt');
   });
+
+  it('should disable tools when callGPT is used to prevent infinite recursion', async () => {
+    const args = JSON.stringify({ text: 'Test text for analysis' });
+    
+    // Mock the streaming response
+    const mockStream = (async function* () {
+      yield 'Analysis complete';
+    })();
+    
+    mockChatService.getResponseStreaming.mockReturnValue(mockStream);
+    
+    const result = await executeTool('gpt_analyzer', args);
+    
+    expect(result.error).toBeUndefined();
+    expect(result.result).toContain('Analysis:');
+    
+    // Verify that the chat service was called with enableTools = false (7th parameter)
+    expect(mockChatService.getResponseStreaming).toHaveBeenCalledTimes(1);
+    
+    const callArgs = mockChatService.getResponseStreaming.mock.calls[0];
+    // Parameters: messages, model, temperature, maxTokens, signal, callbacks, enableTools
+    const enableTools = callArgs[6];
+    expect(enableTools).toBe(false);
+  });
 });

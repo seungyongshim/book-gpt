@@ -2,7 +2,7 @@
 
 GitHub Pages 배포는 GitHub Actions 워크플로(`.github/workflows/deploy.yml`)를 통해 자동으로 이루어집니다.
 
-> 참고: 레거시 Jekyll 빌드가 트리거되어 실패하던 이슈를 방지하기 위해 `public/.nojekyll` 파일과 placeholder `docs/` 디렉터리가 추가되었습니다. Pages Source 를 `GitHub Actions` 로 설정하면 Jekyll 파이프라인은 사용되지 않으므로 추후 `docs/` 삭제 가능.
+> 참고: 레거시 Jekyll 빌드가 트리거되어 실패하던 이슈를 방지하기 위해 `public/.nojekyll` 파일이 추가되었습니다. Pages Source 를 `GitHub Actions` 로 설정하면 Jekyll 파이프라인은 사용되지 않습니다.
 
 ### 주요 명령
 
@@ -38,14 +38,14 @@ const ghBase = process.env.GITHUB_REPOSITORY
 
 ### 오류(Jekyll `No such file or directory /docs`) 원인
 
-Pages 가 예전 설정(정적 Jekyll 빌드) 혹은 별도 워크플로(`actions/jekyll-build-pages`)를 트리거하면서 `_config.yml` 또는 `docs` 디렉터리를 찾으려 했으나 SPA 구조에는 존재하지 않아 실패했습니다. 현재는 전용 Node 빌드 워크플로만 유지하면 됩니다.
+Pages 가 예전 설정(정적 Jekyll 빌드) 혹은 별도 워크플로(`actions/jekyll-build-pages`)를 트리거하면서 `_config.yml` 또는 특정 디렉터리를 찾으려 했으나 SPA 구조에는 존재하지 않아 실패했습니다. 현재는 전용 Node 빌드 워크플로만 유지하면 됩니다.
 
 해결 조치:
 - `.github/workflows/deploy.yml` 에 `actions/configure-pages` + `upload-pages-artifact` + `deploy-pages` 구성 사용
 - Settings > Pages > Source 가 `GitHub Actions` 인지 확인
-- 중복되던 Jekyll 빌드(기본 `docs/` 경로 기대)를 유발하는 다른 워크플로/설정 제거
+- 중복되던 Jekyll 빌드를 유발하는 다른 워크플로/설정 제거
 - 과거 Pages 빌드용 브랜치(`gh-pages`)가 있다면 정리(선택 사항)
-- (임시 안전장치) 빈 `docs/` 디렉터리 & `public/.nojekyll` 추가
+- `public/.nojekyll` 파일로 Jekyll 파이프라인 우회
 
 ### 추가 개선 아이디어
 

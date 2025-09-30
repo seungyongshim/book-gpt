@@ -2,7 +2,7 @@
 
 GitHub Pages 배포는 GitHub Actions 워크플로(`.github/workflows/deploy.yml`)를 통해 자동으로 이루어집니다.
 
-> 참고: 레거시 Jekyll 빌드가 트리거되어 실패하던 이슈를 방지하기 위해 `public/.nojekyll` 파일이 추가되었습니다. Pages Source 를 `GitHub Actions` 로 설정하면 Jekyll 파이프라인은 사용되지 않습니다.
+> 참고: 레거시 Jekyll 빌드가 트리거되어 실패하던 이슈를 방지하기 위해 `.nojekyll` 파일이 레포지토리 루트와 `public/` 디렉터리에 추가되었습니다. 레포지토리 루트의 `.nojekyll` 파일은 GitHub의 자동 Jekyll 빌드를 완전히 비활성화합니다.
 
 ### 주요 명령
 
@@ -25,7 +25,7 @@ npm run preview
    - ❌ `Deploy from a branch` 로 설정되어 있으면 Jekyll 빌드 오류가 발생합니다
    - ✅ `GitHub Actions` 로 설정하면 `.github/workflows/deploy.yml` 워크플로가 정상 작동합니다
 2. 워크플로 실행 후 `Deploy to GitHub Pages` job 이 성공하면 Pages URL 이 environment 출력에 표시됩니다.
-3. `public/.nojekyll` 이 존재하여 Jekyll 파이프라인을 우회합니다 (SPA 폴더 구조 유지). 제거해도 동작은 하나, 레거시 Pages 설정이 남아있는 경우 안전장치가 됩니다.
+3. `.nojekyll` 파일이 레포지토리 루트에 존재하여 GitHub의 자동 Jekyll 빌드를 완전히 비활성화합니다. `public/.nojekyll` 파일은 빌드 시 `dist/.nojekyll`에 복사되어 배포된 사이트의 SPA 폴더 구조를 유지합니다.
 
 ### `base` 경로
 
@@ -50,10 +50,11 @@ Pages 가 예전 설정(정적 Jekyll 빌드) 혹은 별도 워크플로(`action
 1. **Repository Settings > Pages > Build and deployment > Source 를 `GitHub Actions` 로 변경** (가장 중요!)
    - 현재 `Deploy from a branch` 로 설정되어 있다면 Jekyll 이 자동으로 실행됩니다
    - `GitHub Actions` 로 변경하면 `.github/workflows/deploy.yml` 워크플로만 실행됩니다
-2. `.github/workflows/deploy.yml` 에 `actions/configure-pages` + `upload-pages-artifact` + `deploy-pages` 구성 확인
-3. 중복되던 Jekyll 빌드를 유발하는 다른 워크플로/설정 제거
-4. 과거 Pages 빌드용 브랜치(`gh-pages`)가 있다면 정리(선택 사항)
-5. `public/.nojekyll` 파일로 Jekyll 파이프라인 우회 (빌드 시 자동으로 `dist/.nojekyll`에 복사됨)
+2. **레포지토리 루트에 `.nojekyll` 파일 추가** (이미 추가됨) - GitHub의 자동 Jekyll 빌드를 완전히 비활성화합니다
+3. `.github/workflows/deploy.yml` 에 `actions/configure-pages` + `upload-pages-artifact` + `deploy-pages` 구성 확인
+4. 중복되던 Jekyll 빌드를 유발하는 다른 워크플로/설정 제거
+5. 과거 Pages 빌드용 브랜치(`gh-pages`)가 있다면 정리(선택 사항)
+6. `public/.nojekyll` 파일로 배포된 사이트의 Jekyll 파이프라인 우회 (빌드 시 자동으로 `dist/.nojekyll`에 복사됨)
 
 ### 추가 개선 아이디어
 

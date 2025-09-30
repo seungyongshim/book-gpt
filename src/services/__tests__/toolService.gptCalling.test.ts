@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { executeTool, setChatServiceInstance } from '../toolService';
+import { executeTool, setChatServiceInstance, invalidateToolsCache } from '../toolService';
 import { StorageService } from '../storageService';
 import { StoredTool } from '../types';
 
@@ -109,7 +109,7 @@ describe('GPT calling from tools', () => {
     expect(temperature).toBe(0.3);
   });
 
-  it('should allow tools to call GPT with simplified API (systemPrompt + userPrompt)', async () => {
+  it('should allow tools to call GPT with simplified API (system + user)', async () => {
     const args = JSON.stringify({ text: 'This is a complex document that needs detailed analysis for business purposes.' });
     
     // Mock the streaming response
@@ -165,5 +165,44 @@ describe('GPT calling from tools', () => {
     expect(result.error).toBeDefined();
     expect(result.error).toContain('ChatService not available');
     expect(result.result).toBeNull();
+  });
+
+  it('should provide correct error message when no valid options are provided', async () => {
+    // Create a tool that attempts to call GPT with no valid options
+    const invalidTool: StoredTool = {
+      id: 'test-invalid-gpt',
+      name: 'invalid_gpt_caller',
+      description: 'Tests invalid GPT call',
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: []
+      },
+      executeCode: `
+try {
+  await callGPT({});
+  return 'Should not reach here';
+} catch (error) {
+  return error.message;
+}
+      `.trim(),
+      enabled: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // Reset chat service and invalidate cache for this test
+    setChatServiceInstance(mockChatService);
+    await StorageService.saveTools([gptCallingTool, simplifiedGptTool, invalidTool]);
+    invalidateToolsCache(); // Force reload of tools
+    
+    const result = await executeTool('invalid_gpt_caller', '{}');
+    
+    expect(result.error).toBeUndefined();
+    expect(result.result).toBeDefined();
+    // Verify the error message uses correct parameter names (system/user not systemPrompt/userPrompt)
+    expect(result.result).toContain('system/user');
+    expect(result.result).not.toContain('systemPrompt');
+    expect(result.result).not.toContain('userPrompt');
   });
 });

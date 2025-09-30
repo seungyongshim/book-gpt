@@ -79,7 +79,7 @@ async function callGPT(options: GPTCallOptions): Promise<GPTCallResult> {
     // 기존 방식: messages 배열 사용
     messages = options.messages;
   } else {
-    throw new Error('Either systemPrompt/userPrompt or messages array must be provided');
+    throw new Error('Either system/user or messages array must be provided');
   }
   
   try {

@@ -1,5 +1,6 @@
 import { ChatMessage, UsageInfo } from './types';
 import OpenAI from 'openai';
+import type { ChatCompletionCreateParamsStreaming } from 'openai/resources/chat/completions';
 import { executeTool, formatToolResultForAssistant, getRegisteredTools, setChatServiceInstance } from './toolService';
 import { accumulateToolCalls, finalizeToolCalls, ToolCallMeta } from './toolCallAccumulator';
 
@@ -124,7 +125,7 @@ export class ChatService {
       for (let iteration = 0; iteration < ChatService.MAX_TOOL_ITERATIONS; iteration++) {
         assertNotAborted();
 
-        const createParams: any = {
+        const createParams: ChatCompletionCreateParamsStreaming = {
           model,
           temperature,
           messages: toApiMessages(workingMessages) as any,
@@ -132,8 +133,8 @@ export class ChatService {
         };
 
         if (enableTools) {
-          createParams.tools = await getRegisteredTools();
-          createParams.tool_choice = 'auto';
+          (createParams as any).tools = await getRegisteredTools();
+          (createParams as any).tool_choice = 'auto';
         }
 
         const chatStream = await this.client.chat.completions.create(createParams);
